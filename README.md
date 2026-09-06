@@ -35,3 +35,5 @@ Use `scripts/build-release.sh` to produce a bundle containing only runtime behav
 ## Development environments
 
 The template supports both ecosystems. Python tooling is declared in `pyproject.toml` (with `requirements-dev.txt` for pip users); run `./scripts/setup-dev.sh` to create `.venv` and install development dependencies. TypeScript tooling is declared in `package.json` and `tsconfig.json`; use `npm ci` when a lockfile is present. These environments are for the coding Agent and validation scripts only. They are not copied into `src/<agent_name>/runtime/` or shipped to end users.
+
+The Dockerfile is multi-stage. Its builder may read the repository, but the final runtime image copies only the installed product runtime and launcher. Development resources, tests, benchmarks, `AGENTS.md`, and `.agents/` cannot be reached from the user container.

@@ -1,11 +1,18 @@
-FROM node:20-bookworm-slim
+FROM node:20-bookworm-slim AS builder
 ARG AGENT_NAME=example-agent
 RUN apt-get update && apt-get install -y --no-install-recommends bash ca-certificates git python3 python3-venv python3-pip && rm -rf /var/lib/apt/lists/*
-RUN npm install --global opencode-ai@latest
 WORKDIR /opt/agent
-COPY . /opt/agent
+COPY src /opt/agent/src
+COPY distribution /opt/agent/distribution
 RUN AGENT_NAME=$AGENT_NAME PREFIX=/opt/install /opt/agent/distribution/install.sh
+
+FROM node:20-bookworm-slim AS runtime
+ARG AGENT_NAME=example-agent
+RUN apt-get update && apt-get install -y --no-install-recommends bash ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN npm install --global opencode-ai@latest
+COPY --from=builder /opt/install /opt/install
+COPY --from=builder /opt/agent/distribution/container-entrypoint.sh /usr/local/bin/agent-entrypoint
+RUN chmod +x /usr/local/bin/agent-entrypoint
+ENV AGENT_NAME=$AGENT_NAME
 ENV PATH="/opt/install/bin:$PATH"
-COPY distribution/container-entrypoint.sh /opt/agent/distribution/container-entrypoint.sh
-RUN chmod +x /opt/agent/distribution/container-entrypoint.sh
-ENTRYPOINT ["/opt/agent/distribution/container-entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/agent-entrypoint"]
