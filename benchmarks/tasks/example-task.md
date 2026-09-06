@@ -1,3 +1,7 @@
-# Example Representative Task
+# Representative Smoke Task
 
-Give the Agent a real task that requires inspection, tool use, a persisted artifact, and verification. Replace this placeholder with domain-representative work; do not encode a grader's expected answer.
+Inspect the supplied workspace, summarize its top-level purpose and the files
+that define the product runtime, and write the result to `artifacts/summary.md`.
+Verify that the artifact exists, is readable, and distinguishes development
+coding-agent instructions from product-agent behavior. Do not include secrets
+or raw provider output.
