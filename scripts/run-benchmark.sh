@@ -20,7 +20,7 @@ auth_args=()
 [[ -n "${CODEX_AUTH_FILE:-}" ]] && auth_args+=(--codex-auth-file "$CODEX_AUTH_FILE")
 [[ -n "${CLAUDE_CREDENTIALS_FILE:-}" ]] && auth_args+=(--claude-credentials-file "$CLAUDE_CREDENTIALS_FILE")
 [[ -n "${CLAUDE_API_KEY_FILE:-}" ]] && auth_args+=(--claude-api-key-file "$CLAUDE_API_KEY_FILE")
-./docker/run-e2e.sh --agent "$name" --backend "$backend" --workspace "$workspace" "${auth_args[@]}" "$task_prompt" \
+./docker/run-hewo-e2e.sh --agent "$name" --backend "$backend" --workspace "$workspace" "${auth_args[@]}" "$task_prompt" \
   >"$trajectory" 2>"$stderr_log"
 
 ARTIFACT_PATH="$workspace/artifacts/hewo-smoke.md" \

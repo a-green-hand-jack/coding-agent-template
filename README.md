@@ -11,10 +11,10 @@ docker build --build-arg AGENT_NAME=hewo -t hewo:dev -f docker/Dockerfile .
 docker run --rm -it --env-file .env hewo:dev "Say hello to Ada"
 ```
 
-The CLI E2E helper accepts any OpenCode provider and model without requiring manual exports:
+The `run-hewo-e2e.sh` helper accepts any OpenCode provider and model without requiring manual exports:
 
 ```bash
-./docker/run-e2e.sh --agent hewo --provider openai --model gpt-5.5 --api-key-env OPENAI_API_KEY "完成这个任务"
+./docker/run-hewo-e2e.sh --agent hewo --provider openai --model gpt-5.5 --api-key-env OPENAI_API_KEY "完成这个任务"
 ```
 
 `hewo` can use the same product command with three interchangeable coding-agent
@@ -24,14 +24,14 @@ keeps its own model namespace and credential boundary:
 
 ```bash
 # OpenCode: provider/model plus an explicit read-only auth store
-./docker/run-e2e.sh --backend opencode --auth-file "$HOME/.local/share/opencode/auth.json" "hi"
+./docker/run-hewo-e2e.sh --backend opencode --auth-file "$HOME/.local/share/opencode/auth.json" "hi"
 
 # Codex CLI: Codex model plus an explicit read-only Codex auth store
-./docker/run-e2e.sh --backend codex --codex-auth-file "$HOME/.codex/auth.json" --model gpt-5.5 "hi"
+./docker/run-hewo-e2e.sh --backend codex --codex-auth-file "$HOME/.codex/auth.json" --model gpt-5.5 "hi"
 
 # Claude Code: Claude model plus a runtime API key (or a read-only key file)
-./docker/run-e2e.sh --backend claude --api-key-env ANTHROPIC_API_KEY --model sonnet "hi"
-# ./docker/run-e2e.sh --backend claude --claude-api-key-file /path/to/key --model sonnet "hi"
+./docker/run-hewo-e2e.sh --backend claude --api-key-env ANTHROPIC_API_KEY --model sonnet "hi"
+# ./docker/run-hewo-e2e.sh --backend claude --claude-api-key-file /path/to/key --model sonnet "hi"
 ```
 
 The product launcher also accepts `hewo --backend codex ...`,
@@ -41,20 +41,37 @@ Workflows; only the underlying coding-agent CLI and model/provider adapter
 changes. The Docker image uses a Node 22 runtime because the current Claude
 Code package requires Node 22 or newer.
 
+The scaffold, coding-agent backend, and LLM provider are deliberately
+independent layers:
+
+- The scaffold is the runtime definition under `src/<agent>/runtime`.
+- The backend is a mature CLI such as OpenCode, Codex, or Claude Code.
+- The provider/model is selected at runtime and is never baked into the
+  scaffold. OpenCode accepts arbitrary provider IDs through `LLM_PROVIDER`,
+  `<PROVIDER>_API_KEY`, and provider-specific base-URL variables.
+
+The current real Docker smoke matrix is intentionally explicit: OpenCode with
+the `openai/gpt-5.5` auth store, OpenCode with `opencode-go/gpt-5.6-luna`,
+Codex with `gpt-5.5`, and Claude Code through the authorized Apex-compatible
+Anthropic endpoint with `sonnet` all returned the exact `hi` response.
+`opencode-go` exposes additional models (including GLM, Qwen, Kimi, Grok,
+MiniMax, and DeepSeek variants); those are provider/model choices, not new
+scaffolds. Direct DeepSeek-key testing is not part of the passing matrix.
+
 For a short-lived read-only provider runtime bundle, create it and pass it to Docker:
 
 ```bash
 bundle=$(mktemp -d)
 ./scripts/create-provider-bundle.sh openai gpt-5.6 OPENAI_API_KEY "$bundle"
-./docker/run-e2e.sh --provider openai --model gpt-5.6 --bundle "$bundle" "完成这个任务"
+./docker/run-hewo-e2e.sh --provider openai --model gpt-5.6 --bundle "$bundle" "完成这个任务"
 rm -rf "$bundle"
 ```
 
 The bundle is mode `0700`, its credential is mode `0600`, and Docker mounts it read-only at `/run/provider-bundle`. It contains only the selected provider metadata and one credential, never the host `HOME` or any CLI authentication database.
 
-Use `--api-key-stdin` when the key should not appear in shell history, `--auth-file PATH` for one explicit read-only OpenCode auth store, or `--env-file PATH` for a provider-specific environment file. Run `./docker/run-e2e.sh --help` for all options.
+Use `--api-key-stdin` when the key should not appear in shell history, `--auth-file PATH` for one explicit read-only OpenCode auth store, or `--env-file PATH` for a provider-specific environment file. Run `./docker/run-hewo-e2e.sh --help` for all options.
 
-Never commit provider keys. Credentials are injected at runtime through environment variables or Docker secrets. `docker/run-e2e.sh` automatically forwards provider variables already exported in the development shell and also loads `.env` when present; it does not copy OpenCode, Codex, or Claude Code credential files into the image.
+Never commit provider keys. Credentials are injected at runtime through environment variables or Docker secrets. `docker/run-hewo-e2e.sh` automatically forwards provider variables already exported in the development shell and also loads `.env` when present; it does not copy OpenCode, Codex, or Claude Code credential files into the image.
 
 ## Layout
 
@@ -66,7 +83,13 @@ The key feature is definition-first development: create or modify an Agent by ed
 
 The image contains no credentials and does not bake in a provider. The E2E helper passes the selected provider, model, and provider key at runtime. It supports arbitrary provider names using `<PROVIDER>_API_KEY`, explicit key variables, env files, or one explicitly mounted auth store. The entrypoint fails closed when neither a provider key nor an explicit auth store is supplied. Docker uses `opencode-ai@latest` by design; every E2E report records the actual CLI version, provider, model, and Agent Definition revision.
 
-Provider ownership is explicit: OpenCode tests cover the OpenCode-compatible GPT and DeepSeek providers; Codex tests cover the configured Codex profiles; Claude Code owns the Apex Claude integration. `apex-claude` must not be configured or tested through OpenCode. Explicit credential mounts are backend-specific and the helper never copies a complete host home directory; an explicitly supplied env file remains user-controlled and should contain only the variables intended for that run.
+Provider ownership is explicit: OpenCode owns OpenCode-compatible providers
+such as `openai` and `opencode-go`; Codex owns its configured Codex profiles;
+Claude Code owns the Apex Claude integration. `apex-claude` must not be
+configured or tested through OpenCode. Explicit credential mounts are
+backend-specific and the helper never copies a complete host home directory;
+an explicitly supplied env file remains user-controlled and should contain
+only the variables intended for that run.
 
 ## Create a new agent
 
@@ -81,12 +104,19 @@ Agent:
 
 ```bash
 ./scripts/validate-definition.sh hewo
-./docker/run-e2e.sh --agent hewo --provider openai --model gpt-5.5 "Say hello to Ada"
+./docker/run-hewo-e2e.sh --agent hewo --provider openai --model gpt-5.5 "Say hello to Ada"
 ```
 
 Replace `src/example-agent` with the definition for the Agent you are building. Keep this template's own development instructions in `AGENTS.md` and `.agents/`; do not put template workflow instructions inside `src/<agent_name>`.
 
 Use `scripts/build-release.sh hewo 0.1.0` to produce a bundle containing only runtime behavior. The release contains its own installer and launcher; a downloaded bootstrap installer can fetch that archive with `RELEASE_URL=... bash install.sh`, without a developer checkout. Record release and E2E evidence in the relevant GitHub issue and run `scripts/collect-trace.sh` before storing trajectory evidence.
+
+This project follows a reuse-first development philosophy: an independent
+developer should build Agent behavior with prompts, skills, memory, knowledge,
+workflows, and tools, while delegating execution, model adapters, approvals,
+and terminal UX to the established coding-agent CLIs. The template therefore
+adds only the thin scaffold/launcher/provider wiring needed to compose those
+systems; it does not reimplement a coding-agent runtime.
 
 For a non-Docker release installation that should bundle all three backends,
 set `AGENT_BACKENDS=opencode,codex,claude` when running the installer. The
