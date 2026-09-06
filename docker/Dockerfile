@@ -6,4 +6,6 @@ WORKDIR /opt/agent
 COPY . /opt/agent
 RUN AGENT_NAME=$AGENT_NAME PREFIX=/opt/install /opt/agent/distribution/install.sh
 ENV PATH="/opt/install/bin:$PATH"
-ENTRYPOINT ["/opt/install/bin/example-agent"]
+COPY distribution/container-entrypoint.sh /opt/agent/distribution/container-entrypoint.sh
+RUN chmod +x /opt/agent/distribution/container-entrypoint.sh
+ENTRYPOINT ["/opt/agent/distribution/container-entrypoint.sh"]
