@@ -10,6 +10,7 @@ This repository is developed with Codex, OpenCode, or another coding agent. Thes
 - Installation, release archives, and final Docker images must exclude every `AGENTS.md` from product payloads. Keep the build and release filters aligned.
 - Maintain a scoped `AGENTS.md` in every versioned source directory. Do not populate `.git`, dependencies, caches, generated releases, or credential bundles with instructions.
 - Use GitHub issues for discussion and acceptance evidence. Do not recreate `docs/` or `tests/`; verify behavior with real Docker E2E tasks, not agent unit tests. Ignore the obsolete install-test step in the legacy development skill.
+- A successful image build or CLI startup is not Agent E2E evidence. Before claiming an Agent works, inject the intended development-machine provider runtime through the approved safe path and observe a real model response from the container. If credentials or provider adapters were not actually injected, report the run as infrastructure-only and do not call it a successful Agent test.
 
 ## Boundaries
 
