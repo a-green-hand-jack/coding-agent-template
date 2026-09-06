@@ -7,6 +7,7 @@ grep -Fq 'Workspace access' "$ARTIFACT_PATH"
 grep -Fq 'Skill loaded' "$ARTIFACT_PATH"
 grep -Fq 'runtime-smoke' "$ARTIFACT_PATH"
 grep -Fq 'HEWO_KNOWLEDGE_OK' "$ARTIFACT_PATH"
+grep -Fq 'HEWO_TOOL_OK' "$ARTIFACT_PATH"
 grep -Fq 'HEWO_WORKFLOW_OK' "$ARTIFACT_PATH"
 if grep -Eiq 'not installed|not available|unable to load' "$ARTIFACT_PATH"; then
   echo "runtime-smoke skill was not loaded" >&2

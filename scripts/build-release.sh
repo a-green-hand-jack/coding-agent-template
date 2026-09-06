@@ -16,8 +16,8 @@ release_backends="${AGENT_BACKENDS:-opencode}"
   echo "invalid AGENT_BACKENDS: $release_backends" >&2
   exit 2
 }
-sed -i '' "s/AGENT_NAME=\"\${AGENT_NAME:-example-agent}\"/AGENT_NAME=\"\${AGENT_NAME:-$name}\"/; s/AGENT_BACKENDS=\"\${AGENT_BACKENDS:-opencode}\"/AGENT_BACKENDS=\"\${AGENT_BACKENDS:-$release_backends}\"/; s/__AGENT_NAME__/$name/g; s#__RELEASE_URL__#$release_url#g" "$out/install.sh" 2>/dev/null \
-  || sed -i "s/AGENT_NAME=\"\${AGENT_NAME:-example-agent}\"/AGENT_NAME=\"\${AGENT_NAME:-$name}\"/; s/AGENT_BACKENDS=\"\${AGENT_BACKENDS:-opencode}\"/AGENT_BACKENDS=\"\${AGENT_BACKENDS:-$release_backends}\"/; s/__AGENT_NAME__/$name/g; s#__RELEASE_URL__#$release_url#g" "$out/install.sh"
+sed -i '' "s/AGENT_NAME=\"\${AGENT_NAME:-hewo}\"/AGENT_NAME=\"\${AGENT_NAME:-$name}\"/; s/AGENT_BACKENDS=\"\${AGENT_BACKENDS:-opencode}\"/AGENT_BACKENDS=\"\${AGENT_BACKENDS:-$release_backends}\"/; s/__AGENT_NAME__/$name/g; s#__RELEASE_URL__#$release_url#g" "$out/install.sh" 2>/dev/null \
+  || sed -i "s/AGENT_NAME=\"\${AGENT_NAME:-hewo}\"/AGENT_NAME=\"\${AGENT_NAME:-$name}\"/; s/AGENT_BACKENDS=\"\${AGENT_BACKENDS:-opencode}\"/AGENT_BACKENDS=\"\${AGENT_BACKENDS:-$release_backends}\"/; s/__AGENT_NAME__/$name/g; s#__RELEASE_URL__#$release_url#g" "$out/install.sh"
 sed -i '' "s/__AGENT_NAME__/$name/g" "$out/launcher" "$out/bin/$name" 2>/dev/null \
   || sed -i "s/__AGENT_NAME__/$name/g" "$out/launcher" "$out/bin/$name"
 chmod +x "$out/bin/$name"

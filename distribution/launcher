@@ -9,6 +9,11 @@ test -f "$definition_dir/opencode.json" || {
   exit 2
 }
 
+agent_environment_dir="$bin_dir/../lib/__AGENT_NAME__/environment"
+if [[ -d "$agent_environment_dir/bin" ]]; then
+  export PATH="$agent_environment_dir/bin:$PATH"
+fi
+
 backend="${AGENT_BACKEND:-${HEWO_BACKEND:-opencode}}"
 provider="${LLM_PROVIDER:-openai}"
 model="${LLM_MODEL:-}"

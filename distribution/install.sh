@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-AGENT_NAME="${AGENT_NAME:-example-agent}"
+AGENT_NAME="${AGENT_NAME:-hewo}"
 PREFIX="${PREFIX:-$HOME/.local}"
 OPENCODE_VERSION="${OPENCODE_VERSION:-latest}"
 CODEX_VERSION="${CODEX_VERSION:-latest}"
@@ -72,6 +72,17 @@ else
   launcher_source="$release_root/launcher"
   version="$(sed -n 's/.*"version":"\([^"]*\)".*/\1/p' "$release_root/release-manifest.json" | head -n 1)"
   version="${version:-unknown}"
+fi
+
+tools_dir="$definition_dir/tools"
+if [[ -f "$tools_dir/pyproject.toml" ]]; then
+  command -v uv >/dev/null 2>&1 || {
+    echo "uv is required to install the Agent runtime tools" >&2
+    exit 2
+  }
+  runtime_env_dir="$PREFIX/lib/$AGENT_NAME/environment"
+  uv venv "$runtime_env_dir" --python python3 >/dev/null
+  uv pip install --python "$runtime_env_dir/bin/python" "$tools_dir" >/dev/null
 fi
 
 sed -e "s/__AGENT_NAME__/$AGENT_NAME/g" "$launcher_source" > "$PREFIX/bin/$AGENT_NAME"

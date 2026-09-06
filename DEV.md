@@ -46,11 +46,15 @@ src/<agent_name>/
     ├── opencode.json
     ├── knowledge/
     ├── skills/
-    └── workflows/
+    ├── workflows/
+    └── tools/                  # 可选，独立 uv tool project
 ```
 
 `distribution/launcher` 会把 `identity.md` 以及 runtime 下的 knowledge、
-skills、workflows 注入 OpenCode、Codex 或 Claude Code。每个 scaffold 都应
+skills、workflows 注入 OpenCode、Codex 或 Claude Code。若存在
+`runtime/tools/pyproject.toml`，安装器会用 uv 创建独立的
+`<prefix>/lib/<agent>/environment/` 并安装其中的 tools；launcher 会把该
+环境的 `bin/` 放进 backend 的 PATH。每个 scaffold 都应
 保留 `opencode.json`，即使某次运行选择的是 Codex 或 Claude Code。
 
 不要在 `src/<agent_name>/runtime/` 中放置：
@@ -64,7 +68,7 @@ skills、workflows 注入 OpenCode、Codex 或 Claude Code。每个 scaffold 都
 创建下游 Agent：
 
 ```bash
-cp -R src/example-agent src/my-agent
+cp -R src/hewo src/my-agent
 ./scripts/validate-definition.sh my-agent
 ```
 
@@ -109,6 +113,10 @@ API key 环境变量按 provider ID 转换为 `<PROVIDER>_API_KEY`；Docker help
 只转发当前 backend 需要的 provider 环境变量，并拒绝不匹配的 credentials
 参数。
 
+工具项目应保持最小、无凭据、可重复。例如 hewo 的
+`runtime/tools/pyproject.toml` 只安装 `hewo-tool`，用于验证 Agent 是否真的
+能调用自己的产品环境；不要让它依赖 template 根目录的开发 `.venv`。
+
 非 Docker release 可通过 `AGENT_BACKENDS=opencode,codex,claude` 选择要安装
 的 CLI；Docker image 固定包含三个 backend。
 
@@ -122,7 +130,8 @@ AGENT_NAME=hewo AGENT_BACKENDS=opencode,codex,claude \
   ./distribution/install.sh
 ```
 
-开发构建会排除 `AGENTS.md`、node_modules、package metadata 和 credentials。
+开发构建会排除 `AGENTS.md`、node_modules、package metadata 和 credentials；
+若 scaffold 声明 tools，构建阶段会用 uv 生成其独立环境。
 
 ### Docker 构建
 
@@ -188,7 +197,7 @@ BENCHMARK_RUN_DIR=/tmp/hewo-evidence \
 3. 写入 `artifacts/hewo-smoke.md`；
 4. 重新读取 artifact；
 5. 验证 `Product runtime`、`Workspace access`、`Skill loaded`；
-6. 验证 `HEWO_KNOWLEDGE_OK` 和 `HEWO_WORKFLOW_OK`。
+6. 验证 `HEWO_KNOWLEDGE_OK`、`HEWO_TOOL_OK` 和 `HEWO_WORKFLOW_OK`。
 
 trajectory 和 benchmark 输出只能放在 disposable 目录，提交前必须 scrub，
 不能包含 raw provider output 或 secrets。
@@ -233,6 +242,16 @@ git diff --check
 4. 运行至少一个完整 infrastructure smoke；
 5. 扫描镜像和 release payload 中的开发指令与 credentials；
 6. 检查 CI 的 definition 和 image checks。
+
+如果 runtime 声明了 tools，还应检查：
+
+```bash
+docker run --rm --entrypoint bash hewo:e2e -c \
+  'command -v hewo-tool && hewo-tool --check'
+```
+
+输出必须包含 `HEWO_TOOL_OK`。完整 smoke 还必须证明 Agent 是通过 skill
+调用该命令并把结果写入 artifact，而不是开发代理预先生成 artifact。
 
 不要为 Agent 行为重新创建单元测试套件；使用真实 Docker E2E 和 GitHub
 issue 证据。

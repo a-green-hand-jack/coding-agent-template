@@ -11,10 +11,11 @@ test.
 1. Inspect the current workspace without reading credentials or environment
    files.
 2. Confirm that the workspace is separate from the Agent definition directory.
-3. Write `artifacts/hewo-smoke.md` containing the exact headings
+3. Run `hewo-tool --check` and verify the exact output `HEWO_TOOL_OK`.
+4. Write `artifacts/hewo-smoke.md` containing the exact headings
    `Product runtime`, `Workspace access`, and `Skill loaded`.
-4. Re-read the artifact and verify all three headings are present.
-5. Include `HEWO_KNOWLEDGE_OK` under the Product runtime section and
+5. Re-read the artifact and verify all three headings are present.
+6. Include `HEWO_KNOWLEDGE_OK` and `HEWO_TOOL_OK` under the Product runtime section and
    `HEWO_WORKFLOW_OK` under the Workspace access section.
-6. Report only the checked artifact path and outcome; do not include raw
+7. Report only the checked artifact path and outcome; do not include raw
    provider output or secret values.

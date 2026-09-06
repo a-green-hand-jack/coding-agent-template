@@ -94,7 +94,7 @@ only the variables intended for that run.
 ## Create a new agent
 
 ```bash
-cp -R src/example-agent src/my-agent
+cp -R src/hewo src/my-agent
 ./scripts/validate-definition.sh my-agent
 ```
 
@@ -107,7 +107,7 @@ Agent:
 ./docker/run-hewo-e2e.sh --agent hewo --provider openai --model gpt-5.5 "Say hello to Ada"
 ```
 
-Replace `src/example-agent` with the definition for the Agent you are building. Keep this template's own development instructions in `AGENTS.md` and `.agents/`; do not put template workflow instructions inside `src/<agent_name>`.
+Replace `src/hewo` with the definition for the Agent you are building. Keep this template's own development instructions in `AGENTS.md` and `.agents/`; do not put template workflow instructions inside `src/<agent_name>`.
 
 Use `scripts/build-release.sh hewo 0.1.0` to produce a bundle containing only runtime behavior. The release contains its own installer and launcher; a downloaded bootstrap installer can fetch that archive with `RELEASE_URL=... bash install.sh`, without a developer checkout. Record release and E2E evidence in the relevant GitHub issue and run `scripts/collect-trace.sh` before storing trajectory evidence.
 

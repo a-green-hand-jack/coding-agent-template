@@ -7,9 +7,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.x' }
-      - run: ./scripts/validate-definition.sh example-agent
       - run: ./scripts/validate-definition.sh hewo
       - run: docker build --build-arg AGENT_NAME=hewo -t agent-template:test -f docker/Dockerfile .
       - run: >-
-          docker run --rm --entrypoint bash agent-template:test -lc
-          'command -v opencode && command -v codex && command -v claude'
+          docker run --rm --entrypoint bash agent-template:test -c
+          'command -v opencode && command -v codex && command -v claude &&
+          command -v hewo-tool && hewo-tool --check | grep -Fx HEWO_TOOL_OK'
