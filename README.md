@@ -6,9 +6,9 @@ This repository has two strictly separate identities. The **development coding a
 
 ```bash
 cp .env.example .env
-./scripts/validate-definition.sh example-agent
-docker build --build-arg AGENT_NAME=example-agent -t example-agent:dev -f docker/Dockerfile .
-docker run --rm -it --env-file .env example-agent:dev "完成这个任务"
+./scripts/validate-definition.sh hello-world
+docker build --build-arg AGENT_NAME=hello-world -t hello-world:dev -f docker/Dockerfile .
+docker run --rm -it --env-file .env hello-world:dev "Say hello to Ada"
 ```
 
 The CLI E2E helper accepts any OpenCode provider and model without requiring manual exports:
@@ -49,6 +49,14 @@ Provider ownership is explicit: OpenCode tests cover the OpenCode-compatible GPT
 ```bash
 cp -R src/example-agent src/my-agent
 ./scripts/validate-definition.sh my-agent
+```
+
+`src/hello-world` is the template's minimal executable example. Use it to
+verify the complete OpenCode path before developing a larger Agent:
+
+```bash
+./scripts/validate-definition.sh hello-world
+./docker/run-e2e.sh --agent hello-world --provider openai --model gpt-5.6 "Say hello to Ada"
 ```
 
 Replace `src/example-agent` with the definition for the Agent you are building. Keep this template's own development instructions in `AGENTS.md` and `.agents/`; do not put template workflow instructions inside `src/<agent_name>`.
