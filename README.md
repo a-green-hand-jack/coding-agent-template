@@ -13,8 +13,17 @@ Never commit provider keys. Credentials are injected at runtime through environm
 
 ## Layout
 
-`src/<agent_name>` is the single source of behavior shipped to users. `scripts`, `docker`, `tests`, and `benchmarks` are developer infrastructure. `distribution` contains the public installer and launcher.
+`src/<agent_name>` is the complete Agent workspace. Its `runtime/` directory is shipped to users; `development/` holds the memory, knowledge, skills, and workflows used while designing and evaluating that Agent. `scripts`, `docker`, `tests`, and `benchmarks` are developer infrastructure. `distribution` contains the public installer and launcher.
 
 ## Provider contract
 
-The image contains no credentials and does not bake in a provider. Set `OPENAI_API_KEY` and model settings at `docker run` time. Pin runtime and package versions in releases for reproducibility.
+The image contains no credentials and does not bake in a provider. Set `OPENAI_API_KEY` and model settings at `docker run` time (or use Docker secrets). The entrypoint fails closed when the selected provider key is missing. Pin runtime and package versions in releases for reproducibility.
+
+## Create a new agent
+
+```bash
+cp -R src/example-agent src/my-agent
+./scripts/validate-definition.sh my-agent
+```
+
+Edit both `runtime/` (the shipped product) and `development/` (design notes, working memory, reference knowledge, and development-only skills). Build and test only through Docker.

@@ -3,6 +3,8 @@
 traces/
 artifacts/
 node_modules/
+.venv/
+*.log
 
 .omx/
 outputs/
