@@ -3,3 +3,7 @@
 traces/
 artifacts/
 node_modules/
+
+.omx/
+outputs/
+work/
