@@ -13,7 +13,7 @@ Never commit provider keys. Credentials are injected at runtime through environm
 
 ## Layout
 
-`src/<agent_name>` is the complete Agent workspace. Its `runtime/` directory is shipped to users; `development/` holds the memory, knowledge, skills, and workflows used while designing and evaluating that Agent. `scripts`, `docker`, `tests`, and `benchmarks` are developer infrastructure. `distribution` contains the public installer and launcher.
+`src/<agent_name>` is the complete product Agent workspace. Its `runtime/` directory is shipped to users; `development/` holds Agent-specific design material. The coding Agent that develops this product uses `AGENTS.md` and `.agents/` for reusable development memory, knowledge, and skills. `scripts`, `docker`, `tests`, and `benchmarks` are developer infrastructure. `distribution` contains the public installer and launcher.
 
 ## Provider contract
 
