@@ -9,6 +9,14 @@ docker build --build-arg AGENT_NAME=example-agent -t example-agent:dev -f docker
 docker run --rm -it --env-file .env example-agent:dev "完成这个任务"
 ```
 
+The CLI E2E helper accepts any OpenCode provider and model without requiring manual exports:
+
+```bash
+./docker/run-e2e.sh --provider openai --model gpt-5.6 --api-key-env OPENAI_API_KEY "完成这个任务"
+```
+
+Use `--api-key-stdin` when the key should not appear in shell history, or `--env-file PATH` for a provider-specific environment file. Run `./docker/run-e2e.sh --help` for all options.
+
 Never commit provider keys. Credentials are injected at runtime through environment variables or Docker secrets. `docker/run-e2e.sh` automatically forwards provider variables already exported in the development shell and also loads `.env` when present; it does not copy OpenCode, Codex, or Claude Code credential files into the image.
 
 ## Layout
@@ -17,7 +25,7 @@ Never commit provider keys. Credentials are injected at runtime through environm
 
 ## Provider contract
 
-The image contains no credentials and does not bake in a provider. Set provider credentials and model settings at `docker run` time (or use Docker secrets). The E2E helper forwards `LLM_*`, `OPENAI_*`, and `ANTHROPIC_*` variables from the host shell. The entrypoint fails closed when the selected provider key is missing. Pin runtime and package versions in releases for reproducibility.
+The image contains no credentials and does not bake in a provider. The E2E helper passes the selected provider, model, and provider key at runtime. It supports arbitrary provider names using `<PROVIDER>_API_KEY`, plus explicit key variables and env files. The entrypoint fails closed when the selected provider key is missing. Pin runtime and package versions in releases for reproducibility.
 
 ## Create a new agent
 
