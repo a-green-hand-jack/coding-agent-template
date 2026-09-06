@@ -13,7 +13,7 @@ Never commit provider keys. Credentials are injected at runtime through environm
 
 ## Layout
 
-`src/<agent_name>/runtime` is the product Agent definition shipped to users. The coding Agent that develops this template uses `AGENTS.md` and `.agents/` for reusable development memory, knowledge, skills, and workflows. `scripts`, `docker`, `tests`, and `benchmarks` are template infrastructure. `distribution` contains the public installer and launcher.
+`src/<agent_name>/runtime` is the product Agent definition shipped to users. The coding Agent that develops this template uses `AGENTS.md` and `.agents/` for reusable development memory, knowledge, skills, and workflows. `scripts`, `docker`, and `benchmarks` are template infrastructure. `distribution` contains the public installer and launcher.
 
 ## Provider contract
 
@@ -28,7 +28,7 @@ cp -R src/example-agent src/my-agent
 
 Replace `src/example-agent` with the definition for the Agent you are building. Keep this template's own development instructions in `AGENTS.md` and `.agents/`; do not put template workflow instructions inside `src/<agent_name>`.
 
-Use `scripts/build-release.sh` to produce a bundle containing only runtime behavior. Follow `docs/release-checklist.md` and run `scripts/collect-trace.sh` before storing trajectory evidence.
+Use `scripts/build-release.sh` to produce a bundle containing only runtime behavior. Record release and E2E evidence in the relevant GitHub issue and run `scripts/collect-trace.sh` before storing trajectory evidence.
 
 `benchmarks/` contains a benchmark contract and placeholders for representative tasks and verifiers. Replace them with general user tasks, never grader-specific hacks.
 
