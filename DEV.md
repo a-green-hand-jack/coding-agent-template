@@ -3,6 +3,24 @@
 本文面向维护 template、创建下游 Agent scaffold 和记录验证证据的开发者。
 最终用户应阅读 [USER.md](USER.md)。
 
+## 开发 Skill 入口
+
+使用本 template 创建 Agent、同步 template 更新，或把现有 Agent 仓库迁移
+到本结构时，开发 coding agent 应首先加载：
+
+```text
+.agents/skills/template-agent-development/SKILL.md
+```
+
+它会按当前任务渐进式加载一个 sub-skill：新建 Agent、同步 template，或迁移
+现有仓库。修改 `src/<agent>/` 或准备 release 时，再使用
+`.agents/skills/agent-definition-validation/SKILL.md` 完成当前验证流程。
+
+不要把 template 的 `.agents/` 整目录复制到下游项目。Issue #1/HeWo 的历史
+证据、template release 工作流和 benchmark 记录只属于本仓库；下游项目应建立
+自己的 development memory、knowledge、workflow 和验收证据，只按需保留已经
+审查过的通用 skill。
+
 ## 1. 设计原则：reuse-first
 
 开发 Agent 的主要工作是设计和组合：
