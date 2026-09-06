@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 provider="${LLM_PROVIDER:-openai}"
-case "$provider" in
-  openai) test -n "${OPENAI_API_KEY:-}" || { echo "OPENAI_API_KEY is required" >&2; exit 2; } ;;
-  anthropic) test -n "${ANTHROPIC_API_KEY:-}" || { echo "ANTHROPIC_API_KEY is required" >&2; exit 2; } ;;
-  *) echo "Unsupported LLM_PROVIDER: $provider" >&2; exit 2 ;;
-esac
-exec opencode --config "$HOME/.local/lib/__AGENT_NAME__/agent-definition/opencode.json" "$@"
+key_variable="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')_API_KEY"
+test -n "${!key_variable:-}" || { echo "$key_variable is required" >&2; exit 2; }
+export OPENCODE_CONFIG="$HOME/.local/lib/__AGENT_NAME__/agent-definition/opencode.json"
+model="${LLM_MODEL:-}"
+provider="${LLM_PROVIDER:-}"
+model_args=()
+if [[ -n "$provider" && -n "$model" ]]; then
+  model_args=(--model "$provider/$model")
+fi
+exec opencode run "${model_args[@]}" "$@"

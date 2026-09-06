@@ -72,4 +72,8 @@ if [[ -f "$env_file" ]]; then
   env_file_args=(--env-file "$env_file")
 fi
 
-docker run --rm -it "${env_file_args[@]}" "${env_args[@]}" "${bundle_args[@]}" "$name:e2e" "${task[@]}"
+tty_args=()
+if [[ -t 0 && -t 1 ]]; then
+  tty_args=(-it)
+fi
+docker run --rm "${tty_args[@]}" "${env_file_args[@]}" "${env_args[@]}" "${bundle_args[@]}" "$name:e2e" "${task[@]}"
