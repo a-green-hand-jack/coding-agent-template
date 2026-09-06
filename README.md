@@ -17,6 +17,30 @@ The CLI E2E helper accepts any OpenCode provider and model without requiring man
 ./docker/run-e2e.sh --agent hewo --provider openai --model gpt-5.5 --api-key-env OPENAI_API_KEY "完成这个任务"
 ```
 
+`hewo` can use the same product command with three interchangeable coding-agent
+backends. OpenCode is the default; Codex and Claude Code are installed in the
+Docker image and selected with `--backend` (or `AGENT_BACKEND`). Each backend
+keeps its own model namespace and credential boundary:
+
+```bash
+# OpenCode: provider/model plus an explicit read-only auth store
+./docker/run-e2e.sh --backend opencode --auth-file "$HOME/.local/share/opencode/auth.json" "hi"
+
+# Codex CLI: Codex model plus an explicit read-only Codex auth store
+./docker/run-e2e.sh --backend codex --codex-auth-file "$HOME/.codex/auth.json" --model gpt-5.5 "hi"
+
+# Claude Code: Claude model plus a runtime API key (or a read-only key file)
+./docker/run-e2e.sh --backend claude --api-key-env ANTHROPIC_API_KEY --model sonnet "hi"
+# ./docker/run-e2e.sh --backend claude --claude-api-key-file /path/to/key --model sonnet "hi"
+```
+
+The product launcher also accepts `hewo --backend codex ...`,
+`hewo --backend claude ...`, and `hewo --backend opencode ...`. In all three
+cases the launcher injects the same runtime Identity, Knowledge, Skills and
+Workflows; only the underlying coding-agent CLI and model/provider adapter
+changes. The Docker image uses a Node 22 runtime because the current Claude
+Code package requires Node 22 or newer.
+
 For a short-lived read-only provider runtime bundle, create it and pass it to Docker:
 
 ```bash
@@ -42,7 +66,7 @@ The key feature is definition-first development: create or modify an Agent by ed
 
 The image contains no credentials and does not bake in a provider. The E2E helper passes the selected provider, model, and provider key at runtime. It supports arbitrary provider names using `<PROVIDER>_API_KEY`, explicit key variables, env files, or one explicitly mounted auth store. The entrypoint fails closed when neither a provider key nor an explicit auth store is supplied. Docker uses `opencode-ai@latest` by design; every E2E report records the actual CLI version, provider, model, and Agent Definition revision.
 
-Provider ownership is explicit: OpenCode tests cover the OpenCode-compatible GPT and DeepSeek providers; Codex tests cover the configured Codex profiles; Claude Code owns the Apex Claude integration. `apex-claude` must not be configured or tested through OpenCode.
+Provider ownership is explicit: OpenCode tests cover the OpenCode-compatible GPT and DeepSeek providers; Codex tests cover the configured Codex profiles; Claude Code owns the Apex Claude integration. `apex-claude` must not be configured or tested through OpenCode. Explicit credential mounts are backend-specific and the helper never copies a complete host home directory; an explicitly supplied env file remains user-controlled and should contain only the variables intended for that run.
 
 ## Create a new agent
 
@@ -64,6 +88,11 @@ Replace `src/example-agent` with the definition for the Agent you are building. 
 
 Use `scripts/build-release.sh hewo 0.1.0` to produce a bundle containing only runtime behavior. The release contains its own installer and launcher; a downloaded bootstrap installer can fetch that archive with `RELEASE_URL=... bash install.sh`, without a developer checkout. Record release and E2E evidence in the relevant GitHub issue and run `scripts/collect-trace.sh` before storing trajectory evidence.
 
+For a non-Docker release installation that should bundle all three backends,
+set `AGENT_BACKENDS=opencode,codex,claude` when running the installer. The
+default release installation keeps only OpenCode to avoid downloading unused
+CLI runtimes; the Docker image always includes all three.
+
 `benchmarks/` contains a benchmark contract, the `hewo-infrastructure-smoke`
 task, and a deterministic verifier. Run the complete smoke with:
 
@@ -81,4 +110,4 @@ trajectory; never commit the evidence directory or raw provider output.
 
 The template supports both ecosystems. Python tooling is declared in `pyproject.toml` (with `requirements-dev.txt` for pip users); run `./scripts/setup-dev.sh` to create `.venv` and install development dependencies. TypeScript tooling is declared in `package.json` and `tsconfig.json`; use `npm ci` when a lockfile is present. These environments are for the coding Agent and validation scripts only. They are not copied into `src/<agent_name>/runtime/` or shipped to end users.
 
-The Dockerfile is multi-stage. Its builder may read the repository, but the final runtime image copies only the installed product runtime and launcher. Template development resources, tests, benchmarks, `AGENTS.md`, and `.agents/` cannot be reached from the user container.
+The Dockerfile is multi-stage. Its builder may read the repository, but the final runtime image copies only the installed product runtime and launcher plus the OpenCode, Codex and Claude Code CLI packages. Template development resources, tests, benchmarks, `AGENTS.md`, and `.agents/` cannot be reached from the user container.

@@ -8,62 +8,185 @@ test -f "$definition_dir/opencode.json" || {
   echo "Agent definition is missing: $definition_dir" >&2
   exit 2
 }
-provider="${LLM_PROVIDER:-openai}"
-model="${LLM_MODEL:-gpt-5.6}"
-variant="${LLM_VARIANT:-}"
-model_args=()
-if [[ -n "$provider" && -n "$model" ]]; then
-  model_args=(--model "$provider/$model")
-fi
-if [[ -n "$variant" ]]; then
-  model_args+=(--variant "$variant")
-fi
-opencode_bin="$bin_dir/../lib/__AGENT_NAME__/opencode/node_modules/.bin/opencode"
-if [[ ! -x "$opencode_bin" ]]; then
-  opencode_bin="$(command -v opencode || true)"
-fi
 
-require_runtime() {
-  key_variable="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')_API_KEY"
-  if [[ -z "${!key_variable:-}" && "${AGENT_AUTH_STORE:-}" != 1 ]]; then
-    echo "$key_variable is required (or provide an explicit runtime auth store)" >&2
-    exit 2
-  fi
-  [[ -n "$opencode_bin" ]] || { echo "OpenCode runtime is not installed" >&2; exit 2; }
-  export OPENCODE_CONFIG="$definition_dir/opencode.json"
-  export OPENCODE_CONFIG_DIR="$definition_dir"
+backend="${AGENT_BACKEND:-${HEWO_BACKEND:-opencode}}"
+provider="${LLM_PROVIDER:-openai}"
+model="${LLM_MODEL:-}"
+variant="${LLM_VARIANT:-}"
+mode="run"
+passthrough=()
+
+usage() {
+  cat <<'EOF'
+Usage: __AGENT_NAME__ [OPTIONS] [TASK]
+       __AGENT_NAME__ --backend codex|claude|opencode [TASK]
+       __AGENT_NAME__ --tui [OPTIONS]
+
+Backends:
+  opencode  OpenCode CLI (default); model is [provider/]model.
+  codex     Codex CLI; model is a Codex model such as gpt-5.5.
+  claude    Claude Code CLI; model is an alias such as sonnet or opus.
+
+Options:
+  --backend NAME   Select the coding-agent backend.
+  --provider NAME  OpenCode provider name (ignored by Codex/Claude Code).
+  --model NAME     Backend model; backend-specific defaults apply when omitted.
+  --variant NAME   OpenCode model variant.
+  --tui            Start the selected backend's interactive interface.
+  -h, --help       Show this help.
+  -v, --version    Show the installed Agent version.
+
+Credentials are supplied at runtime. OpenCode uses its provider key or an
+explicit auth store; Codex uses OPENAI_API_KEY or CODEX_HOME/auth.json; Claude
+Code uses ANTHROPIC_API_KEY, ANTHROPIC_API_KEY_FILE, or
+CLAUDE_CONFIG_DIR/.credentials.json.
+EOF
 }
 
-case "${1:-}" in
-  --help|-h)
-    cat <<'EOF'
-Usage: __AGENT_NAME__ [TASK]
-       __AGENT_NAME__ --tui
+while (($#)); do
+  case "$1" in
+    --backend|-b) backend="${2:?missing value for --backend}"; shift 2 ;;
+    --provider) provider="${2:?missing value for --provider}"; shift 2 ;;
+    --model|-m) model="${2:?missing value for --model}"; shift 2 ;;
+    --variant) variant="${2:?missing value for --variant}"; shift 2 ;;
+    --tui) mode="tui"; shift ;;
+    --help|-h) usage; exit 0 ;;
+    --version|-v)
+      sed -n 's/.*"version":"\([^"]*\)".*/\1/p' "$bin_dir/../lib/__AGENT_NAME__/release-manifest.json" | head -n 1
+      exit 0
+      ;;
+    --) shift; passthrough+=("$@"); break ;;
+    *) passthrough+=("$1"); shift ;;
+  esac
+done
 
-Run a task through the installed Agent, or start its interactive TUI with no
-arguments / --tui. Provider credentials are supplied at runtime via the
-selected provider's <PROVIDER>_API_KEY variable.
-EOF
-    exit 0
-    ;;
-  --version|-v)
-    sed -n 's/.*"version":"\([^"]*\)".*/\1/p' "$bin_dir/../lib/__AGENT_NAME__/release-manifest.json" | head -n 1
-    exit 0
-    ;;
-  --tui|tui)
-    require_runtime
-    shift
-    exec "$opencode_bin" "${model_args[@]}" "$@"
-    ;;
-  *)
-    require_runtime
-    if [[ $# -eq 0 ]]; then
-      exec "$opencode_bin" "${model_args[@]}"
+case "$backend" in
+  open-code) backend="opencode" ;;
+  claude-code) backend="claude" ;;
+esac
+
+runtime_bin() {
+  local name="$1"
+  local bundled="$bin_dir/../lib/__AGENT_NAME__/runtimes/$name/node_modules/.bin/$name"
+  if [[ -x "$bundled" ]]; then
+    printf '%s\n' "$bundled"
+  else
+    command -v "$name" || true
+  fi
+}
+
+opencode_bin="$(runtime_bin opencode)"
+codex_bin="$(runtime_bin codex)"
+claude_bin="$(runtime_bin claude)"
+
+require_backend() {
+  case "$backend" in
+    opencode)
+      key_variable="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')_API_KEY"
+      if [[ -z "${!key_variable:-}" && "${AGENT_AUTH_STORE:-}" != 1 ]]; then
+        echo "$key_variable is required (or provide an explicit runtime auth store)" >&2
+        exit 2
+      fi
+      [[ -n "$opencode_bin" ]] || { echo "OpenCode runtime is not installed" >&2; exit 2; }
+      export OPENCODE_CONFIG="$definition_dir/opencode.json"
+      export OPENCODE_CONFIG_DIR="$definition_dir"
+      ;;
+    codex)
+      if [[ -z "${OPENAI_API_KEY:-}" && "${CODEX_AUTH_STORE:-}" != 1 ]]; then
+        echo "OPENAI_API_KEY is required (or provide an explicit Codex auth store)" >&2
+        exit 2
+      fi
+      [[ -n "$codex_bin" ]] || { echo "Codex CLI is not installed" >&2; exit 2; }
+      export CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+      ;;
+    claude)
+      if [[ -z "${ANTHROPIC_API_KEY:-}" && -z "${ANTHROPIC_AUTH_TOKEN:-}" && -n "${ANTHROPIC_API_KEY_FILE:-}" ]]; then
+        [[ -r "$ANTHROPIC_API_KEY_FILE" ]] || { echo "Claude API key file is not readable" >&2; exit 2; }
+        export ANTHROPIC_API_KEY="$(<"$ANTHROPIC_API_KEY_FILE")"
+      fi
+      if [[ -z "${ANTHROPIC_API_KEY:-}" && -z "${ANTHROPIC_AUTH_TOKEN:-}" && "${CLAUDE_AUTH_STORE:-}" != 1 ]]; then
+        echo "ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN is required (or provide an explicit Claude auth store)" >&2
+        exit 2
+      fi
+      [[ -n "$claude_bin" ]] || { echo "Claude Code CLI is not installed" >&2; exit 2; }
+      export CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+      ;;
+    *)
+      echo "unsupported backend: $backend (expected opencode, codex, or claude)" >&2
+      exit 2
+      ;;
+  esac
+}
+
+backend_model="${model:-}"
+if [[ "$backend_model" == */* ]]; then
+  backend_model="${backend_model#*/}"
+fi
+
+runtime_context() {
+  local file
+  cat "$definition_dir/identity.md"
+  while IFS= read -r file; do
+    cat "$file"
+  done < <(find "$definition_dir/knowledge" "$definition_dir/skills" "$definition_dir/workflows" \
+    -type f -name '*.md' ! -name AGENTS.md -print | sort)
+}
+
+require_backend
+
+case "$backend" in
+  opencode)
+    [[ -n "$model" ]] || model="gpt-5.6"
+    if [[ "$model" == */* ]]; then
+      model_ref="$model"
+    else
+      model_ref="$provider/$model"
+    fi
+    model_args=(--model "$model_ref")
+    [[ -n "$variant" ]] && model_args+=(--variant "$variant")
+    if [[ "$mode" == tui || ${#passthrough[@]} -eq 0 ]]; then
+      exec "$opencode_bin" "${model_args[@]}" "${passthrough[@]}"
     fi
     format_args=()
-    if [[ -n "${AGENT_OUTPUT_FORMAT:-}" ]]; then
-      format_args=(--format "$AGENT_OUTPUT_FORMAT")
+    [[ -n "${AGENT_OUTPUT_FORMAT:-}" ]] && format_args=(--format "$AGENT_OUTPUT_FORMAT")
+    exec "$opencode_bin" run "${model_args[@]}" "${format_args[@]}" "${passthrough[@]}"
+    ;;
+  codex)
+    [[ -n "$backend_model" ]] || backend_model="${CODEX_MODEL:-gpt-5.5}"
+    codex_sandbox="${CODEX_SANDBOX_MODE:-workspace-write}"
+    case "$codex_sandbox" in
+      read-only|workspace-write|danger-full-access) ;;
+      *) echo "unsupported Codex sandbox mode: $codex_sandbox" >&2; exit 2 ;;
+    esac
+    model_args=()
+    [[ -n "$backend_model" ]] && model_args+=(--model "$backend_model")
+    model_args+=(--sandbox "$codex_sandbox")
+    runtime_instructions="$(runtime_context)"
+    if [[ "$mode" == tui || ${#passthrough[@]} -eq 0 ]]; then
+      codex_initial="$runtime_instructions"
+      [[ ${#passthrough[@]} -gt 0 ]] && codex_initial+=$'\n\nInitial user task:\n'"${passthrough[*]}"
+      exec "$codex_bin" "${model_args[@]}" "$codex_initial"
     fi
-    exec "$opencode_bin" run "${model_args[@]}" "${format_args[@]}" "$@"
+    codex_prompt="$runtime_instructions
+
+User task:
+${passthrough[*]}"
+    codex_args=(exec --skip-git-repo-check --ephemeral "${model_args[@]}" "$codex_prompt")
+    [[ "${AGENT_OUTPUT_FORMAT:-}" == json ]] && codex_args=("${codex_args[@]:0:1}" --json "${codex_args[@]:1}")
+    exec "$codex_bin" "${codex_args[@]}"
+    ;;
+  claude)
+    [[ -n "$backend_model" ]] || backend_model="${CLAUDE_MODEL:-sonnet}"
+    model_args=()
+    [[ -n "$backend_model" ]] && model_args+=(--model "$backend_model")
+    runtime_instructions="$(runtime_context)"
+    if [[ "$mode" == tui || ${#passthrough[@]} -eq 0 ]]; then
+      claude_tui_args=(--append-system-prompt "$runtime_instructions" "${model_args[@]}")
+      [[ ${#passthrough[@]} -gt 0 ]] && claude_tui_args+=("${passthrough[*]}")
+      exec "$claude_bin" "${claude_tui_args[@]}"
+    fi
+    claude_args=(-p "${passthrough[*]}" --append-system-prompt "$runtime_instructions" --no-session-persistence "${model_args[@]}")
+    [[ -n "${AGENT_OUTPUT_FORMAT:-}" ]] && claude_args+=(--output-format "$AGENT_OUTPUT_FORMAT")
+    exec "$claude_bin" "${claude_args[@]}"
     ;;
 esac

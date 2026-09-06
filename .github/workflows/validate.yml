@@ -10,3 +10,6 @@ jobs:
       - run: ./scripts/validate-definition.sh example-agent
       - run: ./scripts/validate-definition.sh hewo
       - run: docker build --build-arg AGENT_NAME=hewo -t agent-template:test -f docker/Dockerfile .
+      - run: >-
+          docker run --rm --entrypoint bash agent-template:test -lc
+          'command -v opencode && command -v codex && command -v claude'
