@@ -20,6 +20,21 @@ This repository is developed with Codex, OpenCode, or another coding agent. Thes
 - Use `.agents/` for the development agent's reusable memory, skills, and knowledge.
 - Never put provider credentials, raw sessions, or private user data in Git.
 
+## Reuse-first Agent philosophy
+
+- Build Agent behavior primarily with prompts, skills, memory, knowledge,
+  workflows, and tools in the scaffold; do not reimplement a coding-agent
+  runtime that an established backend already provides.
+- Keep the Agent scaffold, coding-agent backend, and LLM provider/model as
+  independent layers. OpenCode, Codex, and Claude Code provide the execution,
+  model-adapter, approval, and terminal foundations; this repository should
+  add only the composition, runtime injection, and provider wiring needed to
+  make those foundations usable by an installed Agent.
+- Prefer extending the runtime definition or backend adapter over adding a
+  parallel CLI, model client, session manager, or tool loop. Record a concrete
+  reason in the issue before introducing infrastructure that overlaps a
+  supported backend capability.
+
 ## Development loop
 
 1. Read the relevant `.agents/knowledge` and `.agents/memory` entries.
