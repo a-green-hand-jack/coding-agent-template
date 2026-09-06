@@ -27,6 +27,8 @@ Never commit provider keys. Credentials are injected at runtime through environm
 
 The image contains no credentials and does not bake in a provider. The E2E helper passes the selected provider, model, and provider key at runtime. It supports arbitrary provider names using `<PROVIDER>_API_KEY`, plus explicit key variables and env files. The entrypoint fails closed when the selected provider key is missing. Pin runtime and package versions in releases for reproducibility.
 
+Provider ownership is explicit: OpenCode tests cover the OpenCode-compatible GPT and DeepSeek providers; Codex tests cover the configured Codex profiles; Claude Code owns the Apex Claude integration. `apex-claude` must not be configured or tested through OpenCode.
+
 ## Create a new agent
 
 ```bash
