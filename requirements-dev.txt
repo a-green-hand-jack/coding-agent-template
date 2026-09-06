@@ -1,0 +1,2 @@
+# Compatibility entrypoint for developers who use pip instead of uv.
+-e .[dev]

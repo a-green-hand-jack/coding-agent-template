@@ -1,6 +1,6 @@
 FROM node:20-bookworm-slim
 ARG AGENT_NAME=example-agent
-RUN apt-get update && apt-get install -y --no-install-recommends bash ca-certificates git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends bash ca-certificates git python3 python3-venv python3-pip && rm -rf /var/lib/apt/lists/*
 RUN npm install --global opencode-ai@latest
 WORKDIR /opt/agent
 COPY . /opt/agent

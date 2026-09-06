@@ -5,6 +5,7 @@ artifacts/
 node_modules/
 .venv/
 *.log
+.pytest_cache/
 
 .omx/
 outputs/

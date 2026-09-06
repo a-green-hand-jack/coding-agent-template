@@ -1,0 +1,20 @@
+[project]
+name = "opencode-agent-template"
+version = "0.1.0"
+description = "Development tooling for OpenCode Agent templates"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8,<9",
+  "jsonschema>=4,<5",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"

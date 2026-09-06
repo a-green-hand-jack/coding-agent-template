@@ -31,3 +31,7 @@ Edit both `runtime/` (the shipped product) and `development/` (design notes, wor
 Use `scripts/build-release.sh` to produce a bundle containing only runtime behavior. Follow `docs/release-checklist.md` and run `scripts/collect-trace.sh` before storing trajectory evidence.
 
 `benchmarks/` contains a benchmark contract and placeholders for representative tasks and verifiers. Replace them with general user tasks, never grader-specific hacks.
+
+## Development environments
+
+The template supports both ecosystems. Python tooling is declared in `pyproject.toml` (with `requirements-dev.txt` for pip users); run `./scripts/setup-dev.sh` to create `.venv` and install development dependencies. TypeScript tooling is declared in `package.json` and `tsconfig.json`; use `npm ci` when a lockfile is present. These environments are for the coding Agent and validation scripts only. They are not copied into `src/<agent_name>/runtime/` or shipped to end users.
