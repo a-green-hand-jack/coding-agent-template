@@ -155,7 +155,10 @@ AGENT_BACKENDS=opencode,codex,claude \
 ```
 
 检查 release payload 不含 `AGENTS.md`、auth store、package metadata 或开发
-目录。发布归档只包含 runtime definition、launcher 和 installer。
+目录。发布归档只包含 runtime definition、launcher 和 installer。当前仓库
+提供构建和安装逻辑，但尚未自动发布 GitHub Release/tag；用户文档不得把
+占位 URL 写成可直接下载的地址。发布后，用户可以只下载 release installer，
+通过 `RELEASE_URL` 获取 archive，不需要 clone template。
 
 ## 5. 真实 Docker E2E 验证
 

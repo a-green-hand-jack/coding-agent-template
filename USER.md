@@ -13,9 +13,46 @@ hewo runtime        OpenCode/Codex/Claude    opencode-go/openai/...
 
 ## 1. 安装
 
-### 从源码安装
+### 方案 A：从已发布 release 安装（推荐，不需要 clone GitHub）
 
-在 template 根目录执行：
+release archive 自带 hewo 的 runtime definition、launcher 和 installer。
+用户只需要下载 release 中的 `install.sh`，再让它下载对应 archive；不需要
+clone template 仓库。
+
+当前仓库已经实现了 release 构建和安装逻辑，但截至目前还没有公开发布的
+GitHub Release/tag。下面的地址是发布后的固定格式，只有在对应版本真正发布
+后才能使用：
+
+```bash
+VERSION=0.1.0
+INSTALLER_URL="https://raw.githubusercontent.com/a-green-hand-jack/opencode-agent-template/v${VERSION}/distribution/install.sh"
+RELEASE_URL="https://github.com/a-green-hand-jack/opencode-agent-template/releases/download/v${VERSION}/hewo-${VERSION}.tar.gz"
+
+curl --fail --silent --show-error --location "$INSTALLER_URL" -o /tmp/hewo-install.sh
+RELEASE_URL="$RELEASE_URL" \
+AGENT_NAME=hewo \
+AGENT_BACKENDS=opencode,codex,claude \
+bash /tmp/hewo-install.sh
+rm -f /tmp/hewo-install.sh
+```
+
+安装完成后：
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+hewo --version
+hewo --help
+```
+
+如果只需要 OpenCode，请在上面的安装命令中把
+`AGENT_BACKENDS=opencode,codex,claude` 改成 `AGENT_BACKENDS=opencode`，
+这样可以避免下载不使用的 backend。
+
+不要把 API key、auth store 或 `.env` 放入命令、release archive 或 Git。
+
+### 方案 B：从源码安装（仅适合开发者或未发布 release 时）
+
+这个方案需要先取得 template 源码。在仓库根目录执行：
 
 ```bash
 AGENT_NAME=hewo \
@@ -24,34 +61,8 @@ AGENT_BACKENDS=opencode,codex,claude \
 ./distribution/install.sh
 ```
 
-确保命令目录在 `PATH` 中：
-
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-hewo --version
-hewo --help
-```
-
-`AGENT_BACKENDS` 可以只安装需要的 backend：
-
-```bash
-AGENT_BACKENDS=opencode ./distribution/install.sh
-AGENT_BACKENDS=opencode,codex,claude ./distribution/install.sh
-```
-
-### 从 release 安装
-
-release archive 自带 Agent definition、launcher 和 installer。下载其中的
-`install.sh` 后执行：
-
-```bash
-RELEASE_URL="https://example.com/releases/hewo-0.1.0.tar.gz" \
-AGENT_NAME=hewo \
-AGENT_BACKENDS=opencode,codex,claude \
-bash install.sh
-```
-
-只使用可信的 release URL，不要把 credentials 放入命令或归档。
+源码安装需要本机已有 Node.js/npm、Python 3 和 `uv`。它会把 hewo 的工具
+安装到独立的 `~/.local/lib/hewo/environment/`，不会使用开发仓库的 `.venv`。
 
 ### 使用 Docker
 

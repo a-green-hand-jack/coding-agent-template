@@ -121,7 +121,26 @@ systems; it does not reimplement a coding-agent runtime.
 For a non-Docker release installation that should bundle all three backends,
 set `AGENT_BACKENDS=opencode,codex,claude` when running the installer. The
 default release installation keeps only OpenCode to avoid downloading unused
-CLI runtimes; the Docker image always includes all three.
+CLI runtimes; the Docker image always includes all three. A release archive is
+designed to be installed without cloning this repository: download its
+installer and set `RELEASE_URL` to the matching archive URL. The repository
+currently contains the release builder and installer, but does not yet publish
+a GitHub Release/tag; do not present the example URL as a live download until a
+version is actually published.
+
+After a version is published, the no-clone installation flow is:
+
+```bash
+VERSION=0.1.0
+INSTALLER_URL="https://raw.githubusercontent.com/a-green-hand-jack/opencode-agent-template/v${VERSION}/distribution/install.sh"
+RELEASE_URL="https://github.com/a-green-hand-jack/opencode-agent-template/releases/download/v${VERSION}/hewo-${VERSION}.tar.gz"
+curl --fail --silent --show-error --location "$INSTALLER_URL" -o /tmp/hewo-install.sh
+RELEASE_URL="$RELEASE_URL" AGENT_NAME=hewo AGENT_BACKENDS=opencode,codex,claude \
+  bash /tmp/hewo-install.sh
+rm -f /tmp/hewo-install.sh
+export PATH="$HOME/.local/bin:$PATH"
+hewo --version
+```
 
 `benchmarks/` contains a benchmark contract, the `hewo-infrastructure-smoke`
 task, and a deterministic verifier. Run the complete smoke with:
