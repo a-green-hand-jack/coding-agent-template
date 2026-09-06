@@ -24,14 +24,14 @@ keeps its own model namespace and credential boundary:
 
 ```bash
 # OpenCode: provider/model plus an explicit read-only auth store
-./docker/run-hewo-e2e.sh --backend opencode --auth-file "$HOME/.local/share/opencode/auth.json" "hi"
+./docker/run-hewo-e2e.sh --agent hewo --backend opencode --auth-file "$HOME/.local/share/opencode/auth.json" "hi"
 
 # Codex CLI: Codex model plus an explicit read-only Codex auth store
-./docker/run-hewo-e2e.sh --backend codex --codex-auth-file "$HOME/.codex/auth.json" --model gpt-5.5 "hi"
+./docker/run-hewo-e2e.sh --agent hewo --backend codex --codex-auth-file "$HOME/.codex/auth.json" --model gpt-5.5 "hi"
 
 # Claude Code: Claude model plus a runtime API key (or a read-only key file)
-./docker/run-hewo-e2e.sh --backend claude --api-key-env ANTHROPIC_API_KEY --model sonnet "hi"
-# ./docker/run-hewo-e2e.sh --backend claude --claude-api-key-file /path/to/key --model sonnet "hi"
+./docker/run-hewo-e2e.sh --agent hewo --backend claude --api-key-env ANTHROPIC_API_KEY --model sonnet "hi"
+# ./docker/run-hewo-e2e.sh --agent hewo --backend claude --claude-api-key-file /path/to/key --model sonnet "hi"
 ```
 
 The product launcher also accepts `hewo --backend codex ...`,
@@ -63,7 +63,7 @@ For a short-lived read-only provider runtime bundle, create it and pass it to Do
 ```bash
 bundle=$(mktemp -d)
 ./scripts/create-provider-bundle.sh openai gpt-5.6 OPENAI_API_KEY "$bundle"
-./docker/run-hewo-e2e.sh --provider openai --model gpt-5.6 --bundle "$bundle" "完成这个任务"
+./docker/run-hewo-e2e.sh --agent hewo --provider openai --model gpt-5.6 --bundle "$bundle" "完成这个任务"
 rm -rf "$bundle"
 ```
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-name="${AGENT_NAME:-example-agent}"
+name="${AGENT_NAME:-hewo}"
 backend="${AGENT_BACKEND:-${HEWO_BACKEND:-opencode}}"
 provider="${LLM_PROVIDER:-}"
 model="${LLM_MODEL:-}"
