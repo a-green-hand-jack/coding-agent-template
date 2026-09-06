@@ -16,6 +16,12 @@
 现有仓库。修改 `src/<agent>/` 或准备 release 时，再使用
 `.agents/skills/agent-definition-validation/SKILL.md` 完成当前验证流程。
 
+同步或创建下游仓库前，必须先阅读登记表
+`.agents/template-content-registry.json`。它是 template 专属内容、可选择
+同步的实现、以及 memory/knowledge/workflows 中性占位符的唯一清单；同步
+细节见 `template-agent-development/references/sync-template.md`。不要复制
+`.agents/` 整目录。
+
 在较大改动、template 同步或 release 前，先运行一致性审计：
 
 ```bash

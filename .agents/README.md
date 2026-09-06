@@ -12,12 +12,19 @@ The root `AGENTS.md` is the entrypoint for these resources.
 
 Do not copy this directory wholesale into a downstream Agent repository.
 
+Use [`template-content-registry.json`](template-content-registry.json) as the
+authoritative allow-list. The synchronization sub-skill explains how to copy
+only selected implementation skills and how to install the neutral placeholder
+skeleton under `downstream-skeleton/`.
+
 - Template-only: issue evidence in `memory/`, HeWo-specific history, template
   release decisions, and benchmark/CI maintenance workflows.
 - Reusable after review: focused development skills such as
   `template-agent-development` and `agent-definition-validation`.
 - Downstream-owned: the downstream repository's own memory, knowledge,
   workflows, provider policy, acceptance evidence, and scoped `AGENTS.md`.
+  The template supplies placeholder files only; replace or remove them before
+  recording downstream content.
 
 When bootstrapping or synchronizing a downstream Agent, transfer only the
 method needed for that repository and replace template names, paths, evidence,

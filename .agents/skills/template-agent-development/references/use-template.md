@@ -44,6 +44,8 @@ development `.venv`.
 Before treating the result as a downstream repository, remove or replace
 template-only material rather than inheriting it as Agent context:
 
+- read `.agents/template-content-registry.json` and install only its selected
+  entries; use `.agents/downstream-skeleton/` for neutral placeholders;
 - replace HeWo identity, smoke skills, workflows, artifacts, and benchmark
   assumptions with the downstream Agent's behavior;
 - do not copy `.agents/memory/2026-09-06-issue1-hewo-evidence.md` or other

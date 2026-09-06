@@ -25,6 +25,11 @@ Select one sub-skill from the user's immediate intent and read only that file:
 Do not load all three sub-skills unless the task explicitly combines their
 workflows. Return to this file only for the shared contract below.
 
+Before synchronizing or bootstrapping a downstream repository, read the
+authoritative content registry at
+`.agents/template-content-registry.json`. It defines what is template-only,
+what is selectively reusable, and which neutral placeholders may be installed.
+
 ## Shared contract
 
 - Keep the layers independent:
@@ -33,10 +38,10 @@ workflows. Return to this file only for the shared contract below.
   development memory, knowledge, skills, and workflows in `.agents/`; keep
   Agent-specific design material in `src/<agent>/development/`.
 - Do not copy the template's `.agents/` wholesale into a downstream repository.
-  Template issue evidence, HeWo history, release decisions, and benchmark/CI
-  maintenance context remain here. A downstream repository creates its own
-  memory, knowledge, workflows, and evidence, and copies only reviewed generic
-  skills it still needs.
+  Follow `.agents/template-content-registry.json`: install only explicitly
+  selected skills, and bootstrap downstream-owned memory, knowledge, and
+  workflows from neutral placeholders. Template issue evidence, HeWo history,
+  release decisions, and benchmark/CI maintenance context remain here.
 - `AGENTS.md` files guide the development coding agent only. They must be
   excluded from installation, release archives, and final Docker images.
 - Follow the reuse-first principle. Extend the runtime definition or a thin

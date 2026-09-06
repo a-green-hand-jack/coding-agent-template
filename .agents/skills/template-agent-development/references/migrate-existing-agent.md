@@ -34,11 +34,14 @@ Use this target mapping:
 | Development-agent rules | scoped `AGENTS.md` files |
 
 The mapping describes categories, not permission to copy template content.
-Initialize downstream development resources from the migrated repository's own
-needs. Do not import the template's Issue #1/HeWo memory, template release
-history, benchmark evidence, or CI maintenance context. Generic skills may be
-copied only after removing hardcoded template names, paths, helper commands,
-provider assumptions, and evidence destinations.
+Read `.agents/template-content-registry.json` before initializing downstream
+development resources. Install only selected skills, and copy only the neutral
+placeholders from `.agents/downstream-skeleton/` into downstream `knowledge/`,
+`memory/`, and `workflows/`. Initialize all other resources from the migrated
+repository's own needs. Do not import the template's Issue #1/HeWo memory,
+template release history, benchmark evidence, or CI maintenance context.
+Generic skills may be copied only after removing hardcoded template names,
+paths, helper commands, provider assumptions, and evidence destinations.
 
 Create `src/<agent>/agent.yaml` with the runtime and development directory
 declarations. Keep the scaffold self-contained and give it a valid

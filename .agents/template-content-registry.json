@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "purpose": "Authoritative registry for deciding what may move from this template into a downstream coding-agent repository.",
+  "copy_policy": {
+    "default": "never-copy",
+    "selection_required": true,
+    "never_copy_whole": [
+      ".agents/",
+      "AGENTS.md",
+      "src/hewo/"
+    ],
+    "downstream_placeholders": {
+      "source_root": ".agents/downstream-skeleton",
+      "destinations": [
+        ".agents/knowledge/PLACEHOLDER.md",
+        ".agents/memory/PLACEHOLDER.md",
+        ".agents/workflows/PLACEHOLDER.md"
+      ],
+      "rule": "Copy placeholders only, then replace or remove them with downstream-specific content. Do not copy template AGENTS.md files."
+    }
+  },
+  "classes": {
+    "template-only": "Template history, identity, release, and maintenance context. Never copy.",
+    "selective": "A reusable implementation may be copied only when the downstream repository opts in and adapts names, paths, providers, and evidence commands.",
+    "placeholder-only": "Only the listed empty-content placeholder may be installed; current template content is not downstream content.",
+    "downstream-owned": "Create and maintain independently in the downstream repository.",
+    "template-only-or-adapt": "Reference material that requires a manual rewrite for downstream identity and policy; never overwrite wholesale."
+  },
+  "entries": [
+    {
+      "path": ".agents/skills/template-agent-development/",
+      "class": "selective",
+      "destination": ".agents/skills/template-agent-development/",
+      "adapt_required": ["canonical template URL", "downstream agent name and paths", "local evidence and release commands"]
+    },
+    {
+      "path": ".agents/skills/agent-consistency-audit/",
+      "class": "selective",
+      "destination": ".agents/skills/agent-consistency-audit/",
+      "adapt_required": ["agent-specific runtime assumptions", "release/archive commands"]
+    },
+    {
+      "path": ".agents/skills/agent-definition-validation/",
+      "class": "selective",
+      "destination": ".agents/skills/agent-definition-validation/",
+      "adapt_required": ["agent name", "provider-backed E2E command", "repository acceptance issue"]
+    },
+    {
+      "path": ".agents/skills/agent-infrastructure-health/",
+      "class": "selective",
+      "destination": ".agents/skills/agent-infrastructure-health/",
+      "adapt_required": ["required backend binaries", "tool environment", "agent-specific installer and image checks"]
+    },
+    {
+      "path": ".agents/downstream-skeleton/knowledge/PLACEHOLDER.md",
+      "class": "placeholder-only",
+      "destination": ".agents/knowledge/PLACEHOLDER.md"
+    },
+    {
+      "path": ".agents/downstream-skeleton/memory/PLACEHOLDER.md",
+      "class": "placeholder-only",
+      "destination": ".agents/memory/PLACEHOLDER.md"
+    },
+    {
+      "path": ".agents/downstream-skeleton/workflows/PLACEHOLDER.md",
+      "class": "placeholder-only",
+      "destination": ".agents/workflows/PLACEHOLDER.md"
+    },
+    {
+      "path": ".agents/knowledge/",
+      "class": "downstream-owned",
+      "note": "Create knowledge entries for the downstream Agent; do not copy the template directory."
+    },
+    {
+      "path": ".agents/memory/",
+      "class": "downstream-owned",
+      "note": "Record downstream decisions and evidence only; do not copy template issue history."
+    },
+    {
+      "path": ".agents/workflows/",
+      "class": "downstream-owned",
+      "note": "Define downstream development workflows independently."
+    },
+    {
+      "path": ".agents/template-content-registry.json",
+      "class": "template-only",
+      "note": "Registry for this template; it is not downstream development content."
+    },
+    {
+      "path": ".agents/memory/2026-09-06-issue1-hewo-evidence.md",
+      "class": "template-only"
+    },
+    {
+      "path": ".agents/README.md",
+      "class": "template-only"
+    },
+    {
+      "path": ".agents/**/AGENTS.md",
+      "class": "template-only",
+      "note": "Write downstream-scoped instructions instead of copying these files."
+    },
+    {
+      "path": "README.md",
+      "class": "template-only-or-adapt",
+      "note": "Use as a reference only; rewrite product identity and commands."
+    },
+    {
+      "path": "DEV.md",
+      "class": "template-only-or-adapt",
+      "note": "Use as a reference only; downstream development policy must be reviewed."
+    },
+    {
+      "path": "USER.md",
+      "class": "template-only-or-adapt",
+      "note": "Rewrite for the downstream product and its supported backends/providers."
+    },
+    {
+      "path": "distribution/",
+      "class": "selective",
+      "note": "Adopt only packaging behavior required by the downstream Agent."
+    },
+    {
+      "path": "docker/",
+      "class": "selective",
+      "note": "Adopt only after reviewing backend binaries, credentials, and runtime boundaries."
+    },
+    {
+      "path": "scripts/",
+      "class": "selective",
+      "note": "Select scripts individually; do not overwrite downstream product scripts wholesale."
+    },
+    {
+      "path": "benchmarks/",
+      "class": "template-only",
+      "note": "Template benchmark tasks and evidence are not downstream acceptance evidence."
+    },
+    {
+      "path": ".github/",
+      "class": "template-only-or-adapt",
+      "note": "Review CI and issue automation manually; do not copy template assumptions wholesale."
+    }
+  ]
+}

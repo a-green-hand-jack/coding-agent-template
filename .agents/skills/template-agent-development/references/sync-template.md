@@ -1,9 +1,32 @@
 # Sub-skill: Synchronize Template Updates
 
-Use this sub-skill when a downstream Agent repository already derives from the
-template and needs to consume newer template infrastructure.
+Use this sub-skill when a downstream Agent repository derives from this
+template and needs a newer template change. Synchronization is selective and
+registry-driven: a downstream repository must never copy `.agents/` wholesale.
 
-## 1. Establish the upstream relationship
+## 1. Read the registry before touching files
+
+From the template checkout, read
+`.agents/template-content-registry.json`. It is the authoritative inventory of
+template-only content, reusable content, and the neutral placeholders that may
+be installed downstream. Every copied path must have an explicit registry
+entry and a review decision.
+
+The classes have these meanings:
+
+- `template-only`: never copy; this includes template issue evidence, HeWo
+  history, template registry/AGENTS files, and template benchmark context.
+- `selective`: copy only the named implementation after adapting the listed
+  names, paths, providers, and evidence commands.
+- `placeholder-only`: copy only the listed neutral placeholder into the
+  downstream directory; do not copy the template's current memory, knowledge,
+  or workflow content.
+- `downstream-owned`: create and maintain independently in the downstream
+  repository.
+- `template-only-or-adapt`: use as a reference and rewrite manually; never
+  overwrite downstream identity or policy wholesale.
+
+## 2. Establish the upstream relationship
 
 Inspect existing remotes and history before changing anything:
 
@@ -25,44 +48,52 @@ Use the actual upstream URL configured by the project if it has moved. Work on
 a dedicated branch or clean worktree. Do not discard uncommitted downstream
 work, force-reset, or force-push to resolve a conflict.
 
-## 2. Classify before applying
+## 3. Bootstrap downstream-owned directories
 
-Treat the following as template-owned infrastructure that can usually be
-updated after review:
+The template supplies neutral placeholders so a new downstream repository has
+the expected development layout without inheriting template history:
 
-- `distribution/`, `docker/`, and `scripts/`
-- root packaging and validation configuration
+```bash
+template_root=/path/to/coding-agent-template
+mkdir -p .agents/knowledge .agents/memory .agents/workflows
+cp "$template_root/.agents/downstream-skeleton/knowledge/PLACEHOLDER.md" \
+  .agents/knowledge/PLACEHOLDER.md
+cp "$template_root/.agents/downstream-skeleton/memory/PLACEHOLDER.md" \
+  .agents/memory/PLACEHOLDER.md
+cp "$template_root/.agents/downstream-skeleton/workflows/PLACEHOLDER.md" \
+  .agents/workflows/PLACEHOLDER.md
+```
 
-Treat template-development context as non-transferable by default:
+Replace or remove each placeholder before recording real downstream content.
+Write new scoped `AGENTS.md` files for the downstream repository; never copy
+the template's `.agents/**/AGENTS.md` files.
 
-- `.agents/memory/` issue evidence and template history;
-- HeWo-specific `.agents/knowledge/` and `.agents/workflows/` entries;
-- template release notes, benchmark results, and CI acceptance evidence;
-- template-specific README/DEV/USER wording, repository URLs, examples, and
-  GitHub issue references.
+## 4. Select implementation skills individually
 
-Do not sync `.agents/` as a directory. Review generic skills individually and
-copy only those the downstream repository still needs, adapting Agent names,
-paths, helper commands, provider assumptions, and evidence destinations.
-Likewise, adopt `benchmarks/` or CI definitions only when the downstream Agent
-uses that contract; replace HeWo-specific tasks and verifiers rather than
-presenting them as downstream evidence.
+Opt in to only the skills the downstream development team needs. For example:
 
-Treat these as downstream product-owned and never overwrite them wholesale:
+```bash
+cp -R "$template_root/.agents/skills/agent-consistency-audit" .agents/skills/
+cp -R "$template_root/.agents/skills/agent-definition-validation" .agents/skills/
+cp -R "$template_root/.agents/skills/agent-infrastructure-health" .agents/skills/
+```
 
-- `src/<agent>/runtime/` identity, skills, knowledge, workflows, and tools
-- `src/<agent>/development/`
-- downstream product-specific `AGENTS.md`, memory, and provider policy
+`template-agent-development` is also selectable when the downstream team will
+continue to synchronize or migrate using this template. After copying any
+skill, adapt its registry-listed assumptions: Agent names and paths, backend
+binaries, provider-backed E2E commands, release commands, and evidence issue.
+Review frontmatter and linked references before committing. Do not copy the
+template skill directory's `AGENTS.md` into the downstream repository.
 
-Files such as root `AGENTS.md`, `DEV.md`, and provider configuration may contain
-both template and downstream policy. Review and merge them manually. Preserve
-local security rules and credentials boundaries even when adopting upstream
-examples.
+The current `.agents/knowledge/`, `.agents/memory/`, and `.agents/workflows/`
+directories are not source material for downstream installation. They contain
+template maintenance context and must be replaced with downstream-owned
+content, starting from the placeholders above.
 
-## 3. Apply the smallest coherent update
+## 5. Apply infrastructure updates narrowly
 
-If the repositories share history, compare both sides and choose a normal merge
-or reviewed cherry-picks of template commits:
+If the repositories share history, compare both sides and choose a normal
+merge or reviewed cherry-picks of template commits:
 
 ```bash
 git log --oneline HEAD..template/main
@@ -70,23 +101,32 @@ git diff HEAD..template/main -- distribution docker scripts
 ```
 
 If the downstream repository was copied without shared history, compare the
-same template-owned paths against an upstream checkout and apply a focused
-patch. Do not recursively replace `src/`, `.agents/`, benchmarks, or CI.
+same registry-approved paths against an upstream checkout and apply a focused
+patch. Never recursively replace `src/`, `.agents/`, benchmarks, or CI.
 
 After applying changes:
 
 - update stale template URLs or command names in downstream docs;
 - keep `opencode.json` valid even when the selected backend is Codex or Claude;
-- preserve the independent scaffold/backend/provider layering;
-- review any launcher, Docker, installer, or tool-environment change for
-  credential exposure and runtime `PATH` behavior.
+- preserve independent scaffold/backend/provider layering;
+- review launchers, Docker, installers, and tool environments for credential
+  exposure and runtime `PATH` behavior;
+- record the selected registry entries and adaptations in the downstream PR or
+  issue, not in the template's historical memory.
 
-## 4. Revalidate the downstream Agent
+## 6. Revalidate the downstream Agent
 
 Run the definition check for the downstream Agent:
 
 ```bash
 ./scripts/validate-definition.sh <agent_name>
+```
+
+Run the consistency audit after copying or adapting development resources:
+
+```bash
+python3 .agents/skills/agent-consistency-audit/scripts/audit_agent.py \
+  --agent <agent_name> --strict
 ```
 
 If template infrastructure changed, rebuild the clean image and run a real
@@ -103,5 +143,5 @@ AGENT_BACKENDS=opencode,codex,claude \
 ```
 
 Confirm development instructions, `.agents/`, credentials, and raw sessions
-remain excluded. Finish with `git diff --check` and a review of the exact
-template commits applied.
+remain excluded. Finish with `git diff --check`, a review of the exact
+registry entries applied, and a downstream-specific acceptance record.
