@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+name="${1:?usage: $0 <agent-name> [version]}"
+version="${2:-0.1.0}"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+out="$root/release/$name-$version"
+rm -rf "$out"
+mkdir -p "$out/agent-definition" "$out/bin"
+cp -R "$root/src/$name/runtime/." "$out/agent-definition/"
+cp "$root/distribution/launcher" "$out/bin/$name"
+sed -i '' "s/__AGENT_NAME__/$name/g" "$out/bin/$name" 2>/dev/null || sed -i "s/__AGENT_NAME__/$name/g" "$out/bin/$name"
+chmod +x "$out/bin/$name"
+printf '{"agent":"%s","version":"%s","definition":"src/%s/runtime","provider":"runtime-injected","development_resources":"excluded"}\n' "$name" "$version" "$name" > "$out/release-manifest.json"
+tar -C "$root/release" -czf "$root/release/$name-$version.tar.gz" "$name-$version"
+echo "built release/$name-$version.tar.gz"

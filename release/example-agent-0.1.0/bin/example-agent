@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+provider="${LLM_PROVIDER:-openai}"
+case "$provider" in
+  openai) test -n "${OPENAI_API_KEY:-}" || { echo "OPENAI_API_KEY is required" >&2; exit 2; } ;;
+  anthropic) test -n "${ANTHROPIC_API_KEY:-}" || { echo "ANTHROPIC_API_KEY is required" >&2; exit 2; } ;;
+  *) echo "Unsupported LLM_PROVIDER: $provider" >&2; exit 2 ;;
+esac
+exec opencode --config "$HOME/.local/lib/example-agent/agent-definition/opencode.json" "$@"

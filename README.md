@@ -27,3 +27,7 @@ cp -R src/example-agent src/my-agent
 ```
 
 Edit both `runtime/` (the shipped product) and `development/` (design notes, working memory, reference knowledge, and development-only skills). Build and test only through Docker.
+
+Use `scripts/build-release.sh` to produce a bundle containing only runtime behavior. Follow `docs/release-checklist.md` and run `scripts/collect-trace.sh` before storing trajectory evidence.
+
+`benchmarks/` contains a benchmark contract and placeholders for representative tasks and verifiers. Replace them with general user tasks, never grader-specific hacks.

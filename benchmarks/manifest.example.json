@@ -1,0 +1,1 @@
+{"name":"representative-smoke","version":"0.1.0","tasks":["tasks/example-task.md"],"verifier":"verifiers/example-verifier.sh","model":"record-at-run-time","runtime":"record-at-run-time","definition_revision":"record-at-run-time"}
