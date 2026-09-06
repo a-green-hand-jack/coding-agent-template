@@ -1,7 +1,7 @@
 # Release Checklist
 
 - [ ] `src/<agent_name>/runtime/` is the single behavior source.
-- [ ] Development resources remain under `src/<agent_name>/development/` or `.agents/`.
+- [ ] Template development resources remain under `.agents/`; they are never part of the product definition.
 - [ ] Dependencies and runtime versions are pinned in the release manifest.
 - [ ] A fresh Docker container installs through the public `install.sh` path.
 - [ ] No source checkout, host OpenCode configuration, or preinstalled Skills is used.

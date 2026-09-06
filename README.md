@@ -13,7 +13,7 @@ Never commit provider keys. Credentials are injected at runtime through environm
 
 ## Layout
 
-`src/<agent_name>` is the complete product Agent workspace. Its `runtime/` directory is shipped to users; `development/` holds Agent-specific design material. The coding Agent that develops this product uses `AGENTS.md` and `.agents/` for reusable development memory, knowledge, and skills. `scripts`, `docker`, `tests`, and `benchmarks` are developer infrastructure. `distribution` contains the public installer and launcher.
+`src/<agent_name>/runtime` is the product Agent definition shipped to users. The coding Agent that develops this template uses `AGENTS.md` and `.agents/` for reusable development memory, knowledge, skills, and workflows. `scripts`, `docker`, `tests`, and `benchmarks` are template infrastructure. `distribution` contains the public installer and launcher.
 
 ## Provider contract
 
@@ -26,7 +26,7 @@ cp -R src/example-agent src/my-agent
 ./scripts/validate-definition.sh my-agent
 ```
 
-Edit both `runtime/` (the shipped product) and `development/` (design notes, working memory, reference knowledge, and development-only skills). Build and test only through Docker.
+Replace `src/example-agent` with the definition for the Agent you are building. Keep this template's own development instructions in `AGENTS.md` and `.agents/`; do not put template workflow instructions inside `src/<agent_name>`.
 
 Use `scripts/build-release.sh` to produce a bundle containing only runtime behavior. Follow `docs/release-checklist.md` and run `scripts/collect-trace.sh` before storing trajectory evidence.
 
@@ -36,4 +36,4 @@ Use `scripts/build-release.sh` to produce a bundle containing only runtime behav
 
 The template supports both ecosystems. Python tooling is declared in `pyproject.toml` (with `requirements-dev.txt` for pip users); run `./scripts/setup-dev.sh` to create `.venv` and install development dependencies. TypeScript tooling is declared in `package.json` and `tsconfig.json`; use `npm ci` when a lockfile is present. These environments are for the coding Agent and validation scripts only. They are not copied into `src/<agent_name>/runtime/` or shipped to end users.
 
-The Dockerfile is multi-stage. Its builder may read the repository, but the final runtime image copies only the installed product runtime and launcher. Development resources, tests, benchmarks, `AGENTS.md`, and `.agents/` cannot be reached from the user container.
+The Dockerfile is multi-stage. Its builder may read the repository, but the final runtime image copies only the installed product runtime and launcher. Template development resources, tests, benchmarks, `AGENTS.md`, and `.agents/` cannot be reached from the user container.
