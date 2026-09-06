@@ -6,15 +6,15 @@ This repository has two strictly separate identities. The **development coding a
 
 ```bash
 cp .env.example .env
-./scripts/validate-definition.sh hello-world
-docker build --build-arg AGENT_NAME=hello-world -t hello-world:dev -f docker/Dockerfile .
-docker run --rm -it --env-file .env hello-world:dev "Say hello to Ada"
+./scripts/validate-definition.sh hewo
+docker build --build-arg AGENT_NAME=hewo -t hewo:dev -f docker/Dockerfile .
+docker run --rm -it --env-file .env hewo:dev "Say hello to Ada"
 ```
 
 The CLI E2E helper accepts any OpenCode provider and model without requiring manual exports:
 
 ```bash
-./docker/run-e2e.sh --provider openai --model gpt-5.6 --api-key-env OPENAI_API_KEY "完成这个任务"
+./docker/run-e2e.sh --agent hewo --provider openai --model gpt-5.5 --api-key-env OPENAI_API_KEY "完成这个任务"
 ```
 
 For a short-lived read-only provider runtime bundle, create it and pass it to Docker:
@@ -28,7 +28,7 @@ rm -rf "$bundle"
 
 The bundle is mode `0700`, its credential is mode `0600`, and Docker mounts it read-only at `/run/provider-bundle`. It contains only the selected provider metadata and one credential, never the host `HOME` or any CLI authentication database.
 
-Use `--api-key-stdin` when the key should not appear in shell history, or `--env-file PATH` for a provider-specific environment file. Run `./docker/run-e2e.sh --help` for all options.
+Use `--api-key-stdin` when the key should not appear in shell history, `--auth-file PATH` for one explicit read-only OpenCode auth store, or `--env-file PATH` for a provider-specific environment file. Run `./docker/run-e2e.sh --help` for all options.
 
 Never commit provider keys. Credentials are injected at runtime through environment variables or Docker secrets. `docker/run-e2e.sh` automatically forwards provider variables already exported in the development shell and also loads `.env` when present; it does not copy OpenCode, Codex, or Claude Code credential files into the image.
 
@@ -40,7 +40,7 @@ The key feature is definition-first development: create or modify an Agent by ed
 
 ## Provider contract
 
-The image contains no credentials and does not bake in a provider. The E2E helper passes the selected provider, model, and provider key at runtime. It supports arbitrary provider names using `<PROVIDER>_API_KEY`, plus explicit key variables and env files. The entrypoint fails closed when the selected provider key is missing. Pin runtime and package versions in releases for reproducibility.
+The image contains no credentials and does not bake in a provider. The E2E helper passes the selected provider, model, and provider key at runtime. It supports arbitrary provider names using `<PROVIDER>_API_KEY`, explicit key variables, env files, or one explicitly mounted auth store. The entrypoint fails closed when neither a provider key nor an explicit auth store is supplied. Docker uses `opencode-ai@latest` by design; every E2E report records the actual CLI version, provider, model, and Agent Definition revision.
 
 Provider ownership is explicit: OpenCode tests cover the OpenCode-compatible GPT and DeepSeek providers; Codex tests cover the configured Codex profiles; Claude Code owns the Apex Claude integration. `apex-claude` must not be configured or tested through OpenCode.
 
@@ -51,19 +51,31 @@ cp -R src/example-agent src/my-agent
 ./scripts/validate-definition.sh my-agent
 ```
 
-`src/hello-world` is the template's minimal executable example. Use it to
-verify the complete OpenCode path before developing a larger Agent:
+`src/hewo` (Hello World) is the template's minimal executable infrastructure
+probe. Use it to verify the complete OpenCode path before developing a larger
+Agent:
 
 ```bash
-./scripts/validate-definition.sh hello-world
-./docker/run-e2e.sh --agent hello-world --provider openai --model gpt-5.6 "Say hello to Ada"
+./scripts/validate-definition.sh hewo
+./docker/run-e2e.sh --agent hewo --provider openai --model gpt-5.5 "Say hello to Ada"
 ```
 
 Replace `src/example-agent` with the definition for the Agent you are building. Keep this template's own development instructions in `AGENTS.md` and `.agents/`; do not put template workflow instructions inside `src/<agent_name>`.
 
-Use `scripts/build-release.sh` to produce a bundle containing only runtime behavior. Record release and E2E evidence in the relevant GitHub issue and run `scripts/collect-trace.sh` before storing trajectory evidence.
+Use `scripts/build-release.sh hewo 0.1.0` to produce a bundle containing only runtime behavior. The release contains its own installer and launcher; a downloaded bootstrap installer can fetch that archive with `RELEASE_URL=... bash install.sh`, without a developer checkout. Record release and E2E evidence in the relevant GitHub issue and run `scripts/collect-trace.sh` before storing trajectory evidence.
 
-`benchmarks/` contains a benchmark contract and placeholders for representative tasks and verifiers. Replace them with general user tasks, never grader-specific hacks.
+`benchmarks/` contains a benchmark contract, the `hewo-infrastructure-smoke`
+task, and a deterministic verifier. Run the complete smoke with:
+
+```bash
+OPENCODE_AUTH_FILE="$HOME/.local/share/opencode/auth.json" \
+LLM_PROVIDER=openai LLM_MODEL=gpt-5.5 \
+BENCHMARK_RUN_DIR=/tmp/hewo-evidence \
+./scripts/run-benchmark.sh hewo
+```
+
+The benchmark writes only disposable workspace artifacts and a scrubbed
+trajectory; never commit the evidence directory or raw provider output.
 
 ## Development environments
 

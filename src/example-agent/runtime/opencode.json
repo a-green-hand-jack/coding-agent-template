@@ -1,1 +1,17 @@
-{"runtime":{"name":"opencode","version":"pinned-in-release"},"model":{"provider":"${LLM_PROVIDER:-openai}","name":"${LLM_MODEL:-gpt-5.6}"},"permissions":{"filesystem":"workspace"}}
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "example-agent",
+  "agent": {
+    "example-agent": {
+      "description": "A reliable general-purpose task Agent.",
+      "prompt": "{file:./identity.md}",
+      "tools": {
+        "skill": true
+      }
+    }
+  },
+  "skills": ["./skills"],
+  "instructions": ["./knowledge/*.md", "./workflows/*.md"],
+  "share": "disabled",
+  "autoupdate": false
+}

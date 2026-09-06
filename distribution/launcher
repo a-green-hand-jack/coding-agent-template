@@ -1,13 +1,69 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
+bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+definition_dir="$bin_dir/../lib/__AGENT_NAME__/agent-definition"
+
+test -f "$definition_dir/opencode.json" || {
+  echo "Agent definition is missing: $definition_dir" >&2
+  exit 2
+}
 provider="${LLM_PROVIDER:-openai}"
-key_variable="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')_API_KEY"
-test -n "${!key_variable:-}" || { echo "$key_variable is required" >&2; exit 2; }
-export OPENCODE_CONFIG="$HOME/.local/lib/__AGENT_NAME__/agent-definition/opencode.json"
-model="${LLM_MODEL:-}"
-provider="${LLM_PROVIDER:-}"
+model="${LLM_MODEL:-gpt-5.6}"
+variant="${LLM_VARIANT:-}"
 model_args=()
 if [[ -n "$provider" && -n "$model" ]]; then
   model_args=(--model "$provider/$model")
 fi
-exec opencode run "${model_args[@]}" "$@"
+if [[ -n "$variant" ]]; then
+  model_args+=(--variant "$variant")
+fi
+opencode_bin="$bin_dir/../lib/__AGENT_NAME__/opencode/node_modules/.bin/opencode"
+if [[ ! -x "$opencode_bin" ]]; then
+  opencode_bin="$(command -v opencode || true)"
+fi
+
+require_runtime() {
+  key_variable="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')_API_KEY"
+  if [[ -z "${!key_variable:-}" && "${AGENT_AUTH_STORE:-}" != 1 ]]; then
+    echo "$key_variable is required (or provide an explicit runtime auth store)" >&2
+    exit 2
+  fi
+  [[ -n "$opencode_bin" ]] || { echo "OpenCode runtime is not installed" >&2; exit 2; }
+  export OPENCODE_CONFIG="$definition_dir/opencode.json"
+  export OPENCODE_CONFIG_DIR="$definition_dir"
+}
+
+case "${1:-}" in
+  --help|-h)
+    cat <<'EOF'
+Usage: __AGENT_NAME__ [TASK]
+       __AGENT_NAME__ --tui
+
+Run a task through the installed Agent, or start its interactive TUI with no
+arguments / --tui. Provider credentials are supplied at runtime via the
+selected provider's <PROVIDER>_API_KEY variable.
+EOF
+    exit 0
+    ;;
+  --version|-v)
+    sed -n 's/.*"version":"\([^"]*\)".*/\1/p' "$bin_dir/../lib/__AGENT_NAME__/release-manifest.json" | head -n 1
+    exit 0
+    ;;
+  --tui|tui)
+    require_runtime
+    shift
+    exec "$opencode_bin" "${model_args[@]}" "$@"
+    ;;
+  *)
+    require_runtime
+    if [[ $# -eq 0 ]]; then
+      exec "$opencode_bin" "${model_args[@]}"
+    fi
+    format_args=()
+    if [[ -n "${AGENT_OUTPUT_FORMAT:-}" ]]; then
+      format_args=(--format "$AGENT_OUTPUT_FORMAT")
+    fi
+    exec "$opencode_bin" run "${model_args[@]}" "${format_args[@]}" "$@"
+    ;;
+esac

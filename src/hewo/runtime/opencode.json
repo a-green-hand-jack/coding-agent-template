@@ -1,9 +1,9 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "default_agent": "hello-world",
+  "default_agent": "hewo",
   "agent": {
-    "hello-world": {
-      "description": "A minimal Agent used to verify the template runtime.",
+    "hewo": {
+      "description": "A minimal Agent for validating the OpenCode template infrastructure.",
       "prompt": "{file:./identity.md}",
       "tools": {
         "skill": true
