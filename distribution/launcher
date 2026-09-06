@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+set -euo pipefail
+exec opencode --config "$HOME/.local/lib/__AGENT_NAME__/agent-definition/opencode.json" "$@"

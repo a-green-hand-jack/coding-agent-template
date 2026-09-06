@@ -1,0 +1,1 @@
+{"runtime":{"name":"opencode","version":"pinned-in-release"},"model":{"provider":"openai","name":"${OPENAI_MODEL}"},"permissions":{"filesystem":"workspace"}}
