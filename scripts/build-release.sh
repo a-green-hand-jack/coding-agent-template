@@ -6,7 +6,7 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 out="$root/release/$name-$version"
 rm -rf "$out"
 mkdir -p "$out/agent-definition" "$out/bin"
-cp -R "$root/src/$name/runtime/." "$out/agent-definition/"
+tar -C "$root/src/$name/runtime" --exclude=AGENTS.md -cf - . | tar -C "$out/agent-definition" -xf -
 cp "$root/distribution/launcher" "$out/bin/$name"
 sed -i '' "s/__AGENT_NAME__/$name/g" "$out/bin/$name" 2>/dev/null || sed -i "s/__AGENT_NAME__/$name/g" "$out/bin/$name"
 chmod +x "$out/bin/$name"

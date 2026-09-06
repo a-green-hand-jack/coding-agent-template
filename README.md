@@ -2,6 +2,8 @@
 
 Public template for building installable, container-verified agents. The agent definition lives in `src/<agent_name>`; tooling, dependencies, provider configuration, and evaluation stay outside it.
 
+This repository has two strictly separate identities. The **development coding agent** maintains this repository and follows `AGENTS.md` plus `.agents/`. The **product agent** is what users install and run; it follows only the definition under `src/<agent_name>/runtime/`. Development instructions are never product behavior, and all `AGENTS.md` files are excluded from installation, release archives, and final Docker images.
+
 ```bash
 cp .env.example .env
 ./scripts/validate-definition.sh example-agent
@@ -33,6 +35,8 @@ Never commit provider keys. Credentials are injected at runtime through environm
 ## Layout
 
 `src/<agent_name>/runtime` is the product Agent definition shipped to users. The coding Agent that develops this template uses `AGENTS.md` and `.agents/` for reusable development memory, knowledge, skills, and workflows. `scripts`, `docker`, and `benchmarks` are template infrastructure. `distribution` contains the public installer and launcher.
+
+The key feature is definition-first development: create or modify an Agent by editing its runtime identity, skills, memory policy, and OpenCode configuration rather than implementing another runtime. Use GitHub Issues for design decisions and acceptance evidence; do not add `docs/` or unit-test suites for Agent behavior.
 
 ## Provider contract
 
