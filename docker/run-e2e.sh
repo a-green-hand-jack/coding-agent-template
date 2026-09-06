@@ -7,6 +7,7 @@ provider_key_prefix="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')
 api_key_env=""
 api_key_stdin=false
 env_file="${ENV_FILE:-.env}"
+bundle=""
 
 usage() {
   printf '%s\n' "Usage: $0 [options] <task>" "" \
@@ -27,6 +28,7 @@ while (($#)); do
     --api-key-env) api_key_env="${2:?missing value for --api-key-env}"; shift 2 ;;
     --api-key-stdin) api_key_stdin=true; shift ;;
     --env-file) env_file="${2:?missing value for --env-file}"; shift 2 ;;
+    --bundle) bundle="${2:?missing value for --bundle}"; shift 2 ;;
     --agent) name="${2:?missing value for --agent}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     --) shift; break ;;
@@ -56,9 +58,18 @@ else
   fi
 fi
 
+bundle_args=()
+if [[ -n "$bundle" ]]; then
+  [[ -f "$bundle/manifest.json" && -f "$bundle/credential" ]] || { echo "invalid provider bundle" >&2; exit 2; }
+  bundle_key_env="$(sed -n 's/.*"credential_env":"\([A-Za-z_][A-Za-z0-9_]*\)".*/\1/p' "$bundle/manifest.json")"
+  [[ -n "$bundle_key_env" ]] || { echo "invalid provider bundle manifest" >&2; exit 2; }
+  env_args+=(--env "$bundle_key_env=$(<"$bundle/credential")")
+  bundle_args=(--mount "type=bind,src=$(realpath "$bundle"),dst=/run/provider-bundle,readonly")
+fi
+
 env_file_args=()
 if [[ -f "$env_file" ]]; then
   env_file_args=(--env-file "$env_file")
 fi
 
-docker run --rm -it "${env_file_args[@]}" "${env_args[@]}" "$name:e2e" "${task[@]}"
+docker run --rm -it "${env_file_args[@]}" "${env_args[@]}" "${bundle_args[@]}" "$name:e2e" "${task[@]}"

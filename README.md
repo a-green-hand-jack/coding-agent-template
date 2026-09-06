@@ -15,6 +15,17 @@ The CLI E2E helper accepts any OpenCode provider and model without requiring man
 ./docker/run-e2e.sh --provider openai --model gpt-5.6 --api-key-env OPENAI_API_KEY "完成这个任务"
 ```
 
+For a short-lived read-only provider runtime bundle, create it and pass it to Docker:
+
+```bash
+bundle=$(mktemp -d)
+./scripts/create-provider-bundle.sh openai gpt-5.6 OPENAI_API_KEY "$bundle"
+./docker/run-e2e.sh --provider openai --model gpt-5.6 --bundle "$bundle" "完成这个任务"
+rm -rf "$bundle"
+```
+
+The bundle is mode `0700`, its credential is mode `0600`, and Docker mounts it read-only at `/run/provider-bundle`. It contains only the selected provider metadata and one credential, never the host `HOME` or any CLI authentication database.
+
 Use `--api-key-stdin` when the key should not appear in shell history, or `--env-file PATH` for a provider-specific environment file. Run `./docker/run-e2e.sh --help` for all options.
 
 Never commit provider keys. Credentials are injected at runtime through environment variables or Docker secrets. `docker/run-e2e.sh` automatically forwards provider variables already exported in the development shell and also loads `.env` when present; it does not copy OpenCode, Codex, or Claude Code credential files into the image.
