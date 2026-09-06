@@ -16,6 +16,28 @@
 现有仓库。修改 `src/<agent>/` 或准备 release 时，再使用
 `.agents/skills/agent-definition-validation/SKILL.md` 完成当前验证流程。
 
+在较大改动、template 同步或 release 前，先运行一致性审计：
+
+```bash
+python3 .agents/skills/agent-consistency-audit/scripts/audit_agent.py \
+  --agent <agent_name> --strict
+```
+
+它会自动扫描 memory、skills、tools、runtime、文档和 release payload；模型
+仍需对 WARN 和语义矛盾进行人工判断，不能把静态审计当成真实模型行为证据。
+
+在开始 Agent 编排前，或修改 installer、launcher、Docker、backend、tool
+environment 后，运行基础设施健康检查：
+
+```bash
+python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.py \
+  --agent <agent_name>
+```
+
+它会从当前 worktree 构建并检查 clean image；若只想复用已经由同一 worktree
+构建的镜像，可使用 `--skip-build --image <agent_name>:infra`。通过后仍需用
+实际 provider credentials 运行真实 Docker E2E，才能声称 Agent 行为验证完成。
+
 不要把 template 的 `.agents/` 整目录复制到下游项目。Issue #1/HeWo 的历史
 证据、template release 工作流和 benchmark 记录只属于本仓库；下游项目应建立
 自己的 development memory、knowledge、workflow 和验收证据，只按需保留已经

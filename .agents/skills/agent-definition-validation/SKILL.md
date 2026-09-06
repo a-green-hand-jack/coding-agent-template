@@ -11,6 +11,15 @@ Use after changing `src/<agent_name>/` or before releasing that Agent. Resolve
 the actual Agent name and current repository commands first; do not hardcode
 the template's `hewo` example in a downstream repository.
 
+For broad cross-file freshness and contradiction candidates, run
+`agent-consistency-audit` before this focused validation. This skill remains
+responsible for runtime/provider E2E evidence and release-boundary confirmation.
+
+Before provider-backed behavior testing, run `agent-infrastructure-health` when
+the installer, launcher, Docker image, backend packages, or runtime tools have
+changed. It proves the execution foundation is usable without handling provider
+credentials.
+
 ## Validation levels
 
 1. Validate the definition structure:
