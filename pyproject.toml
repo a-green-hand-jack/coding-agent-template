@@ -1,7 +1,7 @@
 [project]
-name = "opencode-agent-template"
+name = "coding-agent-template"
 version = "0.1.0"
-description = "Development tooling for OpenCode Agent templates"
+description = "Development tooling for installable coding-agent templates"
 requires-python = ">=3.11"
 dependencies = []
 

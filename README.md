@@ -1,4 +1,4 @@
-# OpenCode Agent Template
+# Coding Agent Template
 
 Public template for building installable, container-verified agents. The agent definition lives in `src/<agent_name>`; tooling, dependencies, provider configuration, and evaluation stay outside it.
 
@@ -132,8 +132,8 @@ After a version is published, the no-clone installation flow is:
 
 ```bash
 VERSION=0.1.0
-INSTALLER_URL="https://raw.githubusercontent.com/a-green-hand-jack/opencode-agent-template/v${VERSION}/distribution/install.sh"
-RELEASE_URL="https://github.com/a-green-hand-jack/opencode-agent-template/releases/download/v${VERSION}/hewo-${VERSION}.tar.gz"
+INSTALLER_URL="https://raw.githubusercontent.com/a-green-hand-jack/coding-agent-template/v${VERSION}/distribution/install.sh"
+RELEASE_URL="https://github.com/a-green-hand-jack/coding-agent-template/releases/download/v${VERSION}/hewo-${VERSION}.tar.gz"
 curl --fail --silent --show-error --location "$INSTALLER_URL" -o /tmp/hewo-install.sh
 RELEASE_URL="$RELEASE_URL" AGENT_NAME=hewo AGENT_BACKENDS=opencode,codex,claude \
   bash /tmp/hewo-install.sh

@@ -25,8 +25,8 @@ GitHub Release/tag。下面的地址是发布后的固定格式，只有在对�
 
 ```bash
 VERSION=0.1.0
-INSTALLER_URL="https://raw.githubusercontent.com/a-green-hand-jack/opencode-agent-template/v${VERSION}/distribution/install.sh"
-RELEASE_URL="https://github.com/a-green-hand-jack/opencode-agent-template/releases/download/v${VERSION}/hewo-${VERSION}.tar.gz"
+INSTALLER_URL="https://raw.githubusercontent.com/a-green-hand-jack/coding-agent-template/v${VERSION}/distribution/install.sh"
+RELEASE_URL="https://github.com/a-green-hand-jack/coding-agent-template/releases/download/v${VERSION}/hewo-${VERSION}.tar.gz"
 
 curl --fail --silent --show-error --location "$INSTALLER_URL" -o /tmp/hewo-install.sh
 RELEASE_URL="$RELEASE_URL" \
