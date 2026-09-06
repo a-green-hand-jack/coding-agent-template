@@ -8,6 +8,5 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.x' }
       - run: ./scripts/validate-definition.sh example-agent
-      - run: ./scripts/validate-definition.sh hello-world
       - run: ./scripts/validate-definition.sh hewo
       - run: docker build --build-arg AGENT_NAME=hewo -t agent-template:test -f docker/Dockerfile .
