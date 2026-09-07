@@ -108,5 +108,6 @@ operating-identity self-check above.
 3. Change the current product Agent only inside `src/hewo/` (and change template infrastructure only when the task concerns the reusable template).
 4. Validate the definition, run the self-audit gates for the repository scope (template internal or downstream, as scoped above), run the clean-container checks, and—when validating product behavior—run a real provider-backed Docker E2E through `docker/run-hewo-e2e.sh` using the development machine's intended provider injected via an explicit flag.
 5. Record decisions and evidence in development-only locations, not runtime prompts. A missing credential/provider injection is a blocked behavior validation, not a passing test.
+6. Publish the product Agent release. The product iterates quickly, so after every accepted product-behavior change, bump the version and publish a git tag plus GitHub release via `scripts/publish-release.sh <agent_name> <version>` (it validates the definition, builds the archive with the correct download URL, tags, pushes the tag, and creates the GitHub release). Do not accumulate unreleased changes or leave a release un-tagged.
 
 Do not add benchmark-specific hacks to `src/hewo/runtime/` behavior. Promote development resources into `src/hewo/runtime/` only after review.

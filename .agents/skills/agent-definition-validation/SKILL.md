@@ -46,13 +46,22 @@ credentials.
    infrastructure-only smokes (build/`--help`). Observe the model response and
    inspect any requested workspace artifact.
 
-4. When release contents changed, build and inspect a fresh archive:
+4. When release contents changed, build, inspect, and publish a fresh release.
+   The product iterates quickly, so publish a git tag plus GitHub release after
+   every accepted product-behavior change instead of accumulating unreleased
+   changes:
 
    ```bash
    AGENT_BACKENDS=opencode,codex,claude \
      ./scripts/build-release.sh <agent_name> <version>
    tar -tzf release/<agent_name>-<version>.tar.gz
+   ./scripts/publish-release.sh <agent_name> <version>
    ```
+
+   Prefer the one-shot `publish-release.sh`: it runs the definition check,
+   builds with the correct `RELEASE_URL`, tags, pushes the tag, and creates the
+   GitHub release. Do not treat a bare build or archive inspection as a
+   published release.
 
 ## Evidence boundary
 
