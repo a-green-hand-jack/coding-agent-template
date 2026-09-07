@@ -37,6 +37,11 @@ Before publishing a template version, also load
 `.agents/skills/template-release-readiness/SKILL.md` for the repository-wide
 compatibility and leakage gates.
 
+If the target repository is not going to publish an Agent, do not apply the
+scaffold or product-release contract from this skill. Use the non-Agent
+infrastructure reuse prompt in `DEV.md`, then selectively adapt only the
+infrastructure and development skills the target project needs.
+
 ## Shared contract
 
 - Keep the layers independent:

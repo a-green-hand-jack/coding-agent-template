@@ -84,6 +84,54 @@ registry 条目、哪些内容被明确排除、Agent/backend/provider 组合、
 真实 Docker 响应证据；遇到需要产品决策的冲突时停下来说明，不要静默缩小范围。
 ```
 
+## 给非 Agent 项目的基础设施复用 Prompt
+
+有些项目并不发布一个 Agent，但仍然希望复用本 template 的 Docker、隔离工具
+环境、backend CLI 安装方式，以及开发 coding agent 的经验。把下面这段复制给
+负责初始化该项目的 coding agent；这不是 Agent scaffold 创建流程：
+
+```text
+你正在维护一个不发布 coding Agent 的项目。请把
+https://github.com/a-green-hand-jack/coding-agent-template.git 当作基础设施和
+开发流程参考，初始化当前项目，但不要把它伪装成 Agent dev repo。
+
+项目目的：<project_purpose>
+需要复用的能力：<docker|isolated-uv-tools|backend-clis|development-skills>
+
+请按以下顺序执行：
+1. 阅读 template 的 AGENTS.md、DEV.md、
+   .agents/skills/template-agent-development/SKILL.md、
+   .agents/skills/agent-infrastructure-health/SKILL.md，以及
+   .agents/template-content-registry.json。先在 template checkout 中运行
+   `python3 scripts/check-template-registry.py`，理解每个候选文件的类别。
+2. 选择性复用 registry 中标为 `selective` 的 Docker、distribution、scripts、
+   package/tool 配置和开发 skill；逐项记录选择理由。不要复制 template 仓库、
+   `.agents/`、`src/hewo/`、任何 AGENTS.md、HeWo/Issue 历史、benchmark/release
+   证据、registry 文件或 provider 凭据。
+3. 为当前项目重新编写根 AGENTS.md，并建立自己的 `.agents/knowledge/`、
+   `.agents/memory/`、`.agents/workflows/` 和 scoped AGENTS.md。可以把中性
+   PLACEHOLDER.md 作为目录起点，但必须替换成项目专属内容。
+4. 不要创建 `src/<agent_name>/agent.yaml`、Agent runtime identity、
+   `runtime/opencode.json` 或 Agent 产品 release，除非项目需求后来明确改变。
+   不要运行或声称通过只适用于 Agent scaffold 的 definition validation 或
+   provider-backed Agent E2E；为当前项目定义自己的 smoke/acceptance contract。
+5. 如果复用 Docker/backend CLI/uv 工具环境，删除 HeWo 默认值和 Agent 专属
+   launcher 假设，明确哪些 CLI 只是开发工具、哪些是项目运行时依赖。工具环境
+   必须独立、最小、无凭据；凭据只能在运行时注入。
+6. 遵守 reuse-first：不要重新实现已有 coding-agent CLI 的 model client、
+   session/approval loop 或 tool loop。只增加当前项目确实需要的薄适配层，并在
+   项目 issue 中记录 backend 能力缺口。
+7. 运行适配后的 shell/Python/config 检查、Docker smoke 和工具环境检查；如果
+   使用了 agent-infrastructure-health skill，先改写其中的 Agent 名称、必需
+   二进制和验收命令。最后检查镜像、发布物和 Git 中没有 AGENTS.md、`.agents/`
+   开发历史、auth store、API keys 或个人数据。
+
+请先检查当前项目未提交改动并保留它们。完成后报告：选择了哪些 registry 条目、
+哪些 Agent-specific 内容被排除、复用了哪些基础设施、当前项目自己的验证契约，
+以及仍需人工决定的 backend/provider 或安全边界问题；不要把项目强行改造成
+coding Agent。
+```
+
 在较大改动、template 同步或 release 前，先运行一致性审计：
 
 ```bash
