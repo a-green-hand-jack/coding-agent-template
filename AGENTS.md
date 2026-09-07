@@ -23,6 +23,12 @@ is missing, label the run `infrastructure-only` or `blocked`, never E2E-passed:
 3. State `backend`, `provider`, `model`, and the credential-source flag in the
    report (e.g. `--pi-auth-file ~/.pi/agent/auth.json`). If you cannot name a
    credential source, the run is not E2E evidence.
+4. Discover provider/model availability through secret-free enumeration only
+   (`opencode models <provider>`, `pi --list-models`, or the host private
+   skills' read-only audit scripts). Never print auth stores, `*-key` files,
+   `.env`, or run `opencode debug config` to learn about providers. If a
+   credential is printed, stop, do not repeat it, name the credential class,
+   and recommend rotation.
 
 Resolve which providers actually exist on this machine from the host-level
 private skills (`opencode-providers-private`, `pi-providers-private`) and the
