@@ -123,6 +123,6 @@
 | Commit | Status |
 | --- | --- |
 | C0 | plan authored |
-| C1 | implemented / gate-passed (`python3 scripts/check-template-registry.py && git diff --check`) / committed (pending) / pushed (pending) / acceptance-checked (pending) |
-| C2 | pending |
+| C1 | implemented / gate-passed (`python3 scripts/check-template-registry.py && git diff --check`) / committed (a51d090) / pushed / acceptance-checked (pending) |
+| C2 | implemented / gate-passed (`bash -n scripts/run-agent-loop.sh && bash -n scripts/run-benchmark.sh && ./scripts/run-agent-loop.sh --help`) / committed (ec6ae83) / pushed / acceptance-checked (pending) |
 | C3 | pending |
