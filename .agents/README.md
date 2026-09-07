@@ -1,6 +1,10 @@
 # Development Agent Resources
 
-This directory is for the coding Agent that develops the product Agent. It is not part of the installed product. Keep reusable development memory, knowledge, and skills here; keep Agent-specific material in `src/<agent_name>/development/`.
+This directory is for the **development coding agent** that maintains this
+repository and develops the `hewo` product agent. It is not part of the installed
+product. Keep reusable development memory, knowledge, and skills here; keep
+hewo-specific product material in `src/hewo/` (and, for a downstream repository,
+in that repository's `src/<agent_name>/development/`).
 
 - `memory/`: durable development decisions, checklists, and lessons.
 - `knowledge/`: repository conventions and technical references.

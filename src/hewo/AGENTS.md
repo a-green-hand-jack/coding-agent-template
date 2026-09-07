@@ -1,5 +1,6 @@
-# HeWo Product Agent
+# HeWo Product Agent Source
 
-For the development coding agent only: maintain the `hewo` executable example
-as a small, deterministic OpenCode product. Keep it self-contained and do not
-put template-development instructions in runtime files.
+For the **development coding agent** only: maintain the `hewo` product agent source
+under this directory. Do not act as hewo while editing it. Product identity and
+user-facing behavior belong in `runtime/`; this `AGENTS.md` is development-only and
+is excluded from installation and release artifacts.

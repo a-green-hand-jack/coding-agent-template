@@ -7,10 +7,10 @@ metadata:
 
 # Template Agent Development
 
-Use this skill for development work on a repository based on
-`a-green-hand-jack/coding-agent-template`. It guides the development coding
-agent; it is not product-agent behavior and must never be copied into a
-release or Docker product payload.
+Use this skill as instructions for the **development coding agent**, never as
+product-agent behavior. In this template repository, the concrete product agent
+is `hewo` and product changes belong under `src/hewo/`; the `src/<agent>/`
+paths below are placeholders used only when this skill is adapted downstream.
 
 ## Explicit phase model
 
@@ -67,9 +67,10 @@ infrastructure and development skills the target project needs.
 
 - Keep the layers independent:
   `Agent scaffold -> coding-agent backend -> LLM provider/model`.
-- Put user-facing product behavior under `src/<agent>/runtime/`. Keep reusable
-  development memory, knowledge, skills, and workflows in `.agents/`; keep
-  Agent-specific design material in `src/<agent>/development/`.
+- Put user-facing product behavior under `src/hewo/runtime/` in this repository
+  (or under `src/<agent>/runtime/` after adapting this skill downstream). Keep
+  reusable development memory, knowledge, skills, and workflows in `.agents/`;
+  keep Agent-specific design material in `src/hewo/development/` here.
 - Do not copy the template's `.agents/` wholesale into a downstream repository.
   Follow `.agents/template-content-registry.json`: install only explicitly
   selected skills, and bootstrap downstream-owned memory, knowledge, and

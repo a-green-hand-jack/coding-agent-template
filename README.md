@@ -1,8 +1,18 @@
 # Coding Agent Template
 
-Public template for building installable, container-verified agents. The agent definition lives in `src/<agent_name>`; tooling, dependencies, provider configuration, and evaluation stay outside it.
+这是一个用于构建可安装 Agent 的开发仓。当前仓库只有一个被开发和交付的产品
+agent：**hewo**；它的全部产品源码位于 `src/hewo/`，行为定义位于
+`src/hewo/runtime/`。其他目录不是 hewo 的产品实现：`AGENTS.md`、`.agents/`
+是维护本仓库的开发 coding agent 使用的开发指令和资源，`scripts`、`docker`、
+`benchmarks`、`distribution` 是 template 基础设施。
 
-This repository has two strictly separate identities. The **development coding agent** maintains this repository and follows `AGENTS.md` plus `.agents/`. The **product agent** is what users install and run; it follows only the definition under `src/<agent_name>/runtime/`. Development instructions are never product behavior, and all `AGENTS.md` files are excluded from installation, release archives, and final Docker images.
+
+This repository has two strictly separate identities. The **development coding agent** maintains this repository and follows `AGENTS.md` plus `.agents/`. The **product agent** is `hewo`, what users install and run; it follows only the definition under `src/hewo/runtime/`. Development instructions are never product behavior, and all `AGENTS.md` files are excluded from installation, release archives, and final Docker images.
+
+For downstream repositories, the same product boundary is renamed to
+`src/<agent_name>/runtime/`; that placeholder describes how this template is
+reused, not an additional product in this repository.
+
 
 ```bash
 cp .env.example .env
@@ -49,7 +59,8 @@ Code package requires Node 22 or newer.
 The scaffold, coding-agent backend, and LLM provider are deliberately
 independent layers:
 
-- The scaffold is the runtime definition under `src/<agent>/runtime`.
+- The scaffold is hewo's runtime definition under `src/hewo/runtime` (a downstream
+  repository renames this path to `src/<agent_name>/runtime`).
 - The backend is a mature CLI such as OpenCode, Codex, Claude Code, or pi.
 - The provider/model is selected at runtime and is never baked into the
   scaffold. OpenCode accepts arbitrary provider IDs through `LLM_PROVIDER`,
@@ -81,7 +92,12 @@ Never commit provider keys. Credentials are injected at runtime through environm
 
 ## Layout
 
-`src/<agent_name>/runtime` is the product Agent definition shipped to users. The coding Agent that develops this template uses `AGENTS.md` and `.agents/` for reusable development memory, knowledge, skills, and workflows. `scripts`, `docker`, and `benchmarks` are template infrastructure. `distribution` contains the public installer and launcher.
+`src/hewo/runtime` is the hewo product Agent definition shipped to users. The
+**development coding agent** that develops this template uses `AGENTS.md` and
+`.agents/` for reusable development memory, knowledge, skills, and workflows;
+it must not treat those resources as hewo behavior. `scripts`, `docker`, and
+`benchmarks` are template infrastructure. `distribution` contains the public
+installer and launcher.
 
 The key feature is definition-first development: create or modify an Agent by editing its runtime identity, skills, memory policy, and OpenCode configuration rather than implementing another runtime. Use GitHub Issues for design decisions and acceptance evidence; do not add `docs/` or unit-test suites for Agent behavior.
 
@@ -104,16 +120,19 @@ cp -R src/hewo src/my-agent
 ./scripts/validate-definition.sh my-agent
 ```
 
-`src/hewo` (Hello World) is the template's minimal executable infrastructure
-probe. Use it to verify the complete OpenCode path before developing a larger
-Agent:
+`src/hewo`（Hello World）是本 template 的最小产品 agent 示例，也是当前仓库实际
+开发的产品。使用它验证完整 OpenCode 路径；如果要创建下游产品，才复制并改名为
+`src/<agent_name>`：
 
 ```bash
 ./scripts/validate-definition.sh hewo
 ./docker/run-hewo-e2e.sh --agent hewo --provider openai --model gpt-5.5 "Say hello to Ada"
 ```
 
-Replace `src/hewo` with the definition for the Agent you are building. Keep this template's own development instructions in `AGENTS.md` and `.agents/`; do not put template workflow instructions inside `src/<agent_name>`.
+Replace `src/hewo` only when creating a separate downstream product Agent. In
+this repository, keep hewo's product behavior under `src/hewo/`; keep the
+**development coding agent** instructions in `AGENTS.md` and `.agents/`, and do
+not put template workflow instructions inside `src/hewo/runtime`.
 
 Use `scripts/build-release.sh hewo 0.1.0` to produce a bundle containing only runtime behavior. The release contains its own installer and launcher; a downloaded bootstrap installer can fetch that archive with `RELEASE_URL=... bash install.sh`, without a developer checkout. Record release and E2E evidence in the relevant GitHub issue and run `scripts/collect-trace.sh` before storing trajectory evidence.
 
@@ -163,6 +182,6 @@ trajectory; never commit the evidence directory or raw provider output.
 
 ## Development environments
 
-The template supports both ecosystems. Python tooling is declared in `pyproject.toml` (with `requirements-dev.txt` for pip users); run `./scripts/setup-dev.sh` to create `.venv` and install development dependencies. TypeScript tooling is declared in `package.json` and `tsconfig.json`; use `npm ci` when a lockfile is present. These environments are for the coding Agent and validation scripts only. They are not copied into `src/<agent_name>/runtime/` or shipped to end users.
+The template supports both ecosystems. Python tooling is declared in `pyproject.toml` (with `requirements-dev.txt` for pip users); run `./scripts/setup-dev.sh` to create `.venv` and install development dependencies. TypeScript tooling is declared in `package.json` and `tsconfig.json`; use `npm ci` when a lockfile is present. These environments are for the **development coding agent** and validation scripts only. They are not copied into `src/hewo/runtime/` (or a downstream `src/<agent_name>/runtime/`) or shipped to end users.
 
 The Dockerfile is multi-stage. Its builder may read the repository, but the final runtime image copies only the installed product runtime and launcher plus the OpenCode, Codex, Claude Code, and pi CLI packages. Template development resources, tests, benchmarks, `AGENTS.md`, and `.agents/` cannot be reached from the user container.

@@ -1,7 +1,27 @@
 # Agent 开发者指南
 
-本文面向维护 template、创建下游 Agent scaffold 和记录验证证据的开发者。
+本文先定义本仓库中的两个不同身份，避免把“开发者”与“产品”混为一谈：
+
+- **开发 coding agent**：运行 Codex、OpenCode、Claude Code、pi 或其他 coding-agent
+  CLI、并维护本仓库代码的人机代理。它读取根目录和 `.agents/` 下的
+  `AGENTS.md`、skills、memory、knowledge 与 workflows；这些内容是开发流程，
+  不是产品行为，也绝不会随产品发布。
+- **被开发的产品 agent**：本仓库要构建、安装并交付给最终用户的 `hewo`。它的
+  唯一产品源码和行为定义在 `src/hewo/`，其中真正进入产品载荷的是
+  `src/hewo/runtime/`（不包括任何 `AGENTS.md`）。产品 agent 读取 runtime 中的
+  identity、skills、knowledge、workflows 和 tools；它不是负责维护本仓库的
+  coding agent。
+
+因此，当前 template 仓库的修改规则是：维护基础设施和开发流程时由开发
+coding agent 工作；实现 hewo 的产品行为时只修改 `src/hewo/`。不要因为文档、
+benchmark 或 runtime 文件中出现 “Agent” 就切换身份，也不要把 `AGENTS.md`、
+`.agents/` 或开发证据当成 hewo 的产品上下文。本文中出现的
+`src/<agent_name>/` 仅表示下游仓库复制本 template 后的占位路径，不表示本仓库
+可以把 hewo 实现分散到其他 `src/` 子目录。
+
+本文面向维护 template、开发 `hewo`、创建下游 Agent scaffold 和记录验证证据的开发者。
 最终用户应阅读 [USER.md](USER.md)。
+
 
 ## 开发 Skill 入口
 
@@ -13,8 +33,9 @@
 ```
 
 它会按当前任务渐进式加载一个 sub-skill：新建 Agent、同步 template，或迁移
-现有仓库。修改 `src/<agent>/` 或准备 release 时，再使用
-`.agents/skills/agent-definition-validation/SKILL.md` 完成当前验证流程。
+现有仓库。修改本仓库的 `src/hewo/` 或准备 hewo release 时，再使用
+`.agents/skills/agent-definition-validation/SKILL.md` 完成当前验证流程。只有在
+为下游仓库编写初始化说明时，才使用 `src/<agent>/` 这类占位路径。
 
 每次发布 template 前，还必须加载
 `.agents/skills/template-release-readiness/SKILL.md`。它审核整个 template
@@ -38,10 +59,16 @@ python3 scripts/check-template-registry.py
 
 ## 给下游 coding agent 的初始化 Prompt（Phase 0）
 
-把下面这段完整复制给负责建立下游 Agent dev repo 的 coding agent，只需要
-替换尖括号中的变量。这个阶段的任务名称是“初始化”，不是“实现 Agent”。
+当前 prompt 是下游仓库的通用模板。这里的 `src/hewo/` 是本 template 仓库唯一的
+最小产品 agent 示例；下游执行时才将它适配为变量中的 `src/<agent_name>/`，不要
+反过来把下游占位路径用于本仓库的 hewo 实现。
 
 ```text
+你是负责维护下游仓库的**开发 coding agent**，不是下游将要交付的**产品 agent**。
+产品 agent 的身份和用户可见行为必须写在下游仓库的 `src/<agent_name>/runtime/`；
+本 prompt、`AGENTS.md`、`.agents/` 和验证脚本只指导开发 coding agent，不能被
+复制进产品 runtime 或当作产品行为。
+
 你正在维护下游 coding-agent 开发仓库。请以
 https://github.com/a-green-hand-jack/coding-agent-template.git 为 template
 上游，执行 Phase 0: Initialize，建立一个最小可运行、可供后续实现的 Agent
@@ -118,10 +145,15 @@ dev repo scaffold。
 
 ## 从初始化进入 Agent 实现的 Prompt（Phase 1）
 
-只有用户明确授权后，才把下面这段交给 coding agent。它是独立的产品实现入口，
-不属于 Phase 0 的完成条件：
+只有用户明确授权后，才把下面这段交给**开发 coding agent**。这里的“Agent 产品行为”
+特指下游仓库的产品；在本 template 仓库中则特指 `src/hewo/runtime/`，不是让开发
+coding agent 变成 hewo，也不是修改 `.agents/` 来实现 hewo：
 
 ```text
+你是开发 coding agent，正在实现被开发的产品 agent，而不是扮演它。当前 template
+仓库的产品 agent 是 hewo，所有产品改动必须位于 `src/hewo/`；只有在下游仓库中
+才把该路径替换为 `src/<agent_name>/`。
+
 用户已明确授权开始实现 Agent 产品行为。请执行 Phase 1: Implement product
 behavior。先确认 Agent 名称、目标用户和产品边界，再把 Phase 0 中带有
 `TODO: replace during implementation` 的占位内容逐项替换为经过用户确认的
@@ -239,15 +271,15 @@ backend 没有提供该能力，并在 issue 中记录具体理由。优先扩�
 
 ## 2. Scaffold 合约（Phase 1 产品实现后）
 
-以下合约描述的是经过用户授权、开始实现产品行为后的完整 Agent scaffold，
-不是 Phase 0 初始化的额外要求。初始化阶段只需满足前述最小结构和基础设施
-完成门，并在报告后停止。
+在本仓库中，下面的通用合约实际对应 `hewo`：产品源码只能位于
+`src/hewo/`，产品 runtime 只能位于 `src/hewo/runtime/`。`src/<agent_name>/`
+仅在下游 scaffold 文档中作为变量使用。
 
-一个可安装 Agent 的最小结构是：
+一个可安装产品 Agent 的最小结构是（本仓库把 `<agent_name>` 固定为 `hewo`）：
 
 ```text
-src/<agent_name>/
-├── AGENTS.md                 # 仅开发代理使用，不发布
+src/hewo/
+├── AGENTS.md                 # 仅开发 coding agent 使用，不发布
 ├── agent.yaml
 └── runtime/
     ├── identity.md
@@ -259,6 +291,9 @@ src/<agent_name>/
     └── tools/                  # 可选，独立 uv tool project
 ```
 
+下游仓库将上图的 `hewo` 替换为自己的 `<agent_name>`；本仓库不要新增第二个
+产品目录。
+
 `distribution/launcher` 会把 `identity.md` 以及 runtime 下的 knowledge、
 skills、workflows 注入 OpenCode、Codex 或 Claude Code。若存在
 `runtime/tools/pyproject.toml`，安装器会用 uv 创建独立的
@@ -266,7 +301,7 @@ skills、workflows 注入 OpenCode、Codex 或 Claude Code。若存在
 环境的 `bin/` 放进 backend 的 PATH。每个 scaffold 都应
 保留 `opencode.json`，即使某次运行选择的是 Codex 或 Claude Code。
 
-不要在 `src/<agent_name>/runtime/` 中放置：
+不要在 `src/hewo/runtime/` 中放置（下游适配后对应其 `src/<agent_name>/runtime/`）：
 
 - API keys、auth stores、tokens 或 `.env`
 - 原始 provider session

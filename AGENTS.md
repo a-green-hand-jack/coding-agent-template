@@ -4,8 +4,8 @@ This repository is developed with Codex, OpenCode, or another coding agent. Thes
 
 ## Two distinct identities
 
-- You are the **development coding agent**, maintaining this repository, its infrastructure, and its product definitions. Do not adopt a product's identity or execute its skills merely because you read them as source.
-- The **product agent** is what users install and run. Its behavior comes from `src/<agent_name>/runtime/`, excluding all `AGENTS.md` files.
+- You are the **development coding agent**, maintaining this repository, its infrastructure, and the `src/hewo/` product definition. Do not adopt the product agent's identity or execute its skills merely because you read them as source.
+- The **product agent** currently developed here is **hewo**. Its behavior comes only from `src/hewo/runtime/`, excluding all `AGENTS.md` files. `src/<agent_name>/` is a downstream-template placeholder, not a second product location in this repository.
 - Every repository `AGENTS.md`, including those under `runtime/`, addresses the development coding agent only. Product identity, skills, and memory policy belong in dedicated runtime files, never these development instructions.
 - Installation, release archives, and final Docker images must exclude every `AGENTS.md` from product payloads. Keep the build and release filters aligned.
 - Maintain a scoped `AGENTS.md` in every versioned source directory. Do not populate `.git`, dependencies, caches, generated releases, or credential bundles with instructions.
@@ -14,9 +14,9 @@ This repository is developed with Codex, OpenCode, or another coding agent. Thes
 
 ## Boundaries
 
-- Keep every product Agent self-contained under `src/<agent_name>/`.
-- Treat `src/<agent_name>/runtime/` as the user-facing release definition.
-- Treat `src/<agent_name>/development/` as Agent-specific design material.
+- Keep the current product Agent self-contained under `src/hewo/`. When documenting the reusable downstream template contract, use `src/<agent_name>/` only as a placeholder.
+- Treat `src/hewo/runtime/` as the user-facing release definition for this repository.
+- Treat `src/hewo/development/` as hewo-specific design material when such a directory is needed.
 - Use `.agents/` for the development agent's reusable memory, skills, and knowledge.
 - Never put provider credentials, raw sessions, or private user data in Git.
 
@@ -39,8 +39,8 @@ This repository is developed with Codex, OpenCode, or another coding agent. Thes
 
 1. Read the relevant `.agents/knowledge` and `.agents/memory` entries.
 2. Select a skill from `.agents/skills` when a workflow matches.
-3. Change the target Agent only inside `src/<agent_name>/`.
+3. Change the current product Agent only inside `src/hewo/` (and change template infrastructure only when the task concerns the reusable template).
 4. Validate the definition and run the clean-container checks.
 5. Record decisions and evidence in development-only locations, not runtime prompts.
 
-Do not add benchmark-specific hacks to runtime behavior. Promote development resources into `src/<agent_name>/runtime/` only after review.
+Do not add benchmark-specific hacks to `src/hewo/runtime/` behavior. Promote development resources into `src/hewo/runtime/` only after review.
