@@ -24,7 +24,34 @@
     "selective": "A reusable implementation may be copied only when the downstream repository opts in and adapts names, paths, providers, and evidence commands.",
     "placeholder-only": "Only the listed empty-content placeholder may be installed; current template content is not downstream content.",
     "downstream-owned": "Create and maintain independently in the downstream repository.",
-    "template-only-or-adapt": "Reference material that requires a manual rewrite for downstream identity and policy; never overwrite wholesale."
+    "template-only-or-adapt": "Reference material that requires a manual rewrite for downstream identity and policy; never overwrite wholesale.",
+    "template-example": "Minimal executable example used to bootstrap a downstream Agent; copy only as a renamed, adapted scaffold, never unchanged."
+  },
+  "repository_inventory": {
+    "description": "Every tracked path in this repository is covered by one of these patterns. When a specific entry below also matches, the specific entry and its adaptation rule takes precedence over the broader directory pattern.",
+    "tracked_paths_must_be_registered": true,
+    "patterns": [
+      {"path": "AGENTS.md", "class": "template-only", "note": "Template development policy; write downstream-scoped instructions instead."},
+      {"path": ".agents/**", "class": "template-only", "note": "Use the specific entries below for selectable skills and neutral placeholders."},
+      {"path": ".dockerignore", "class": "selective", "note": "Adapt build-context and credential/development exclusions."},
+      {"path": ".env.example", "class": "template-only-or-adapt", "note": "Reference variable names only; never copy values."},
+      {"path": ".gitignore", "class": "selective", "note": "Merge downstream entries while preserving secret/generated-output exclusions."},
+      {"path": ".github/**", "class": "template-only-or-adapt", "note": "Review CI and repository-specific automation manually."},
+      {"path": ".opencode/**", "class": "template-only-or-adapt", "note": "Development-only OpenCode configuration and dependency metadata."},
+      {"path": "README.md", "class": "template-only-or-adapt", "note": "Rewrite identity, commands, provider matrix, and release URLs."},
+      {"path": "DEV.md", "class": "template-only-or-adapt", "note": "Rewrite development scope and evidence policy for the downstream repository."},
+      {"path": "USER.md", "class": "template-only-or-adapt", "note": "Rewrite installation and supported backend/provider documentation."},
+      {"path": "benchmarks/**", "class": "template-only", "note": "Template benchmark tasks and evidence are not downstream acceptance evidence."},
+      {"path": "distribution/**", "class": "selective", "note": "Select installer, launcher, and entrypoint behavior individually; exclude AGENTS.md."},
+      {"path": "docker/**", "class": "selective", "note": "Select Docker files individually and adapt Agent names, binaries, providers, and credentials."},
+      {"path": "package.json", "class": "selective", "note": "Merge required scripts and metadata; do not overwrite product metadata."},
+      {"path": "pyproject.toml", "class": "selective", "note": "Adopt only required development tooling declarations."},
+      {"path": "requirements-dev.txt", "class": "selective", "note": "Merge development dependencies intentionally; keep runtime dependencies isolated."},
+      {"path": "scripts/**", "class": "selective", "note": "Select scripts individually and adapt names, paths, and provider assumptions."},
+      {"path": "src/**", "class": "template-example", "note": "Use src/hewo only as a reference scaffold; create src/<agent> and replace identity and runtime resources."},
+      {"path": "tsconfig.json", "class": "selective", "note": "Adopt only when downstream development tooling uses TypeScript."},
+      {"path": "release/**", "class": "template-only", "note": "Generated template release artifacts; build downstream-specific releases instead."}
+    ]
   },
   "entries": [
     {
@@ -50,6 +77,12 @@
       "class": "selective",
       "destination": ".agents/skills/agent-infrastructure-health/",
       "adapt_required": ["required backend binaries", "tool environment", "agent-specific installer and image checks"]
+    },
+    {
+      "path": ".agents/skills/template-release-readiness/",
+      "class": "selective",
+      "destination": ".agents/skills/template-release-readiness/",
+      "adapt_required": ["downstream release commands", "promised backend/provider matrix", "repository-specific publication policy"]
     },
     {
       "path": ".agents/downstream-skeleton/knowledge/PLACEHOLDER.md",
@@ -98,6 +131,12 @@
       "path": ".agents/**/AGENTS.md",
       "class": "template-only",
       "note": "Write downstream-scoped instructions instead of copying these files."
+    },
+    {
+      "path": "src/hewo/",
+      "class": "template-example",
+      "destination": "src/<agent_name>/",
+      "adapt_required": ["agent name", "runtime/development paths", "identity", "skills", "knowledge", "workflows", "backend/provider defaults"]
     },
     {
       "path": "README.md",

@@ -28,7 +28,14 @@ workflows. Return to this file only for the shared contract below.
 Before synchronizing or bootstrapping a downstream repository, read the
 authoritative content registry at
 `.agents/template-content-registry.json`. It defines what is template-only,
-what is selectively reusable, and which neutral placeholders may be installed.
+what is selectively reusable, which reference scaffolds need adaptation, and
+which neutral placeholders may be installed. It covers the entire repository,
+not only `.agents/`; run `python3 scripts/check-template-registry.py` after
+adding tracked template files.
+
+Before publishing a template version, also load
+`.agents/skills/template-release-readiness/SKILL.md` for the repository-wide
+compatibility and leakage gates.
 
 ## Shared contract
 

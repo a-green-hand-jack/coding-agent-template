@@ -20,8 +20,14 @@ scaffold at a time.
 Start from the minimal executable scaffold when it is appropriate:
 
 ```bash
-cp -R src/hewo src/<agent_name>
+mkdir -p src/<agent_name>
+tar -C src/hewo --exclude=AGENTS.md -cf - . | tar -C src/<agent_name> -xf -
 ```
+
+This copies the executable reference files without its development
+instructions. It is a scaffold seed, not a permission to preserve the `hewo`
+identity or ship the example unchanged; the registry marks `src/hewo/` as a
+`template-example`.
 
 Then update all identity-bearing values:
 

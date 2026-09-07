@@ -8,9 +8,12 @@ registry-driven: a downstream repository must never copy `.agents/` wholesale.
 
 From the template checkout, read
 `.agents/template-content-registry.json`. It is the authoritative inventory of
-template-only content, reusable content, and the neutral placeholders that may
-be installed downstream. Every copied path must have an explicit registry
-entry and a review decision.
+every tracked path in the repository: template-only content, reusable content,
+reference examples, and neutral placeholders that may be installed
+downstream. Every copied path must have an explicit registry entry and a review
+decision. The registry covers more than `.agents/`: it also governs source
+scaffolds, Docker, distribution, scripts, package metadata, CI, benchmarks,
+release artifacts, and documentation.
 
 The classes have these meanings:
 
@@ -25,6 +28,16 @@ The classes have these meanings:
   repository.
 - `template-only-or-adapt`: use as a reference and rewrite manually; never
   overwrite downstream identity or policy wholesale.
+
+Confirm that the inventory still covers the complete template before syncing:
+
+```bash
+python3 scripts/check-template-registry.py
+```
+
+This check uses `git ls-files`, so adding a new tracked file without assigning
+it a registry pattern fails instead of silently making it part of an
+unreviewed downstream sync.
 
 ## 2. Establish the upstream relationship
 
@@ -90,19 +103,22 @@ directories are not source material for downstream installation. They contain
 template maintenance context and must be replaced with downstream-owned
 content, starting from the placeholders above.
 
-## 5. Apply infrastructure updates narrowly
+## 5. Apply registered repository updates narrowly
 
 If the repositories share history, compare both sides and choose a normal
 merge or reviewed cherry-picks of template commits:
 
 ```bash
 git log --oneline HEAD..template/main
-git diff HEAD..template/main -- distribution docker scripts
+git diff HEAD..template/main -- .dockerignore .env.example .github .opencode \
+  distribution docker package.json pyproject.toml scripts src
 ```
 
 If the downstream repository was copied without shared history, compare the
 same registry-approved paths against an upstream checkout and apply a focused
-patch. Never recursively replace `src/`, `.agents/`, benchmarks, or CI.
+patch. Never recursively replace `.agents/`, `src/`, benchmarks, release
+artifacts, or CI. The inventory's broad patterns are an audit boundary, not a
+permission to overwrite a downstream repository wholesale.
 
 After applying changes:
 
@@ -111,6 +127,10 @@ After applying changes:
 - preserve independent scaffold/backend/provider layering;
 - review launchers, Docker, installers, and tool environments for credential
   exposure and runtime `PATH` behavior;
+- treat `src/hewo/` as a renamed reference scaffold, not as a product to ship
+  unchanged;
+- treat `.opencode/`, `.github/`, root docs, and root package metadata as
+  development/repository policy that requires manual adaptation;
 - record the selected registry entries and adaptations in the downstream PR or
   issue, not in the template's historical memory.
 
