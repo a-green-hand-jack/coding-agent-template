@@ -12,7 +12,7 @@ cp "$root/distribution/install.sh" "$out/install.sh"
 cp "$root/distribution/launcher" "$out/bin/$name"
 release_url="${RELEASE_URL:-__RELEASE_URL__}"
 release_backends="${AGENT_BACKENDS:-opencode}"
-[[ "$release_backends" =~ ^(opencode|codex|claude|claude-code)(,(opencode|codex|claude|claude-code))*$ ]] || {
+[[ "$release_backends" =~ ^(opencode|codex|claude|claude-code|pi)(,(opencode|codex|claude|claude-code|pi))*$ ]] || {
   echo "invalid AGENT_BACKENDS: $release_backends" >&2
   exit 2
 }

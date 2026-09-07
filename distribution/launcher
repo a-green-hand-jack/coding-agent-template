@@ -24,17 +24,18 @@ passthrough=()
 usage() {
   cat <<'EOF'
 Usage: __AGENT_NAME__ [OPTIONS] [TASK]
-       __AGENT_NAME__ --backend codex|claude|opencode [TASK]
+       __AGENT_NAME__ --backend codex|claude|opencode|pi [TASK]
        __AGENT_NAME__ --tui [OPTIONS]
 
 Backends:
   opencode  OpenCode CLI (default); model is [provider/]model.
   codex     Codex CLI; model is a Codex model such as gpt-5.5.
   claude    Claude Code CLI; model is an alias such as sonnet or opus.
+  pi        pi coding agent CLI; model is provider-specific (for example gpt-5.5).
 
 Options:
   --backend NAME   Select the coding-agent backend.
-  --provider NAME  OpenCode provider name (ignored by Codex/Claude Code).
+  --provider NAME  Provider name (OpenCode and pi); ignored by Codex/Claude Code.
   --model NAME     Backend model; backend-specific defaults apply when omitted.
   --variant NAME   OpenCode model variant.
   --tui            Start the selected backend's interactive interface.
@@ -44,7 +45,8 @@ Options:
 Credentials are supplied at runtime. OpenCode uses its provider key or an
 explicit auth store; Codex uses OPENAI_API_KEY or CODEX_HOME/auth.json; Claude
 Code uses ANTHROPIC_API_KEY, ANTHROPIC_API_KEY_FILE, or
-CLAUDE_CONFIG_DIR/.credentials.json.
+CLAUDE_CONFIG_DIR/.credentials.json. Pi uses the selected provider's API key
+such as OPENAI_API_KEY or ANTHROPIC_API_KEY.
 EOF
 }
 
@@ -68,6 +70,7 @@ done
 case "$backend" in
   open-code) backend="opencode" ;;
   claude-code) backend="claude" ;;
+  pi-coding-agent) backend="pi" ;;
 esac
 
 runtime_bin() {
@@ -83,6 +86,7 @@ runtime_bin() {
 opencode_bin="$(runtime_bin opencode)"
 codex_bin="$(runtime_bin codex)"
 claude_bin="$(runtime_bin claude)"
+pi_bin="$(runtime_bin pi)"
 
 require_backend() {
   case "$backend" in
@@ -116,9 +120,14 @@ require_backend() {
       [[ -n "$claude_bin" ]] || { echo "Claude Code CLI is not installed" >&2; exit 2; }
       export CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
       ;;
-    *)
-      echo "unsupported backend: $backend (expected opencode, codex, or claude)" >&2
-      exit 2
+    pi)
+      key_variable="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')_API_KEY"
+      if [[ -z "${!key_variable:-}" && "${PI_AUTH_STORE:-}" != 1 ]]; then
+        echo "$key_variable is required for pi (or provide an explicit pi auth store)" >&2
+        exit 2
+      fi
+      [[ -n "$pi_bin" ]] || { echo "pi runtime is not installed" >&2; exit 2; }
+      export PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
       ;;
   esac
 }
@@ -193,5 +202,19 @@ ${passthrough[*]}"
     claude_args=(-p "${passthrough[*]}" --append-system-prompt "$runtime_instructions" --no-session-persistence "${model_args[@]}")
     [[ -n "${AGENT_OUTPUT_FORMAT:-}" ]] && claude_args+=(--output-format "$AGENT_OUTPUT_FORMAT")
     exec "$claude_bin" "${claude_args[@]}"
+    ;;
+  pi)
+    [[ -n "$model" ]] || model="${PI_MODEL:-gpt-5.5}"
+    pi_args=(--provider "$provider" --model "$model" --append-system-prompt "$(runtime_context)")
+    [[ -n "${AGENT_OUTPUT_FORMAT:-}" ]] && pi_args+=(--mode "$AGENT_OUTPUT_FORMAT")
+    if [[ "$mode" == tui || ${#passthrough[@]} -eq 0 ]]; then
+      exec "$pi_bin" "${pi_args[@]}" "${passthrough[@]}"
+    fi
+    pi_args+=(--print --no-session)
+    exec "$pi_bin" "${pi_args[@]}" "${passthrough[@]}"
+    ;;
+  *)
+    echo "unsupported backend: $backend (expected opencode, codex, claude, or pi)" >&2
+    exit 2
     ;;
 esac

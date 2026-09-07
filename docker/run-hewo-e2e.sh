@@ -13,13 +13,15 @@ auth_file="${OPENCODE_AUTH_FILE:-}"
 codex_auth_file="${CODEX_AUTH_FILE:-}"
 claude_credentials_file="${CLAUDE_CREDENTIALS_FILE:-}"
 claude_api_key_file="${CLAUDE_API_KEY_FILE:-}"
+pi_auth_file="${PI_AUTH_FILE:-}"
+pi_models_file="${PI_MODELS_FILE:-}"
 codex_sandbox_mode="${CODEX_SANDBOX_MODE:-workspace-write}"
 no_build=false
 
 usage() {
   printf '%s\n' "Usage: $0 [options] <task>" "" \
     "Options:" \
-    "  --backend NAME       Backend: opencode, codex, or claude" \
+    "  --backend NAME       Backend: opencode, codex, claude, or pi" \
     "  --provider NAME       OpenCode provider name (backend-specific default)" \
     "  --model NAME          Model name (backend-specific default)" \
     "  --api-key-env NAME    Read the provider key from this host variable" \
@@ -30,6 +32,8 @@ usage() {
     "  --codex-auth-file PATH Mount one explicit Codex auth store read-only" \
     "  --claude-credentials-file PATH Mount Claude credentials read-only" \
     "  --claude-api-key-file PATH Mount one Claude API key file read-only" \
+    "  --pi-auth-file PATH   Mount one pi auth store read-only" \
+    "  --pi-models-file PATH Mount one pi model catalog read-only" \
     "  --codex-sandbox-mode MODE Codex sandbox: read-only, workspace-write, or danger-full-access" \
     "  --workspace PATH      Mount PATH as the clean container workspace" \
     "  --no-build            Reuse the existing image for this Agent" \
@@ -50,6 +54,8 @@ while (($#)); do
     --codex-auth-file) codex_auth_file="${2:?missing value for --codex-auth-file}"; shift 2 ;;
     --claude-credentials-file) claude_credentials_file="${2:?missing value for --claude-credentials-file}"; shift 2 ;;
     --claude-api-key-file) claude_api_key_file="${2:?missing value for --claude-api-key-file}"; shift 2 ;;
+    --pi-auth-file) pi_auth_file="${2:?missing value for --pi-auth-file}"; shift 2 ;;
+    --pi-models-file) pi_models_file="${2:?missing value for --pi-models-file}"; shift 2 ;;
     --codex-sandbox-mode) codex_sandbox_mode="${2:?missing value for --codex-sandbox-mode}"; shift 2 ;;
     --workspace) workspace="${2:?missing value for --workspace}"; shift 2 ;;
     --no-build) no_build=true; shift ;;
@@ -69,7 +75,7 @@ case "$backend" in
   opencode) [[ -n "$provider" ]] || provider="openai" ;;
   codex) [[ -n "$provider" ]] || provider="openai" ;;
   claude) [[ -n "$provider" ]] || provider="anthropic" ;;
-  *) echo "unsupported backend: $backend (expected opencode, codex, or claude)" >&2; exit 2 ;;
+  pi) [[ -n "$provider" ]] || provider="openai" ;;
 esac
 provider_key_prefix="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')"
 if [[ -z "$model" ]]; then
@@ -77,6 +83,7 @@ if [[ -z "$model" ]]; then
     opencode) model="gpt-5.6" ;;
     codex) model="gpt-5.5" ;;
     claude) model="sonnet" ;;
+    pi) model="gpt-5.5" ;;
   esac
 fi
 
@@ -100,7 +107,7 @@ if [[ -n "$api_key_env" ]]; then
   case "$backend" in
     codex) env_args+=(--env "OPENAI_API_KEY=${!api_key_env}") ;;
     claude) env_args+=(--env "ANTHROPIC_API_KEY=${!api_key_env}") ;;
-    *) env_args+=(--env "${api_key_env}=${!api_key_env}") ;;
+    pi) env_args+=(--env "${provider_key_prefix}_API_KEY=${!api_key_env}") ;;
   esac
 elif [[ "$api_key_stdin" == true ]]; then
   IFS= read -r api_key
@@ -108,7 +115,7 @@ elif [[ "$api_key_stdin" == true ]]; then
   case "$backend" in
     codex) env_args+=(--env "OPENAI_API_KEY=$api_key") ;;
     claude) env_args+=(--env "ANTHROPIC_API_KEY=$api_key") ;;
-    *) env_args+=(--env "${provider_key_prefix}_API_KEY=$api_key") ;;
+    pi) env_args+=(--env "${provider_key_prefix}_API_KEY=$api_key") ;;
   esac
 else
   key_variable="${provider_key_prefix}_API_KEY"
@@ -123,6 +130,7 @@ passthrough_envs=()
 case "$backend" in
   opencode|codex) passthrough_envs=(OPENAI_BASE_URL) ;;
   claude) passthrough_envs=(ANTHROPIC_BASE_URL ANTHROPIC_AUTH_TOKEN) ;;
+  pi) passthrough_envs=(OPENAI_BASE_URL ANTHROPIC_BASE_URL) ;;
 esac
 for passthrough_env in "${passthrough_envs[@]}"; do
   if [[ -n "${!passthrough_env:-}" ]]; then
@@ -146,6 +154,12 @@ case "$backend" in
   claude)
     [[ -z "$auth_file" && -z "$codex_auth_file" ]] || {
       echo "credential option does not match selected Claude backend" >&2
+      exit 2
+    }
+    ;;
+  pi)
+    [[ -z "$auth_file" && -z "$codex_auth_file" && -z "$claude_credentials_file" && -z "$claude_api_key_file" ]] || {
+      echo "credential option does not match selected pi backend" >&2
       exit 2
     }
     ;;
@@ -188,6 +202,21 @@ if [[ -n "$claude_api_key_file" ]]; then
   claude_auth_args+=(--env ANTHROPIC_API_KEY_FILE=/run/secrets/anthropic_api_key --mount "type=bind,src=$(realpath "$claude_api_key_file"),dst=/run/secrets/anthropic_api_key,readonly")
 fi
 
+pi_auth_args=()
+if [[ -n "$pi_auth_file" ]]; then
+  [[ "$backend" == pi ]] || { echo "--pi-auth-file requires --backend pi" >&2; exit 2; }
+  [[ -f "$pi_auth_file" ]] || { echo "pi auth file does not exist: $pi_auth_file" >&2; exit 2; }
+  pi_auth_args=(--env PI_AUTH_STORE=1 --env PI_CODING_AGENT_DIR=/root/.pi/agent --mount "type=bind,src=$(realpath "$pi_auth_file"),dst=/root/.pi/agent/auth.json,readonly")
+  if [[ -z "$pi_models_file" ]]; then
+    candidate_models_file="$(dirname "$pi_auth_file")/models.json"
+    [[ -f "$candidate_models_file" ]] && pi_models_file="$candidate_models_file"
+  fi
+  if [[ -n "$pi_models_file" ]]; then
+    [[ -f "$pi_models_file" ]] || { echo "pi models file does not exist: $pi_models_file" >&2; exit 2; }
+    pi_auth_args+=(--mount "type=bind,src=$(realpath "$pi_models_file"),dst=/root/.pi/agent/models.json,readonly")
+  fi
+fi
+
 env_file_args=()
 if [[ -f "$env_file" ]]; then
   env_file_args=(--env-file "$env_file")
@@ -197,4 +226,4 @@ tty_args=()
 if [[ -t 0 && -t 1 ]]; then
   tty_args=(-it)
 fi
-docker run --rm "${tty_args[@]}" "${env_file_args[@]}" "${env_args[@]}" "${bundle_args[@]}" "${workspace_args[@]}" "${auth_args[@]}" "${codex_auth_args[@]}" "${claude_auth_args[@]}" "$name:e2e" "${task[@]}"
+docker run --rm "${tty_args[@]}" "${env_file_args[@]}" "${env_args[@]}" "${bundle_args[@]}" "${workspace_args[@]}" "${auth_args[@]}" "${codex_auth_args[@]}" "${claude_auth_args[@]}" "${pi_auth_args[@]}" "$name:e2e" "${task[@]}"

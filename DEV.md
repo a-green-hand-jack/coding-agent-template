@@ -49,7 +49,7 @@ dev repo scaffold。
 
 变量：
 - Agent 名称：<agent_name>
-- 目标 backend：<opencode|codex|claude，可多选>
+- 目标 backend：<opencode|codex|claude|pi，可多选>
 - 目标 provider/model：<provider/model，按 backend 分别填写>
 
 初始化边界：
@@ -219,7 +219,7 @@ python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.
 - workflows
 - tools
 
-OpenCode、Codex、Claude Code 等成熟 coding-agent 负责执行循环、模型适配、
+OpenCode、Codex、Claude Code、pi 等成熟 coding-agent 负责执行循环、模型适配、
 工具调用、审批和终端交互。本仓库只实现必要的 scaffold、runtime context
 注入、backend 选择和 provider wiring，不重复实现 coding-agent runtime。
 
@@ -292,9 +292,10 @@ tar -C src/hewo --exclude=AGENTS.md -cf - . | tar -C src/my-agent -xf -
 当前 Docker image 安装：
 
 ```text
-OpenCode       opencode-ai
-Codex          @openai/codex
-Claude Code    @anthropic-ai/claude-code
+OpenCode      opencode-ai
+Codex         @openai/codex
+Claude Code   @anthropic-ai/claude-code
+pi            @mariozechner/pi-coding-agent
 ```
 
 产品命令通过 `--backend` 或 `AGENT_BACKEND` 选择 backend：
@@ -303,9 +304,10 @@ Claude Code    @anthropic-ai/claude-code
 hewo --backend opencode ...
 hewo --backend codex ...
 hewo --backend claude ...
+hewo --backend pi ...
 ```
 
-`--provider` 只改变 OpenCode provider；Codex 和 Claude Code 保持各自的
+`--provider` 改变 OpenCode 或 pi 的 provider；Codex 和 Claude Code 保持各自的
 认证、模型命名空间和 CLI 约定。
 
 ### Provider/model
@@ -327,15 +329,15 @@ API key 环境变量按 provider ID 转换为 `<PROVIDER>_API_KEY`；Docker help
 `runtime/tools/pyproject.toml` 只安装 `hewo-tool`，用于验证 Agent 是否真的
 能调用自己的产品环境；不要让它依赖 template 根目录的开发 `.venv`。
 
-非 Docker release 可通过 `AGENT_BACKENDS=opencode,codex,claude` 选择要安装
-的 CLI；Docker image 固定包含三个 backend。
+非 Docker release 可通过 `AGENT_BACKENDS=opencode,codex,claude,pi` 选择要安装
+的 CLI；Docker image 固定包含四个 backend。
 
 ## 4. 构建、安装和发布
 
 ### 源码安装检查
 
 ```bash
-AGENT_NAME=hewo AGENT_BACKENDS=opencode,codex,claude \
+AGENT_NAME=hewo AGENT_BACKENDS=opencode,codex,claude,pi \
   PREFIX=/tmp/hewo-install \
   ./distribution/install.sh
 ```
@@ -350,11 +352,11 @@ docker build --build-arg AGENT_NAME=hewo \
   -t hewo:e2e -f docker/Dockerfile .
 ```
 
-Docker 使用 Node 22，并安装当前三个 CLI。验证版本时绕过产品 entrypoint：
+Docker 使用 Node 22，并安装当前四个 CLI。验证版本时绕过产品 entrypoint：
 
 ```bash
 docker run --rm --entrypoint /bin/bash hewo:e2e -lc \
-  'opencode --version; codex --version; claude --version'
+  'opencode --version; codex --version; claude --version; pi --version'
 ```
 
 ### Release
@@ -427,6 +429,7 @@ trajectory 和 benchmark 输出只能放在 disposable 目录，提交前必须 
 - `opencode-go/grok-4.6`
 - Codex `gpt-5.5`
 - Claude Code `sonnet`（通过授权的 Apex-compatible Anthropic endpoint）
+- pi `openai-codex/gpt-5.5`（通过只读 pi auth store）
 
 `opencode-go` 还提供其他模型，但不能因为模型出现在列表中就声称测试
 通过。每个下游 Agent 应记录实际使用的 provider、model、CLI version、
@@ -477,7 +480,7 @@ issue 证据。
 Agent name: <agent_name>
 Scaffold path: src/<agent_name>/runtime/
 Default backend: opencode
-Supported backends: opencode, codex, claude
+Supported backends: opencode, codex, claude, pi
 Validated provider/models: <实际 E2E 结果>
 CLI command: <agent_name>
 ```

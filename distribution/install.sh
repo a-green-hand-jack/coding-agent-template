@@ -6,6 +6,7 @@ PREFIX="${PREFIX:-$HOME/.local}"
 OPENCODE_VERSION="${OPENCODE_VERSION:-latest}"
 CODEX_VERSION="${CODEX_VERSION:-latest}"
 CLAUDE_CODE_VERSION="${CLAUDE_CODE_VERSION:-latest}"
+PI_VERSION="${PI_VERSION:-latest}"
 AGENT_BACKENDS="${AGENT_BACKENDS:-opencode}"
 RELEASE_URL="${RELEASE_URL:-${AGENT_RELEASE_URL:-__RELEASE_URL__}}"
 
@@ -14,7 +15,7 @@ RELEASE_URL="${RELEASE_URL:-${AGENT_RELEASE_URL:-__RELEASE_URL__}}"
   exit 2
 }
 
-[[ "$AGENT_BACKENDS" =~ ^(opencode|codex|claude|claude-code)(,(opencode|codex|claude|claude-code))*$ ]] || {
+[[ "$AGENT_BACKENDS" =~ ^(opencode|codex|claude|claude-code|pi)(,(opencode|codex|claude|claude-code|pi))*$ ]] || {
   echo "invalid AGENT_BACKENDS: $AGENT_BACKENDS" >&2
   exit 2
 }
@@ -55,7 +56,7 @@ EOF
   [[ -n "$release_install" ]] || { echo "release archive does not contain install.sh" >&2; exit 2; }
   AGENT_NAME="$AGENT_NAME" PREFIX="$PREFIX" AGENT_BACKENDS="$AGENT_BACKENDS" \
     OPENCODE_VERSION="$OPENCODE_VERSION" CODEX_VERSION="$CODEX_VERSION" \
-    CLAUDE_CODE_VERSION="$CLAUDE_CODE_VERSION" \
+    CLAUDE_CODE_VERSION="$CLAUDE_CODE_VERSION" PI_VERSION="$PI_VERSION" \
     "$release_install"
   exit 0
 fi
@@ -114,6 +115,10 @@ if [[ -z "${SKIP_RUNTIME_INSTALL:-}" && -z "${SKIP_OPENCODE_INSTALL:-}" ]]; then
         requested_backend=claude
         runtime_binary=claude
         runtime_package="@anthropic-ai/claude-code@$CLAUDE_CODE_VERSION"
+        ;;
+      pi|pi-coding-agent)
+        runtime_binary=pi
+        runtime_package="@mariozechner/pi-coding-agent@$PI_VERSION"
         ;;
       '')
         continue

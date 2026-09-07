@@ -6,10 +6,10 @@ scaffold 的行为定义交给成熟的 coding-agent backend 执行，再由 bac
 
 ```text
 Agent scaffold  ->  coding-agent backend  ->  LLM provider/model
-hewo runtime        OpenCode/Codex/Claude    opencode-go/openai/...
+hewo runtime        OpenCode/Codex/Claude/pi    opencode-go/openai/...
 ```
 
-用户通常只需要使用 `hewo`，不需要直接调用 OpenCode、Codex 或 Claude Code。
+用户通常只需要使用 `hewo`，不需要直接调用 OpenCode、Codex、Claude Code 或 pi。
 
 ## 1. 安装
 
@@ -31,7 +31,7 @@ RELEASE_URL="https://github.com/a-green-hand-jack/coding-agent-template/releases
 curl --fail --silent --show-error --location "$INSTALLER_URL" -o /tmp/hewo-install.sh
 RELEASE_URL="$RELEASE_URL" \
 AGENT_NAME=hewo \
-AGENT_BACKENDS=opencode,codex,claude \
+AGENT_BACKENDS=opencode,codex,claude,pi \
 bash /tmp/hewo-install.sh
 rm -f /tmp/hewo-install.sh
 ```
@@ -45,7 +45,7 @@ hewo --help
 ```
 
 如果只需要 OpenCode，请在上面的安装命令中把
-`AGENT_BACKENDS=opencode,codex,claude` 改成 `AGENT_BACKENDS=opencode`，
+`AGENT_BACKENDS=opencode,codex,claude,pi` 改成 `AGENT_BACKENDS=opencode`，
 这样可以避免下载不使用的 backend。
 
 不要把 API key、auth store 或 `.env` 放入命令、release archive 或 Git。

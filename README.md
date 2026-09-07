@@ -17,8 +17,8 @@ The `run-hewo-e2e.sh` helper accepts any OpenCode provider and model without req
 ./docker/run-hewo-e2e.sh --agent hewo --provider openai --model gpt-5.5 --api-key-env OPENAI_API_KEY "完成这个任务"
 ```
 
-`hewo` can use the same product command with three interchangeable coding-agent
-backends. OpenCode is the default; Codex and Claude Code are installed in the
+`hewo` can use the same product command with four interchangeable coding-agent
+backends. OpenCode is the default; Codex, Claude Code, and pi are installed in the
 Docker image and selected with `--backend` (or `AGENT_BACKEND`). Each backend
 keeps its own model namespace and credential boundary:
 
@@ -32,10 +32,15 @@ keeps its own model namespace and credential boundary:
 # Claude Code: Claude model plus a runtime API key (or a read-only key file)
 ./docker/run-hewo-e2e.sh --agent hewo --backend claude --api-key-env ANTHROPIC_API_KEY --model sonnet "hi"
 # ./docker/run-hewo-e2e.sh --agent hewo --backend claude --claude-api-key-file /path/to/key --model sonnet "hi"
+
+# pi with an existing read-only pi auth store
+./docker/run-hewo-e2e.sh --agent hewo --backend pi \
+  --provider openai-codex --model gpt-5.5 \
+  --pi-auth-file "$HOME/.pi/agent/auth.json" "hi"
 ```
 
 The product launcher also accepts `hewo --backend codex ...`,
-`hewo --backend claude ...`, and `hewo --backend opencode ...`. In all three
+`hewo --backend claude ...`, `hewo --backend pi ...`, and `hewo --backend opencode ...`. In all four
 cases the launcher injects the same runtime Identity, Knowledge, Skills and
 Workflows; only the underlying coding-agent CLI and model/provider adapter
 changes. The Docker image uses a Node 22 runtime because the current Claude
@@ -45,15 +50,16 @@ The scaffold, coding-agent backend, and LLM provider are deliberately
 independent layers:
 
 - The scaffold is the runtime definition under `src/<agent>/runtime`.
-- The backend is a mature CLI such as OpenCode, Codex, or Claude Code.
+- The backend is a mature CLI such as OpenCode, Codex, Claude Code, or pi.
 - The provider/model is selected at runtime and is never baked into the
   scaffold. OpenCode accepts arbitrary provider IDs through `LLM_PROVIDER`,
   `<PROVIDER>_API_KEY`, and provider-specific base-URL variables.
 
 The current real Docker smoke matrix is intentionally explicit: OpenCode with
 the `openai/gpt-5.5` auth store, OpenCode with `opencode-go/gpt-5.6-luna`,
-Codex with `gpt-5.5`, and Claude Code through the authorized Apex-compatible
-Anthropic endpoint with `sonnet` all returned the exact `hi` response.
+Codex with `gpt-5.5`, Claude Code through the authorized Apex-compatible
+Anthropic endpoint with `sonnet`, and pi with the existing `openai-codex/gpt-5.5`
+auth store all returned the exact `hi` response.
 `opencode-go` exposes additional models (including GLM, Qwen, Kimi, Grok,
 MiniMax, and DeepSeek variants); those are provider/model choices, not new
 scaffolds. Direct DeepSeek-key testing is not part of the passing matrix.
@@ -118,8 +124,8 @@ and terminal UX to the established coding-agent CLIs. The template therefore
 adds only the thin scaffold/launcher/provider wiring needed to compose those
 systems; it does not reimplement a coding-agent runtime.
 
-For a non-Docker release installation that should bundle all three backends,
-set `AGENT_BACKENDS=opencode,codex,claude` when running the installer. The
+For a non-Docker release installation that should bundle all four backends,
+set `AGENT_BACKENDS=opencode,codex,claude,pi` when running the installer. The
 default release installation keeps only OpenCode to avoid downloading unused
 CLI runtimes; the Docker image always includes all three. A release archive is
 designed to be installed without cloning this repository: download its
@@ -135,7 +141,7 @@ VERSION=0.1.0
 INSTALLER_URL="https://raw.githubusercontent.com/a-green-hand-jack/coding-agent-template/v${VERSION}/distribution/install.sh"
 RELEASE_URL="https://github.com/a-green-hand-jack/coding-agent-template/releases/download/v${VERSION}/hewo-${VERSION}.tar.gz"
 curl --fail --silent --show-error --location "$INSTALLER_URL" -o /tmp/hewo-install.sh
-RELEASE_URL="$RELEASE_URL" AGENT_NAME=hewo AGENT_BACKENDS=opencode,codex,claude \
+RELEASE_URL="$RELEASE_URL" AGENT_NAME=hewo AGENT_BACKENDS=opencode,codex,claude,pi \
   bash /tmp/hewo-install.sh
 rm -f /tmp/hewo-install.sh
 export PATH="$HOME/.local/bin:$PATH"
@@ -159,4 +165,4 @@ trajectory; never commit the evidence directory or raw provider output.
 
 The template supports both ecosystems. Python tooling is declared in `pyproject.toml` (with `requirements-dev.txt` for pip users); run `./scripts/setup-dev.sh` to create `.venv` and install development dependencies. TypeScript tooling is declared in `package.json` and `tsconfig.json`; use `npm ci` when a lockfile is present. These environments are for the coding Agent and validation scripts only. They are not copied into `src/<agent_name>/runtime/` or shipped to end users.
 
-The Dockerfile is multi-stage. Its builder may read the repository, but the final runtime image copies only the installed product runtime and launcher plus the OpenCode, Codex and Claude Code CLI packages. Template development resources, tests, benchmarks, `AGENTS.md`, and `.agents/` cannot be reached from the user container.
+The Dockerfile is multi-stage. Its builder may read the repository, but the final runtime image copies only the installed product runtime and launcher plus the OpenCode, Codex, Claude Code, and pi CLI packages. Template development resources, tests, benchmarks, `AGENTS.md`, and `.agents/` cannot be reached from the user container.
