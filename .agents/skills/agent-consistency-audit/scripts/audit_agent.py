@@ -351,7 +351,7 @@ class Audit:
             backend_match = re.search(r'AGENT_BACKENDS="\$\{AGENT_BACKENDS:-([^}]+)\}"', text)
             if backend_match:
                 for backend in backend_match.group(1).split(","):
-                    if backend not in {"opencode", "codex", "claude", "claude-code"}:
+                    if backend not in {"opencode", "codex", "claude", "claude-code", "pi"}:
                         self.add("ERROR", "installer-backend", install, f"unsupported default backend {backend!r}")
         dockerfile = self.root / "docker" / "Dockerfile"
         if dockerfile.is_file():

@@ -397,7 +397,7 @@ docker run --rm --entrypoint /bin/bash hewo:e2e -lc \
 ### Release
 
 ```bash
-AGENT_BACKENDS=opencode,codex,claude \
+AGENT_BACKENDS=opencode,pi,codex,claude \
   ./scripts/build-release.sh hewo 0.1.0
 ```
 

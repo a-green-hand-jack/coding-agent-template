@@ -144,9 +144,11 @@ adds only the thin scaffold/launcher/provider wiring needed to compose those
 systems; it does not reimplement a coding-agent runtime.
 
 For a non-Docker release installation that should bundle all four backends,
-set `AGENT_BACKENDS=opencode,codex,claude,pi` when running the installer. The
-default release installation keeps only OpenCode to avoid downloading unused
-CLI runtimes; the Docker image always includes all three. A release archive is
+set `AGENT_BACKENDS=opencode,pi,codex,claude` when running the installer. The
+default release installation includes OpenCode and pi; set
+`AGENT_BACKENDS=opencode` if you want to avoid downloading pi. Codex and Claude
+Code can be added explicitly with `AGENT_BACKENDS=opencode,pi,codex,claude`.
+The Docker image always includes all four. A release archive is
 designed to be installed without cloning this repository: download its
 installer and set `RELEASE_URL` to the matching archive URL. The repository
 currently contains the release builder and installer, but does not yet publish

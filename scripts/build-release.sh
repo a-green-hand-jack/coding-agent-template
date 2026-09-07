@@ -11,7 +11,7 @@ cp "$root/distribution/launcher" "$out/launcher"
 cp "$root/distribution/install.sh" "$out/install.sh"
 cp "$root/distribution/launcher" "$out/bin/$name"
 release_url="${RELEASE_URL:-__RELEASE_URL__}"
-release_backends="${AGENT_BACKENDS:-opencode}"
+release_backends="${AGENT_BACKENDS:-opencode,pi}"
 [[ "$release_backends" =~ ^(opencode|codex|claude|claude-code|pi)(,(opencode|codex|claude|claude-code|pi))*$ ]] || {
   echo "invalid AGENT_BACKENDS: $release_backends" >&2
   exit 2
@@ -23,6 +23,6 @@ sed -i '' "s/__AGENT_NAME__/$name/g" "$out/launcher" "$out/bin/$name" 2>/dev/nul
 chmod +x "$out/bin/$name"
 chmod +x "$out/install.sh" "$out/launcher"
 printf '{"agent":"%s","version":"%s","definition":"src/%s/runtime","provider":"runtime-injected","opencode":"%s","backends":"%s","development_resources":"excluded"}\n' \
-  "$name" "$version" "$name" "${OPENCODE_VERSION:-latest}" "${AGENT_BACKENDS:-opencode}" > "$out/release-manifest.json"
+  "$name" "$version" "$name" "${OPENCODE_VERSION:-latest}" "${AGENT_BACKENDS:-opencode,pi}" > "$out/release-manifest.json"
 tar -C "$root/release" -czf "$root/release/$name-$version.tar.gz" "$name-$version"
 echo "built release/$name-$version.tar.gz"

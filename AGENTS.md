@@ -10,7 +10,7 @@ This repository is developed with Codex, OpenCode, or another coding agent. Thes
 - Installation, release archives, and final Docker images must exclude every `AGENTS.md` from product payloads. Keep the build and release filters aligned.
 - Maintain a scoped `AGENTS.md` in every versioned source directory. Do not populate `.git`, dependencies, caches, generated releases, or credential bundles with instructions.
 - Use GitHub issues for discussion and acceptance evidence. Do not recreate `docs/` or `tests/`; verify behavior with real Docker E2E tasks, not agent unit tests. Ignore the obsolete install-test step in the legacy development skill.
-- A successful image build or CLI startup is not Agent E2E evidence. Before claiming an Agent works, inject the intended development-machine provider runtime through the approved safe path and observe a real model response from the container. If credentials or provider adapters were not actually injected, report the run as infrastructure-only and do not call it a successful Agent test.
+- A successful image build or CLI startup is not Agent E2E evidence. For every task that changes or claims product behavior, the development coding agent must inject the intended development-machine provider runtime through the approved safe path, run a real Docker request against `src/hewo/runtime/`, and inspect the model response and requested artifacts before reporting success. If credentials or a provider adapter were not actually injected, stop and report the run as infrastructure-only; never imply that the product Agent passed E2E.
 
 ## Boundaries
 
@@ -40,7 +40,7 @@ This repository is developed with Codex, OpenCode, or another coding agent. Thes
 1. Read the relevant `.agents/knowledge` and `.agents/memory` entries.
 2. Select a skill from `.agents/skills` when a workflow matches.
 3. Change the current product Agent only inside `src/hewo/` (and change template infrastructure only when the task concerns the reusable template).
-4. Validate the definition and run the clean-container checks.
-5. Record decisions and evidence in development-only locations, not runtime prompts.
+4. Validate the definition, run the clean-container checks, and—when validating product behavior—run a real provider-backed Docker E2E using the development machine's intended provider credentials through the approved safe injection path.
+5. Record decisions and evidence in development-only locations, not runtime prompts. A missing credential/provider injection is a blocked behavior validation, not a passing test.
 
 Do not add benchmark-specific hacks to `src/hewo/runtime/` behavior. Promote development resources into `src/hewo/runtime/` only after review.

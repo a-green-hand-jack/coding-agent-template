@@ -61,8 +61,9 @@ AGENT_BACKENDS=opencode,codex,claude \
 ./distribution/install.sh
 ```
 
-源码安装需要本机已有 Node.js/npm、Python 3 和 `uv`。它会把 hewo 的工具
-安装到独立的 `~/.local/lib/hewo/environment/`，不会使用开发仓库的 `.venv`。
+源码安装默认安装 OpenCode 和 pi，并把 hewo 的工具安装到独立的
+`~/.local/lib/hewo/environment/`，不会使用开发仓库的 `.venv`。如需同时安装
+Codex 或 Claude Code，可显式设置 `AGENT_BACKENDS=opencode,pi,codex,claude`。
 
 ### 使用 Docker
 
@@ -113,13 +114,17 @@ hewo --backend opencode \
 
 OpenCode 使用 `[provider/]model` 命名空间；`--provider` 主要用于 OpenCode。
 
-### Codex
+### pi
 
 ```bash
-hewo --backend codex \
+hewo --backend pi \
+  --provider openai-codex \
   --model gpt-5.5 \
   "分析这个项目"
 ```
+
+pi 使用自己的 provider/model 命名空间，并可通过 pi auth store 或对应
+provider 的 API key 进行运行时认证。
 
 ### Claude Code
 
@@ -215,8 +220,8 @@ provider/model。
 常用环境变量：
 
 ```text
-AGENT_BACKEND   opencode、codex 或 claude
-LLM_PROVIDER    OpenCode provider ID
+AGENT_BACKEND   opencode、codex、claude 或 pi
+LLM_PROVIDER    OpenCode/pi provider ID
 LLM_MODEL       默认模型
 LLM_VARIANT     OpenCode model variant
 ```
