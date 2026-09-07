@@ -103,11 +103,16 @@ operating-identity self-check above.
 
 ## Development loop
 
+Use `.agents/workflows/agent-development.md` as the project-internal,
+product-external evaluation loop. The loop is development infrastructure: it
+may call scripts, audits, Docker E2E, benchmarks, and evidence collection, but
+it must not be copied into `src/hewo/runtime/` or treated as hewo behavior.
+
 1. Read the relevant `.agents/knowledge` and `.agents/memory` entries.
 2. Select a skill from `.agents/skills` when a workflow matches.
 3. Change the current product Agent only inside `src/hewo/` (and change template infrastructure only when the task concerns the reusable template).
-4. Validate the definition, run the self-audit gates for the repository scope (template internal or downstream, as scoped above), run the clean-container checks, and—when validating product behavior—run a real provider-backed Docker E2E through `docker/run-hewo-e2e.sh` using the development machine's intended provider injected via an explicit flag.
-5. Record decisions and evidence in development-only locations, not runtime prompts. A missing credential/provider injection is a blocked behavior validation, not a passing test.
-6. Publish the product Agent release. The product iterates quickly, so after every accepted product-behavior change, bump the version and publish a git tag plus GitHub release via `scripts/publish-release.sh <agent_name> <version>` (it validates the definition, builds the archive with the correct download URL, tags, pushes the tag, and creates the GitHub release). Do not accumulate unreleased changes or leave a release un-tagged.
+4. Validate the definition, run the self-audit gates for the repository scope (template internal or downstream, as scoped above), run the clean-container checks, and—when validating product behavior—run a real provider-backed Docker E2E through `docker/run-hewo-e2e.sh` or the loop wrapper using the development machine's intended provider injected via an explicit flag.
+5. For long product-agent validation, prefer a registered background loop run instead of a foreground terminal command. The run must be queryable, must record backend/provider/model and credential-source flag without secret values, and must be cleaned up after the result is consumed.
+6. Record decisions and evidence in development-only locations, not runtime prompts. A missing credential/provider injection is a blocked behavior validation, not a passing test.
 
 Do not add benchmark-specific hacks to `src/hewo/runtime/` behavior. Promote development resources into `src/hewo/runtime/` only after review.

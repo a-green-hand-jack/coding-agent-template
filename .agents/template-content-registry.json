@@ -45,6 +45,7 @@
       {"path": "distribution/**", "class": "selective", "note": "Select installer, launcher, and entrypoint behavior individually; exclude AGENTS.md."},
       {"path": "docker/**", "class": "selective", "note": "Select Docker files individually and adapt Agent names, binaries, providers, and credentials."},
       {"path": "package.json", "class": "selective", "note": "Merge required scripts and metadata; do not overwrite product metadata."},
+      {"path": "PLAN-*.md", "class": "template-only", "note": "Temporary implementation plans are PR-visible development records, not downstream product content."},
       {"path": "pyproject.toml", "class": "selective", "note": "Adopt only required development tooling declarations."},
       {"path": "requirements-dev.txt", "class": "selective", "note": "Merge development dependencies intentionally; keep runtime dependencies isolated."},
       {"path": "scripts/**", "class": "selective", "note": "Select scripts individually and adapt names, paths, and provider assumptions."},

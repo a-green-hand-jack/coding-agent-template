@@ -123,6 +123,6 @@
 | Commit | Status |
 | --- | --- |
 | C0 | plan authored |
-| C1 | pending |
+| C1 | implemented / gate-passed (`python3 scripts/check-template-registry.py && git diff --check`) / committed (pending) / pushed (pending) / acceptance-checked (pending) |
 | C2 | pending |
 | C3 | pending |
