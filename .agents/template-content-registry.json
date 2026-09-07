@@ -48,7 +48,7 @@
       {"path": "pyproject.toml", "class": "selective", "note": "Adopt only required development tooling declarations."},
       {"path": "requirements-dev.txt", "class": "selective", "note": "Merge development dependencies intentionally; keep runtime dependencies isolated."},
       {"path": "scripts/**", "class": "selective", "note": "Select scripts individually and adapt names, paths, and provider assumptions."},
-      {"path": "src/**", "class": "template-example", "note": "Use src/hewo only as a reference scaffold; create src/<agent> and replace identity and runtime resources."},
+      {"path": "src/**", "class": "template-example", "note": "Use src/hewo only as a reference scaffold; create src/<agent> and replace identity and runtime resources. Its smoke resources may probe initialization infrastructure, but must not be inherited as product behavior."},
       {"path": "tsconfig.json", "class": "selective", "note": "Adopt only when downstream development tooling uses TypeScript."},
       {"path": "release/**", "class": "template-only", "note": "Generated template release artifacts; build downstream-specific releases instead."}
     ]
@@ -136,7 +136,8 @@
       "path": "src/hewo/",
       "class": "template-example",
       "destination": "src/<agent_name>/",
-      "adapt_required": ["agent name", "runtime/development paths", "identity", "skills", "knowledge", "workflows", "backend/provider defaults"]
+      "adapt_required": ["agent name", "runtime/development paths", "identity", "skills", "knowledge", "workflows", "backend/provider defaults"],
+      "initialization_rule": "Phase 0 may retain only the minimum smoke capability as infrastructure evidence. Do not inherit HeWo name, identity, domain semantics, historical evidence, or product behavior; define formal identity, skills, knowledge, and workflows only after explicit Phase 1 authorization."
     },
     {
       "path": "README.md",

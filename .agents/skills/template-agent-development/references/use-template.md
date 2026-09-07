@@ -1,21 +1,25 @@
 # Sub-skill: Use the Template to Build an Agent
 
 Use this sub-skill when the target repository is starting a new Agent from the
-template or when adding a new `src/<agent>` scaffold.
+template or when adding a new `src/<agent>` scaffold. It defines Phase 0
+initialization; Phase 1 product implementation and Phase 2 release require
+separate authorization and gates.
 
 ## 1. Establish the boundary
 
 Confirm the target repository, branch/worktree, and Agent name. Read the root
 `AGENTS.md`, the relevant `.agents/knowledge` and `.agents/memory` entries, and
 the scoped instructions below `src/`. Do not treat runtime identity or product
-skills as instructions for the development coding agent.
+skills as instructions for the development coding agent. State that the current
+task is **Phase 0: Initialize** and stop after the initialization report; do not
+infer authorization for Phase 1.
 
 The installed command is normally the scaffold name. Choose a stable name that
 matches `^[a-zA-Z0-9][a-zA-Z0-9._-]*$`; do not plan on a runtime
 `--scaffold` registry because the launcher currently selects one installed
 scaffold at a time.
 
-## 2. Create the scaffold
+## 2. Create the Phase 0 scaffold
 
 Start from the minimal executable scaffold when it is appropriate:
 
@@ -24,21 +28,18 @@ mkdir -p src/<agent_name>
 tar -C src/hewo --exclude=AGENTS.md -cf - . | tar -C src/<agent_name> -xf -
 ```
 
-This copies the executable reference files without its development
-instructions. It is a scaffold seed, not a permission to preserve the `hewo`
-identity or ship the example unchanged; the registry marks `src/hewo/` as a
-`template-example`.
+This copies executable reference files without development instructions. It is a
+scaffold seed, not a permission to preserve the `hewo` identity or ship the
+example unchanged; the registry marks `src/hewo/` as a `template-example`.
+During Phase 0, retain only the smallest smoke capability needed to probe the
+infrastructure. HeWo's name, identity, domain semantics, historical evidence,
+and product assumptions must not be inherited.
 
-Then update all identity-bearing values:
-
-- `src/<agent_name>/agent.yaml`: `name`, `runtime_dir`, `development_dir`, and
-  runtime subdirectory declarations.
-- `src/<agent_name>/runtime/opencode.json`: `default_agent`, the matching
-  `agent.<agent_name>` key, prompt path, skills path, and instructions paths.
-- `src/<agent_name>/runtime/identity.md`: the product Agent's role and claims
-  boundary.
-- `runtime/knowledge/`, `runtime/skills/`, and `runtime/workflows/`: only
-  user-facing resources that should ship with the Agent.
+Create only the structural definition and generic runtime configuration needed to
+start the backend. `agent.yaml`, `runtime/opencode.json`, `identity.md`, and any
+placeholder knowledge, skill, workflow, or tool files may exist, but their content
+must be neutral and visibly marked `TODO: replace during implementation`. Do not
+write the real product identity or domain resources until Phase 1 is authorized.
 
 Keep product resources self-contained under `src/<agent_name>/`. Development
 guidance belongs in scoped `AGENTS.md` files or `.agents/`, never in runtime
@@ -61,6 +62,10 @@ template-only material rather than inheriting it as Agent context:
 - retain a generic development skill only after reviewing its Agent names,
   paths, helper names, provider assumptions, and evidence destination.
 
+The Phase 0 scaffold must not add domain tools, business execution logic,
+benchmarks, product acceptance evidence, or release-ready behavior. Do not modify
+the backend execution loop, model client, session, approval, or tool loop.
+
 ## 3. Compose backend and provider at runtime
 
 Do not bake a provider or model into the scaffold. The same command can select
@@ -76,9 +81,9 @@ For a downstream Agent, replace `hewo` with its installed command. `--provider`
 is an OpenCode provider selector; Codex and Claude Code keep their own model
 and credential namespaces. Never copy auth stores into the scaffold.
 
-## 4. Validate behavior
+## 4. Validate the Phase 0 infrastructure boundary
 
-Run definition validation first:
+Run the structural checks first:
 
 ```bash
 ./scripts/validate-definition.sh <agent_name>
@@ -98,12 +103,45 @@ value or commit it. For example:
   "Reply with exactly: hi"
 ```
 
-Use the backend-specific credential option for Codex or Claude. A Docker image
-build alone, or a run without injected provider credentials, is only
-infrastructure evidence. Confirm the task response and inspect any requested
-artifact in the clean workspace.
+Use the backend-specific credential option for Codex or Claude. Label directory
+and configuration checks `structure`. Label Docker, CLI, tool-environment,
+provider-injection, and model-response checks `infrastructure`. An image build,
+CLI startup, tool check, or provider response is never `agent-behavior` evidence;
+that label is reserved for Phase 1 after product resources are authorized and
+defined. Do not claim that the downstream Agent is implemented from Phase 0
+responses.
 
-## 5. Prepare a release (when requested)
+## 5. Phase 0 completion report and stop condition
+
+The initialization gate requires valid directories and configuration, a buildable
+Docker image, a startable backend CLI, and a response from each requested
+provider-backed request. It must also show that no product behavior is declared
+and that the product boundary is credential-free.
+
+The report must list:
+
+- files created during initialization;
+- registry entries reused;
+- template-specific content explicitly excluded;
+- retained HeWo smoke content and its status as infrastructure-only;
+- backend/provider E2E results and evidence labels;
+- product content not yet implemented; and
+- decisions requiring user authorization for Phase 1.
+
+After the report and infrastructure checks, stop. Wait for an explicit instruction
+such as “开始实现 Agent 产品行为” before entering Phase 1. Do not automatically
+design identity, skills, knowledge, workflows, tools, benchmarks, or release
+behavior.
+
+## 6. Phase 1 and Phase 2 gates
+
+After explicit authorization, Phase 1 may replace the TODO placeholders with the
+user-approved identity, skills, knowledge, workflows, and tools. Run definition
+validation, consistency audit, and real provider-backed Docker E2E, and collect
+`agent-behavior` observations before claiming product implementation. Start Phase 2
+release work only after that gate and separate release authorization.
+
+## 7. Prepare a release (when requested)
 
 Build only the selected Agent's runtime payload:
 

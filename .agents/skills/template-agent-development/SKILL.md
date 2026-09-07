@@ -12,6 +12,27 @@ Use this skill for development work on a repository based on
 agent; it is not product-agent behavior and must never be copied into a
 release or Docker product payload.
 
+## Explicit phase model
+
+Downstream work proceeds through three user-visible phases:
+
+- **Phase 0: Initialize** — create the smallest runnable scaffold and verify the
+  infrastructure boundary. HeWo smoke resources may be retained temporarily as
+  probes, but no product behavior is designed. The coding agent stops after the
+  initialization report and waits for explicit authorization.
+- **Phase 1: Implement product behavior** — after explicit user authorization,
+  define the product identity and user-facing skills, knowledge, workflows, and
+  tools, then collect real Agent behavior evidence.
+- **Phase 2: Release** — package and publish the authorized product runtime after
+  the product implementation gates pass.
+
+Use these evidence labels consistently: `structure` covers files, configuration,
+and directory checks; `infrastructure` covers Docker, CLI, tool environment,
+provider injection, and model responses; `agent-behavior` covers observed product
+identity, skills, workflows, and tool behavior. Phase 0 may produce only
+`structure` and `infrastructure` evidence. A provider response alone is never
+`agent-behavior` evidence.
+
 ## Progressive disclosure
 
 Select one sub-skill from the user's immediate intent and read only that file:
@@ -71,12 +92,22 @@ infrastructure and development skills the target project needs.
   Docker E2E, and release inspection). Do not revive the obsolete install-test
   workflow or add an Agent unit-test suite.
 
-## Completion gate
+## Completion gates
 
-Before handing off a change, the selected sub-skill must leave:
+The Phase 0 initialization gate is satisfied only when the downstream repository
+has valid directories and configuration, a Docker image can build, the backend CLI
+can start, and each requested provider-backed request returns a response. The
+report must label these results `structure` or `infrastructure`, state that no
+product behavior is declared, and stop for user authorization. A clean,
+credential-free product boundary and any unresolved provider or history conflict
+must also be reported.
 
-1. A valid `src/<agent>/agent.yaml` and runtime definition.
-2. A clean, credential-free product boundary.
-3. Validation evidence appropriate to the changed backend/runtime.
-4. Any unresolved provider, migration, or history conflict reported instead of
-   silently being dropped.
+The Phase 1 product implementation gate is separate. It requires user-authorized
+identity, skills, knowledge, workflows, and tools, followed by definition
+validation, consistency audit, and real provider-backed Docker E2E that observes
+`agent-behavior`. These checks are product acceptance evidence only after the
+behavior has been defined; they are not initialization requirements.
+
+Phase 2 release work starts only after the Phase 1 gate and explicit release
+authorization. Release payload inspection must still confirm the credential-free
+product boundary and exclusion of development instructions.

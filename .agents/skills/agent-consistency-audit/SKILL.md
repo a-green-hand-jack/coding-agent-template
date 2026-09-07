@@ -12,6 +12,19 @@ update, or before release. It audits the development repository and its
 product boundary; it does not execute the product Agent or read provider
 credentials.
 
+## Phase-aware interpretation
+
+The audit can be run during **Phase 0: Initialize** to check scaffold structure
+and boundary hygiene. A runtime file containing a neutral
+`TODO: replace during implementation` placeholder, or a minimal HeWo smoke
+resource explicitly retained as an infrastructure probe, is not evidence that a
+product identity or product skill has been implemented. Classify those findings
+as initialization state and report them rather than filling them in silently.
+Use `structure` for file/configuration findings, `infrastructure` for Docker,
+CLI, tool-environment, provider-injection, and model-response findings, and
+`agent-behavior` only after Phase 1 product resources have been authorized and
+observed. The audit itself never produces `agent-behavior` evidence.
+
 ## Run the deterministic audit first
 
 From the repository root:

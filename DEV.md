@@ -36,22 +36,40 @@ python3 scripts/check-template-registry.py
 
 这个检查会在新增文件没有归类时失败，避免下游无意间继承未审查的内容。
 
-## 给下游 coding agent 的初始化 Prompt
+## 给下游 coding agent 的初始化 Prompt（Phase 0）
 
 把下面这段完整复制给负责建立下游 Agent dev repo 的 coding agent，只需要
-替换尖括号中的变量：
+替换尖括号中的变量。这个阶段的任务名称是“初始化”，不是“实现 Agent”。
 
 ```text
 你正在维护下游 coding-agent 开发仓库。请以
 https://github.com/a-green-hand-jack/coding-agent-template.git 为 template
-上游，建立一个可长期维护的 Agent dev repo。
+上游，执行 Phase 0: Initialize，建立一个最小可运行、可供后续实现的 Agent
+dev repo scaffold。
 
 变量：
 - Agent 名称：<agent_name>
 - 目标 backend：<opencode|codex|claude，可多选>
 - 目标 provider/model：<provider/model，按 backend 分别填写>
 
-请按以下顺序执行：
+初始化边界：
+- 只创建下游仓库基础目录、`src/<agent_name>/agent.yaml`、最小 runtime 配置、
+  下游自己的 `.agents/` 目录和中性占位符，以及必要的 Docker、distribution、
+  launcher、脚本和工具环境配置。
+- 可以从 `src/hewo/` 派生可执行 scaffold，但只保留最小 HeWo smoke 资源作为
+  临时基础设施探针。HeWo 的名称、身份、领域语义、历史证据和产品假设不得继承，
+  smoke 资源不得扩展为产品功能。
+- 所有临时内容都必须带有明显的 `TODO: replace during implementation` 标记。
+  初始化时不要求填写真实产品 identity，也不要求创建产品专属 knowledge。
+
+初始化阶段禁止：
+- 编写产品 identity 或产品声明；
+- 添加领域专属 knowledge，设计正式 skills 或业务 workflows；
+- 增加领域工具、业务执行逻辑、产品 benchmark 或产品验收证据；
+- 修改执行循环、model client、session、approval 或 tool loop；
+- 生成 release-ready 的产品行为，或把 provider 响应描述为已实现的 Agent。
+
+执行顺序：
 1. 阅读 template 的 AGENTS.md、DEV.md、
    .agents/skills/template-agent-development/SKILL.md，以及
    .agents/template-content-registry.json；先运行
@@ -59,29 +77,60 @@ https://github.com/a-green-hand-jack/coding-agent-template.git 为 template
 2. 使用 registry 和 sync-template sub-skill 做选择性同步。不要复制 template
    仓库或 `.agents/` 整目录，不要复制任何 template 的 AGENTS.md、Issue/HeWo
    历史、benchmark/release 证据、registry 文件或 provider 凭据。
-3. 在 `src/<agent_name>/` 建立新的 runtime scaffold：可以从 `src/hewo/`
-   复制排除 AGENTS.md 的可执行文件作为参考，但必须替换 Agent identity、
-   skills、knowledge、workflows、tools 和 backend/provider 默认值。
+3. 建立 `src/<agent_name>/` 的最小 scaffold；复制 `src/hewo/` 时排除
+   AGENTS.md，并清理 HeWo identity、产品语义和非必要 smoke 内容。runtime
+   文件可以存在，但只能是通用占位内容并带 TODO 标记。
 4. 建立下游自己的 `.agents/knowledge/`、`.agents/memory/`、
-   `.agents/workflows/`，只复制 template 的中性 PLACEHOLDER.md 作为起点，
-   然后写入下游专属内容；为下游目录重新编写 scoped AGENTS.md。
-5. 只按需选择性安装并适配 template 的开发 skill；所有 scaffold、backend、
-   LLM provider/model 保持独立，不重复实现已有 coding-agent CLI 的执行循环、
-   model client、审批或 tool loop。
-6. 根据下游 Agent 的 backend/provider 组合更新 Docker、distribution、scripts、
-   package 配置和文档；不要把 template 的 HeWo 命令、仓库名、发布 URL 或
-   验收证据原样带入下游。
-7. 运行 `./scripts/validate-definition.sh <agent_name>`、
-   `python3 .agents/skills/agent-consistency-audit/scripts/audit_agent.py
-   --agent <agent_name> --strict` 和
-   `python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.py --agent <agent_name>`。
-8. 对每个承诺支持的 backend/provider 运行真实的 provider-backed Docker E2E；
-   凭据只能运行时注入，不能写入 Git。最后检查 release payload 不包含
-   AGENTS.md、`.agents/`、development 目录、auth store 或 credentials。
+   `.agents/workflows/`，只复制中性 PLACEHOLDER.md 作为起点；不要在这里写入
+   产品设计。为下游目录重新编写 scoped AGENTS.md。
+5. 只按需选择性安装并适配开发 skill；保持 scaffold、backend、LLM provider/model
+   独立，不重复实现已有 coding-agent CLI 的执行循环、model client、审批或
+   tool loop。根据 backend/provider 组合适配 Docker、distribution、launcher
+   和工具环境，但不要加入业务逻辑。
+6. 运行结构检查和基础设施检查（例如
+   `./scripts/validate-definition.sh <agent_name>`、
+   `python3 .agents/skills/agent-consistency-audit/scripts/audit_agent.py --agent <agent_name> --strict`
+   和
+   `python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.py --agent <agent_name>`）。
+   初始化证据只能使用以下标签：
+   `structure`（文件、配置和目录结构）、`infrastructure`（Docker、CLI、工具
+   环境、provider 注入和模型响应）、`agent-behavior`（产品 identity、skill、
+   workflow 和工具行为的真实观察）。Phase 0 最多产生 `structure` 和
+   `infrastructure` 证据；provider-backed 响应必须标记为
+   `infrastructure evidence`、`not Agent behavior evidence`。
+7. 对每个目标 backend/provider 运行真实的 provider-backed Docker E2E；凭据只能
+   运行时注入，不能写入 Git。检查 release 边界不包含 AGENTS.md、`.agents/`、
+   development 目录、auth store 或 credentials，但不要生成产品 release。
 
-请先检查当前仓库是否有未提交改动并保留它们。完成后报告：选择了哪些
-registry 条目、哪些内容被明确排除、Agent/backend/provider 组合、验证命令及
-真实 Docker 响应证据；遇到需要产品决策的冲突时停下来说明，不要静默缩小范围。
+初始化报告必须包含：
+- 初始化创建的文件；
+- 复用的 registry 条目；
+- 明确排除的 template-specific 内容；
+- 保留的 HeWo smoke 内容及其“仅用于基础设施验证”的状态；
+- backend/provider E2E 结果和证据标签；
+- 尚未实现的产品内容；
+- 下一阶段需要用户授权的事项。
+
+完成初始化检查和基础设施 E2E 后立即停止并输出报告。等待用户明确发出
+“开始实现 Agent 产品行为”之类的授权指令；不得自动进入 Phase 1，也不得
+把初始化报告当作产品验收。
+```
+
+## 从初始化进入 Agent 实现的 Prompt（Phase 1）
+
+只有用户明确授权后，才把下面这段交给 coding agent。它是独立的产品实现入口，
+不属于 Phase 0 的完成条件：
+
+```text
+用户已明确授权开始实现 Agent 产品行为。请执行 Phase 1: Implement product
+behavior。先确认 Agent 名称、目标用户和产品边界，再把 Phase 0 中带有
+`TODO: replace during implementation` 的占位内容逐项替换为经过用户确认的
+identity、skills、knowledge、workflows 和 tools。重新运行 definition validation、
+consistency audit，并用真实 provider-backed Docker E2E 观察产品行为；只有这些
+`agent-behavior` 证据完成后，才能声称 Agent 产品实现完成。不要修改已有 backend
+执行循环、model client、session、approval 或 tool loop，除非用户另行授权且
+issue 记录了 backend 能力缺口。Phase 1 完成后报告产品决策、行为证据和仍待
+授权的 Phase 2 release 工作。
 ```
 
 ## 给非 Agent 项目的基础设施复用 Prompt
@@ -188,7 +237,11 @@ backend 没有提供该能力，并在 issue 中记录具体理由。优先扩�
 中的文件才是产品 Agent 的行为定义。`AGENTS.md` 不得进入 release 或 Docker
 产品载荷。
 
-## 2. Scaffold 合约
+## 2. Scaffold 合约（Phase 1 产品实现后）
+
+以下合约描述的是经过用户授权、开始实现产品行为后的完整 Agent scaffold，
+不是 Phase 0 初始化的额外要求。初始化阶段只需满足前述最小结构和基础设施
+完成门，并在报告后停止。
 
 一个可安装 Agent 的最小结构是：
 
