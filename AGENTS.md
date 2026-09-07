@@ -62,12 +62,45 @@ provider/model.
   reason in the issue before introducing infrastructure that overlaps a
   supported backend capability.
 
+## Self-audit gates
+
+Two audit layers must pass before claiming a task done. They have different
+scopes and must not be confused:
+
+- **Template internal self-audit** — this repository, before publishing or
+  tagging the template (load
+  `.agents/skills/template-release-readiness/SKILL.md` first):
+
+  ```bash
+  python3 scripts/check-template-registry.py
+  python3 .agents/skills/template-release-readiness/scripts/audit_template_release.py --agent hewo
+  ```
+
+  It verifies registry coverage, downstream placeholders, selectable skills,
+  credential absence, and that release archives exclude development
+  instructions and template history.
+
+- **Downstream-repository audit** — run *inside* a downstream Agent repo after
+  creating, migrating, or synchronizing it, with that repo's own Agent name
+  (never `hewo`):
+
+  ```bash
+  python3 .agents/skills/agent-consistency-audit/scripts/audit_agent.py --agent <agent_name> --strict
+  ```
+
+  Adapt names, paths, helper commands, and evidence destinations first; add
+  `--release` when a release archive exists.
+
+Both audits are deterministic preflight, not provider-backed behavior evidence.
+A clean audit still requires the real Docker E2E described in the
+operating-identity self-check above.
+
 ## Development loop
 
 1. Read the relevant `.agents/knowledge` and `.agents/memory` entries.
 2. Select a skill from `.agents/skills` when a workflow matches.
 3. Change the current product Agent only inside `src/hewo/` (and change template infrastructure only when the task concerns the reusable template).
-4. Validate the definition, run the clean-container checks, and—when validating product behavior—run a real provider-backed Docker E2E using the development machine's intended provider credentials through the approved safe injection path.
+4. Validate the definition, run the self-audit gates for the repository scope (template internal or downstream, as scoped above), run the clean-container checks, and—when validating product behavior—run a real provider-backed Docker E2E through `docker/run-hewo-e2e.sh` using the development machine's intended provider injected via an explicit flag.
 5. Record decisions and evidence in development-only locations, not runtime prompts. A missing credential/provider injection is a blocked behavior validation, not a passing test.
 
 Do not add benchmark-specific hacks to `src/hewo/runtime/` behavior. Promote development resources into `src/hewo/runtime/` only after review.
