@@ -17,6 +17,7 @@ pi_auth_file="${PI_AUTH_FILE:-}"
 pi_models_file="${PI_MODELS_FILE:-}"
 codex_sandbox_mode="${CODEX_SANDBOX_MODE:-workspace-write}"
 no_build=false
+allow_unauthenticated=false
 
 usage() {
   printf '%s\n' "Usage: $0 [options] <task>" "" \
@@ -37,6 +38,7 @@ usage() {
     "  --codex-sandbox-mode MODE Codex sandbox: read-only, workspace-write, or danger-full-access" \
     "  --workspace PATH      Mount PATH as the clean container workspace" \
     "  --no-build            Reuse the existing image for this Agent" \
+    "  --allow-unauthenticated Run without a provider credential (infrastructure-only)" \
     "  --agent NAME          Build and run a different src/<agent>" \
     "  -h, --help            Show this help"
 }
@@ -59,6 +61,7 @@ while (($#)); do
     --codex-sandbox-mode) codex_sandbox_mode="${2:?missing value for --codex-sandbox-mode}"; shift 2 ;;
     --workspace) workspace="${2:?missing value for --workspace}"; shift 2 ;;
     --no-build) no_build=true; shift ;;
+    --allow-unauthenticated) allow_unauthenticated=true; shift ;;
     --agent) name="${2:?missing value for --agent}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     --) shift; break ;;
@@ -123,6 +126,36 @@ else
   [[ "$backend" == claude ]] && key_variable=ANTHROPIC_API_KEY
   if [[ -n "${!key_variable:-}" ]]; then
     env_args+=(--env "$key_variable=${!key_variable}")
+  fi
+fi
+
+# Fail closed: a task run needs an injected provider credential. Without one,
+# the run is infrastructure-only at best and must not be reported as E2E.
+if [[ "$allow_unauthenticated" != true ]]; then
+  guard_key_variable="${provider_key_prefix}_API_KEY"
+  [[ "$backend" == codex ]] && guard_key_variable=OPENAI_API_KEY
+  [[ "$backend" == claude ]] && guard_key_variable=ANTHROPIC_API_KEY
+  has_credential=false
+  [[ -n "$api_key_env" ]] && has_credential=true
+  [[ "$api_key_stdin" == true ]] && has_credential=true
+  [[ -n "$bundle" ]] && has_credential=true
+  [[ -n "$auth_file" || -n "$codex_auth_file" || -n "$claude_credentials_file" || -n "$claude_api_key_file" || -n "$pi_auth_file" ]] && has_credential=true
+  [[ -n "${!guard_key_variable:-}" ]] && has_credential=true
+  if [[ -f "$env_file" ]] && grep -qE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*(_API_KEY|_AUTH_TOKEN)=' "$env_file"; then
+    has_credential=true
+  fi
+  if [[ "$has_credential" != true ]]; then
+    printf '%s\n' \
+      'error: no provider credential injected; a task run cannot be E2E evidence.' \
+      'Inject one of:' \
+      '  --api-key-env NAME | --api-key-stdin | --bundle PATH' \
+      '  --auth-file PATH (opencode) | --codex-auth-file PATH (codex)' \
+      '  --claude-credentials-file PATH | --claude-api-key-file PATH (claude)' \
+      '  --pi-auth-file PATH (pi)' \
+      "or export $guard_key_variable." \
+      'Pass --allow-unauthenticated only for infrastructure-only smokes' \
+      '(build/--help).' >&2
+    exit 2
   fi
 fi
 

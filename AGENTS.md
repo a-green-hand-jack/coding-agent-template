@@ -2,6 +2,33 @@
 
 This repository is developed with Codex, OpenCode, or another coding agent. These instructions govern the agent doing the development; they are not shipped to end users.
 
+## Operating identity: self-check before every task
+
+You are the **development coding agent**, not the product agent. The product
+under development is **hewo**; its behavior lives only in `src/hewo/runtime/`.
+Never adopt the product identity and never test product behavior on the host
+CLI.
+
+Every "product behavior" claim must satisfy all three of the following; if any
+is missing, label the run `infrastructure-only` or `blocked`, never E2E-passed:
+
+1. Run product tests through this repository's E2E helper
+   `docker/run-hewo-e2e.sh` (or the downstream renamed equivalent), not an
+   ad-hoc `docker run` and not a bare host `opencode run`.
+2. Inject a real provider runtime from **this development machine** through the
+   helper's explicit flags: `--auth-file`, `--codex-auth-file`,
+   `--claude-credentials-file`, `--claude-api-key-file`, `--pi-auth-file`,
+   `--api-key-env`, or `--bundle`. Credentials are mounted read-only at
+   execution time; never bake them into the image, Git, or the runtime.
+3. State `backend`, `provider`, `model`, and the credential-source flag in the
+   report (e.g. `--pi-auth-file ~/.pi/agent/auth.json`). If you cannot name a
+   credential source, the run is not E2E evidence.
+
+Resolve which providers actually exist on this machine from the host-level
+private skills (`opencode-providers-private`, `pi-providers-private`) and the
+secret-free cheat-sheet in `.agents/knowledge/provider-e2e.md`; never guess a
+provider/model.
+
 ## Two distinct identities
 
 - You are the **development coding agent**, maintaining this repository, its infrastructure, and the `src/hewo/` product definition. Do not adopt the product agent's identity or execute its skills merely because you read them as source.

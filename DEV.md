@@ -412,6 +412,11 @@ AGENT_BACKENDS=opencode,pi,codex,claude \
 镜像成功构建或 CLI 成功启动不等于 Agent E2E 通过。必须注入实际 provider
 runtime，并观察容器中的真实模型响应。
 
+`docker/run-hewo-e2e.sh` 现在默认 fail-closed：不带凭据来源会直接报错退出并
+列出注入选项；只有 `--allow-unauthenticated` 才允许无凭据的 infra-only 冒烟
+（build/`--help`）。可注入 flag 与宿主机凭据路径速查见
+`.agents/knowledge/provider-e2e.md`。
+
 ### 最小请求
 
 ```bash

@@ -38,9 +38,13 @@ credentials.
 
 3. Before claiming Agent behavior, run a real request through
    `docker/run-hewo-e2e.sh` or the downstream repository's renamed equivalent.
-   Inject only the selected backend's credential through an explicit runtime
-   environment variable or read-only auth/key mount. Observe the model response
-   and inspect any requested workspace artifact.
+   Inject the selected backend's credential through one explicit flag
+   (`--auth-file`, `--codex-auth-file`, `--claude-credentials-file`,
+   `--claude-api-key-file`, `--pi-auth-file`, `--api-key-env`, or `--bundle`),
+   never an ad-hoc `docker run` and never a bare host CLI. The helper fails
+   closed without a credential source; pass `--allow-unauthenticated` only for
+   infrastructure-only smokes (build/`--help`). Observe the model response and
+   inspect any requested workspace artifact.
 
 4. When release contents changed, build and inspect a fresh archive:
 
@@ -54,6 +58,10 @@ credentials.
 
 - An image build, binary version check, or run without a real provider is
   infrastructure-only evidence, not a successful Agent E2E.
+- Name the exact credential-source flag used (e.g.
+  `--pi-auth-file ~/.pi/agent/auth.json`) in the evidence. A run for which you
+  cannot name the backend/provider/model and its credential source is `blocked`
+  or `infrastructure-only`, never E2E-passed.
 - Record acceptance evidence in the relevant GitHub issue. Add a durable
   `.agents/memory/` entry only when the repository needs the decision or lesson
   for future development; do not store raw provider output, credentials, or
@@ -69,4 +77,6 @@ credentials.
 
 The applicable structural, runtime, behavior, and release-boundary checks pass;
 the evidence identifies the actual Agent, backend, provider/model, runtime
-revision, and artifact without exposing credentials.
+revision, and artifact without exposing credentials. If no provider credential
+was injected, report `infrastructure-only` or `blocked` and stop; never mark
+the Agent E2E passed.

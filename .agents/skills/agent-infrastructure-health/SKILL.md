@@ -51,6 +51,13 @@ actual model response and any workspace artifact. Exercise each backend that
 the downstream Agent promises to support. A build, `--help`, or binary version
 check without provider injection is infrastructure-only evidence.
 
+The helper fails closed without a credential source: pass one explicit flag
+(`--auth-file`, `--codex-auth-file`, `--claude-credentials-file`,
+`--claude-api-key-file`, `--pi-auth-file`, `--api-key-env`, or `--bundle`) and
+record the exact flag plus backend/provider/model used. `--allow-unauthenticated`
+is for infrastructure-only smokes only and never counts as provider-backed
+evidence.
+
 Use `agent-definition-validation` for this provider-backed behavior evidence and
 `agent-consistency-audit` for stale, contradictory, or template-residue
 content. Do not turn this health check into a duplicate model client or tool
