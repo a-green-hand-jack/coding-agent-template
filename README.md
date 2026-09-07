@@ -27,10 +27,12 @@ The `run-hewo-e2e.sh` helper accepts any OpenCode provider and model without req
 ./docker/run-hewo-e2e.sh --agent hewo --provider openai --model gpt-5.5 --api-key-env OPENAI_API_KEY "完成这个任务"
 ```
 
-`hewo` can use the same product command with four interchangeable coding-agent
-backends. OpenCode is the default; Codex, Claude Code, and pi are installed in the
-Docker image and selected with `--backend` (or `AGENT_BACKEND`). Each backend
-keeps its own model namespace and credential boundary:
+`hewo` can use the same complete Hello World runtime with four interchangeable
+coding-agent backends. pi is the first-choice backend; OpenCode, Codex, and
+Claude Code are also available and selected with `--backend` (or
+`AGENT_BACKEND`). The user/platform supplies the provider, model, and
+credentials at runtime. Each backend keeps its own model namespace and
+credential boundary:
 
 ```bash
 # OpenCode: provider/model plus an explicit read-only auth store
@@ -57,7 +59,9 @@ changes. The Docker image uses a Node 22 runtime because the current Claude
 Code package requires Node 22 or newer.
 
 The scaffold, coding-agent backend, and LLM provider are deliberately
-independent layers:
+independent layers. HeWo is a complete, intentionally scoped Hello World
+Agent—not a deliberately degraded or incomplete version—and the concrete
+provider/model below is only a run-time choice or verification example:
 
 - The scaffold is hewo's runtime definition under `src/hewo/runtime` (a downstream
   repository renames this path to `src/<agent_name>/runtime`).
@@ -120,9 +124,9 @@ cp -R src/hewo src/my-agent
 ./scripts/validate-definition.sh my-agent
 ```
 
-`src/hewo`（Hello World）是本 template 的最小产品 agent 示例，也是当前仓库实际
-开发的产品。使用它验证完整 OpenCode 路径；如果要创建下游产品，才复制并改名为
-`src/<agent_name>`：
+`src/hewo`（Hello World）是本 template 中功能完整、刻意限定范围的参考产品
+Agent，也是当前仓库实际开发的产品。使用它验证完整 runtime 路径；如果要创建
+下游产品，才复制并改名为 `src/<agent_name>`：
 
 ```bash
 ./scripts/validate-definition.sh hewo

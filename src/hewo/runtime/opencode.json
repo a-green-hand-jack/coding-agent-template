@@ -3,7 +3,7 @@
   "default_agent": "hewo",
   "agent": {
     "hewo": {
-      "description": "A minimal Agent for validating the OpenCode template infrastructure.",
+      "description": "The complete HeWo Hello World Agent runtime adapter.",
       "prompt": "{file:./identity.md}",
       "tools": {
         "skill": true

@@ -6,7 +6,7 @@ scaffold 的行为定义交给成熟的 coding-agent backend 执行，再由 bac
 
 ```text
 Agent scaffold  ->  coding-agent backend  ->  LLM provider/model
-hewo runtime        OpenCode/Codex/Claude/pi    opencode-go/openai/...
+hewo runtime        pi/OpenCode/Codex/Claude    user-selected provider/model
 ```
 
 用户通常只需要使用 `hewo`，不需要直接调用 OpenCode、Codex、Claude Code 或 pi。
@@ -82,7 +82,7 @@ Docker 镜像内置 OpenCode、Codex 和 Claude Code。镜像不包含开发目�
 
 ## 2. Agent scaffold、backend 和 LLM
 
-这三层是独立的：
+这三层是独立的。pi 是当前第一选择的 backend，但不是 runtime 定义的依赖；provider、model 和 credentials 始终由用户或平台在运行时提供。HeWo 是一个功能完整、刻意限定范围的 Hello World Agent，不是通过故意裁剪形成的不完整版本：
 
 - **Agent scaffold**：一个 Agent 的 Identity、Knowledge、Skills、Memory
   policy 和 Workflows。
@@ -98,7 +98,7 @@ AGENT_NAME=my-agent ./distribution/install.sh
 my-agent "运行我的 Agent"
 ```
 
-当前版本可以在运行时切换 backend 和 provider/model，但还不能用
+当前版本默认优先使用 pi，也可以在运行时切换 backend 和 provider/model；但还不能用
 `hewo --scaffold another-agent` 在多个 scaffold 之间切换。
 
 ## 3. 选择 backend

@@ -14,8 +14,8 @@ if [[ -d "$agent_environment_dir/bin" ]]; then
   export PATH="$agent_environment_dir/bin:$PATH"
 fi
 
-backend="${AGENT_BACKEND:-${HEWO_BACKEND:-opencode}}"
-provider="${LLM_PROVIDER:-openai}"
+backend="${AGENT_BACKEND:-${HEWO_BACKEND:-pi}}"
+provider="${LLM_PROVIDER:-}"
 model="${LLM_MODEL:-}"
 variant="${LLM_VARIANT:-}"
 mode="run"
@@ -28,25 +28,24 @@ Usage: __AGENT_NAME__ [OPTIONS] [TASK]
        __AGENT_NAME__ --tui [OPTIONS]
 
 Backends:
-  opencode  OpenCode CLI (default); model is [provider/]model.
-  codex     Codex CLI; model is a Codex model such as gpt-5.5.
-  claude    Claude Code CLI; model is an alias such as sonnet or opus.
-  pi        pi coding agent CLI; model is provider-specific (for example gpt-5.5).
+  pi        pi coding agent CLI (default); provider and model are supplied at runtime.
+  opencode  OpenCode CLI; provider and model are supplied at runtime.
+  codex     Codex CLI; model is supplied at runtime.
+  claude    Claude Code CLI; model is supplied at runtime.
 
 Options:
   --backend NAME   Select the coding-agent backend.
-  --provider NAME  Provider name (OpenCode and pi); ignored by Codex/Claude Code.
-  --model NAME     Backend model; backend-specific defaults apply when omitted.
+  --provider NAME  Provider name (required by OpenCode and pi); ignored by Codex/Claude Code.
+  --model NAME     Backend model; supplied by the user/platform when needed.
   --variant NAME   OpenCode model variant.
   --tui            Start the selected backend's interactive interface.
   -h, --help       Show this help.
   -v, --version    Show the installed Agent version.
 
-Credentials are supplied at runtime. OpenCode uses its provider key or an
-explicit auth store; Codex uses OPENAI_API_KEY or CODEX_HOME/auth.json; Claude
-Code uses ANTHROPIC_API_KEY, ANTHROPIC_API_KEY_FILE, or
-CLAUDE_CONFIG_DIR/.credentials.json. Pi uses the selected provider's API key
-such as OPENAI_API_KEY or ANTHROPIC_API_KEY.
+The execution backend, provider, model, and credentials are supplied at
+runtime. OpenCode uses its selected provider key or an explicit auth store;
+Codex and Claude Code use their own credential namespaces; pi uses the
+selected provider's credentials. No provider is required by the Agent runtime.
 EOF
 }
 
@@ -91,6 +90,7 @@ pi_bin="$(runtime_bin pi)"
 require_backend() {
   case "$backend" in
     opencode)
+      [[ -n "$provider" ]] || { echo "--provider or LLM_PROVIDER is required for OpenCode" >&2; exit 2; }
       key_variable="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')_API_KEY"
       if [[ -z "${!key_variable:-}" && "${AGENT_AUTH_STORE:-}" != 1 ]]; then
         echo "$key_variable is required (or provide an explicit runtime auth store)" >&2
@@ -121,6 +121,7 @@ require_backend() {
       export CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
       ;;
     pi)
+      [[ -n "$provider" ]] || { echo "--provider or LLM_PROVIDER is required for pi" >&2; exit 2; }
       key_variable="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')_API_KEY"
       if [[ -z "${!key_variable:-}" && "${PI_AUTH_STORE:-}" != 1 ]]; then
         echo "$key_variable is required for pi (or provide an explicit pi auth store)" >&2
@@ -150,13 +151,15 @@ require_backend
 
 case "$backend" in
   opencode)
-    [[ -n "$model" ]] || model="gpt-5.6"
-    if [[ "$model" == */* ]]; then
-      model_ref="$model"
-    else
-      model_ref="$provider/$model"
+    model_args=()
+    if [[ -n "$model" ]]; then
+      if [[ "$model" == */* ]]; then
+        model_ref="$model"
+      else
+        model_ref="$provider/$model"
+      fi
+      model_args=(--model "$model_ref")
     fi
-    model_args=(--model "$model_ref")
     [[ -n "$variant" ]] && model_args+=(--variant "$variant")
     if [[ "$mode" == tui || ${#passthrough[@]} -eq 0 ]]; then
       exec "$opencode_bin" "${model_args[@]}" "${passthrough[@]}"
@@ -166,7 +169,7 @@ case "$backend" in
     exec "$opencode_bin" run "${model_args[@]}" "${format_args[@]}" "${passthrough[@]}"
     ;;
   codex)
-    [[ -n "$backend_model" ]] || backend_model="${CODEX_MODEL:-gpt-5.5}"
+    [[ -n "$backend_model" ]] || backend_model="${CODEX_MODEL:-}"
     codex_sandbox="${CODEX_SANDBOX_MODE:-workspace-write}"
     case "$codex_sandbox" in
       read-only|workspace-write|danger-full-access) ;;
@@ -190,7 +193,7 @@ ${passthrough[*]}"
     exec "$codex_bin" "${codex_args[@]}"
     ;;
   claude)
-    [[ -n "$backend_model" ]] || backend_model="${CLAUDE_MODEL:-sonnet}"
+    [[ -n "$backend_model" ]] || backend_model="${CLAUDE_MODEL:-}"
     model_args=()
     [[ -n "$backend_model" ]] && model_args+=(--model "$backend_model")
     runtime_instructions="$(runtime_context)"
@@ -204,8 +207,9 @@ ${passthrough[*]}"
     exec "$claude_bin" "${claude_args[@]}"
     ;;
   pi)
-    [[ -n "$model" ]] || model="${PI_MODEL:-gpt-5.5}"
-    pi_args=(--provider "$provider" --model "$model" --append-system-prompt "$(runtime_context)")
+    [[ -n "$model" ]] || model="${PI_MODEL:-}"
+    pi_args=(--provider "$provider" --append-system-prompt "$(runtime_context)")
+    [[ -n "$model" ]] && pi_args+=(--model "$model")
     [[ -n "${AGENT_OUTPUT_FORMAT:-}" ]] && pi_args+=(--mode "$AGENT_OUTPUT_FORMAT")
     if [[ "$mode" == tui || ${#passthrough[@]} -eq 0 ]]; then
       exec "$pi_bin" "${pi_args[@]}" "${passthrough[@]}"
