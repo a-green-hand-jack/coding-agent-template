@@ -240,6 +240,36 @@ python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.
 自己的 development memory、knowledge、workflow 和验收证据，只按需保留已经
 审查过的通用 skill。
 
+## 产品外评估闭环
+
+开发产品 Agent 时，必须形成项目内、产品外的 loop：定义或修改 runtime 后，
+由开发 coding agent 在 `.agents/` 与 `scripts/` 中完成验证、证据收集和失败
+回流，而不是把评估逻辑写进 `src/hewo/runtime/`。这个 loop 的权威入口是
+`.agents/workflows/agent-development.md`；可执行辅助入口是
+`scripts/run-agent-loop.sh`（或下游改名后的等价脚本）。
+
+Loop 的阶段是：
+
+1. 确认身份和边界：开发 coding agent 读取 `AGENTS.md` / `.agents/`，产品
+   Agent 只读取 runtime。
+2. 运行结构验证和 repository-scope audit。
+3. 运行 clean-container infrastructure check。
+4. 通过明确 credential-source 注入真实 backend/provider/model，执行
+   provider-backed E2E 或 benchmark stage。
+5. 保存 artifact、trajectory 和 scrubbed trajectory，只记录 secret-free summary。
+6. 把失败分类为 definition、infrastructure、provider、benchmark/verifier 或
+   product-behavior 问题，再回到 runtime 定义或开发基础设施中修复。
+
+产品 Agent 的长程任务验证通常不应阻塞前台终端。对耗时验证，应通过 loop
+runner 的后台模式登记任务；登记内容只包含 run id、stage、backend/provider/model、
+credential-source flag、状态、pid/owner、artifact 路径和 scrubbed evidence 路径，
+不得包含 key、auth store 内容、raw provider output 或个人数据。开发者需要用
+`--status` 查询，结果消费后用 `--cleanup` 清除登记；如果验证中断，下次 loop
+运行应能识别 stale/orphaned 状态并安全清理或重跑。
+
+Benchmark 只是 loop 的一个 stage。它衡量 capability/regression，不定义产品
+行为；不能为了通过 verifier 在 runtime 中加入 benchmark-specific hack。
+
 ## 1. 设计原则：reuse-first
 
 开发 Agent 的主要工作是设计和组合：

@@ -180,7 +180,11 @@ BENCHMARK_RUN_DIR=/tmp/hewo-evidence \
 ```
 
 The benchmark writes only disposable workspace artifacts and a scrubbed
-trajectory; never commit the evidence directory or raw provider output.
+trajectory; never commit the evidence directory or raw provider output. For
+full product-agent iteration, run the project-internal evaluation loop from
+`.agents/workflows/agent-development.md`; long E2E or benchmark validation
+should be submitted through the loop helper's registered background mode so it
+can be queried and cleaned up without blocking the developer session.
 
 ## Development environments
 
