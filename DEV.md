@@ -36,6 +36,54 @@ python3 scripts/check-template-registry.py
 
 这个检查会在新增文件没有归类时失败，避免下游无意间继承未审查的内容。
 
+## 给下游 coding agent 的初始化 Prompt
+
+把下面这段完整复制给负责建立下游 Agent dev repo 的 coding agent，只需要
+替换尖括号中的变量：
+
+```text
+你正在维护下游 coding-agent 开发仓库。请以
+https://github.com/a-green-hand-jack/coding-agent-template.git 为 template
+上游，建立一个可长期维护的 Agent dev repo。
+
+变量：
+- Agent 名称：<agent_name>
+- 目标 backend：<opencode|codex|claude，可多选>
+- 目标 provider/model：<provider/model，按 backend 分别填写>
+
+请按以下顺序执行：
+1. 阅读 template 的 AGENTS.md、DEV.md、
+   .agents/skills/template-agent-development/SKILL.md，以及
+   .agents/template-content-registry.json；先运行
+   `python3 scripts/check-template-registry.py`。
+2. 使用 registry 和 sync-template sub-skill 做选择性同步。不要复制 template
+   仓库或 `.agents/` 整目录，不要复制任何 template 的 AGENTS.md、Issue/HeWo
+   历史、benchmark/release 证据、registry 文件或 provider 凭据。
+3. 在 `src/<agent_name>/` 建立新的 runtime scaffold：可以从 `src/hewo/`
+   复制排除 AGENTS.md 的可执行文件作为参考，但必须替换 Agent identity、
+   skills、knowledge、workflows、tools 和 backend/provider 默认值。
+4. 建立下游自己的 `.agents/knowledge/`、`.agents/memory/`、
+   `.agents/workflows/`，只复制 template 的中性 PLACEHOLDER.md 作为起点，
+   然后写入下游专属内容；为下游目录重新编写 scoped AGENTS.md。
+5. 只按需选择性安装并适配 template 的开发 skill；所有 scaffold、backend、
+   LLM provider/model 保持独立，不重复实现已有 coding-agent CLI 的执行循环、
+   model client、审批或 tool loop。
+6. 根据下游 Agent 的 backend/provider 组合更新 Docker、distribution、scripts、
+   package 配置和文档；不要把 template 的 HeWo 命令、仓库名、发布 URL 或
+   验收证据原样带入下游。
+7. 运行 `./scripts/validate-definition.sh <agent_name>`、
+   `python3 .agents/skills/agent-consistency-audit/scripts/audit_agent.py
+   --agent <agent_name> --strict` 和
+   `python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.py --agent <agent_name>`。
+8. 对每个承诺支持的 backend/provider 运行真实的 provider-backed Docker E2E；
+   凭据只能运行时注入，不能写入 Git。最后检查 release payload 不包含
+   AGENTS.md、`.agents/`、development 目录、auth store 或 credentials。
+
+请先检查当前仓库是否有未提交改动并保留它们。完成后报告：选择了哪些
+registry 条目、哪些内容被明确排除、Agent/backend/provider 组合、验证命令及
+真实 Docker 响应证据；遇到需要产品决策的冲突时停下来说明，不要静默缩小范围。
+```
+
 在较大改动、template 同步或 release 前，先运行一致性审计：
 
 ```bash
@@ -128,7 +176,8 @@ skills、workflows 注入 OpenCode、Codex 或 Claude Code。若存在
 创建下游 Agent：
 
 ```bash
-cp -R src/hewo src/my-agent
+mkdir -p src/my-agent
+tar -C src/hewo --exclude=AGENTS.md -cf - . | tar -C src/my-agent -xf -
 ./scripts/validate-definition.sh my-agent
 ```
 
