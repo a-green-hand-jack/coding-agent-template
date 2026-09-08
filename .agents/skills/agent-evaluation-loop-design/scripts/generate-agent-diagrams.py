@@ -212,6 +212,10 @@ class Scan:
         self.skills: list[Component] = []
         self.workflows: list[Component] = []
         self.tools: list[Component] = []
+        self.prompts: list[Component] = []
+        self.themes: list[Component] = []
+        self.extensions: list[Component] = []
+        self.agent_definitions: list[Component] = []
         self.problems: list[str] = []
 
 
@@ -289,6 +293,45 @@ def scan_runtime(agent_root: Path, manifest: dict[str, str]) -> Scan:
             relative = path.relative_to(workflows_dir).as_posix()
             scan.workflows.append(
                 Component(allocate("wf", relative.rsplit(".", 1)[0], used), relative, relative)
+            )
+
+    # Prompt-template discovery is non-recursive, matching the backend.
+    prompts_dir = runtime_dir / "prompts"
+    if prompts_dir.is_dir():
+        for path in sorted(prompts_dir.iterdir(), key=lambda item: item.as_posix()):
+            if not path.is_file() or path.suffix != ".md" or path.name == "AGENTS.md":
+                continue
+            scan.prompts.append(
+                Component(allocate("pr", path.stem, used), f"/{path.stem}", f"prompts/{path.name}")
+            )
+
+    themes_dir = runtime_dir / "themes"
+    if themes_dir.is_dir():
+        for path in sorted(themes_dir.iterdir(), key=lambda item: item.as_posix()):
+            if not path.is_file() or path.suffix != ".json":
+                continue
+            scan.themes.append(
+                Component(allocate("th", path.stem, used), path.name, f"themes/{path.name}")
+            )
+
+    extensions_dir = runtime_dir / "extensions"
+    if extensions_dir.is_dir():
+        for path in sorted(extensions_dir.iterdir(), key=lambda item: item.as_posix()):
+            if path.is_dir() and (path / "index.ts").is_file():
+                entry = f"extensions/{path.name}/index.ts"
+            elif path.is_file() and path.suffix in {".ts", ".js"}:
+                entry = f"extensions/{path.name}"
+            else:
+                continue
+            scan.extensions.append(Component(allocate("xt", path.stem, used), path.stem, entry))
+
+    agents_dir = runtime_dir / "agents"
+    if agents_dir.is_dir():
+        for path in sorted(agents_dir.iterdir(), key=lambda item: item.as_posix()):
+            if not path.is_file() or path.suffix != ".md" or path.name == "AGENTS.md":
+                continue
+            scan.agent_definitions.append(
+                Component(allocate("ag", path.stem, used), path.stem, f"agents/{path.name}")
             )
 
     tools_dir = runtime_dir / "tools"
@@ -396,6 +439,10 @@ def render_architecture(agent: str, agent_relative: str, scan: Scan, view: dict[
     group_block(lines, "grp_skills", "skills", scan.skills, "sk")
     group_block(lines, "grp_workflows", "workflows", scan.workflows, "wf")
     group_block(lines, "grp_tools", "tools (deterministic leaf adapters)", scan.tools, "tl")
+    group_block(lines, "grp_prompts", "prompt templates (slash commands)", scan.prompts, "pr")
+    group_block(lines, "grp_extensions", "extensions (typed tools, hooks, state)", scan.extensions, "xt")
+    group_block(lines, "grp_agents", "sub-agent definitions", scan.agent_definitions, "ag")
+    group_block(lines, "grp_themes", "themes", scan.themes, "th")
     lines.append("  end")
     lines.extend(
         [
@@ -437,6 +484,15 @@ def render_architecture(agent: str, agent_relative: str, scan: Scan, view: dict[
     for component in scan.knowledge:
         lines.append(f"  {component.node_id} --> rt_identity")
     for component in scan.tools:
+        lines.append(f"  {component.node_id} --> ev_artifact")
+    for component in scan.prompts:
+        lines.append(f"  user_input --> {component.node_id}")
+    for component in scan.extensions:
+        lines.append(f"  rt_identity --> {component.node_id}")
+    for component in scan.agent_definitions:
+        # Sub-agents are launched by an extension, not by the backend core.
+        for extension in scan.extensions:
+            lines.append(f"  {extension.node_id} --> {component.node_id}")
         lines.append(f"  {component.node_id} --> ev_artifact")
     if scan.problems:
         for index, problem in enumerate(scan.problems, start=1):

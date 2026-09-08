@@ -1,0 +1,12 @@
+{
+  "name": "hewo",
+  "note": "This theme intentionally defines only a name and shared vars. pi falls back to its built-in theme for any colour token this file does not define. A complete theme must supply pi's full colour token set of 53 tokens.",
+  "vars": {
+    "ink": "#1c1c1c",
+    "paper": "#fafafa",
+    "accent": "#3b6ea5",
+    "muted": "#6b7280",
+    "warn": "#b45309",
+    "error": "#b91c1c"
+  }
+}

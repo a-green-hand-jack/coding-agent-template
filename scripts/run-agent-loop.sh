@@ -9,7 +9,7 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 
 agent="${AGENT_NAME:-hewo}"
-backend="${AGENT_BACKEND:-${HEWO_BACKEND:-opencode}}"
+backend="${AGENT_BACKEND:-${HEWO_BACKEND:-pi}}"
 provider="${LLM_PROVIDER:-}"
 model="${LLM_MODEL:-}"
 workspace=""
@@ -29,17 +29,13 @@ Run the project-internal evaluation loop in this order:
 
 Options:
   --agent NAME                    Agent name (default: hewo)
-  --backend NAME                  opencode, codex, claude, or pi
-  --provider NAME                 Provider name
-  --model NAME                    Model name
-  --auth-file PATH                OpenCode auth store (opencode only)
-  --api-key-env NAME              Key environment (opencode, or OPENAI_API_KEY for codex)
-  --codex-auth-file PATH          Codex auth store (codex only)
-  --claude-credentials-file PATH  Claude credentials (claude only)
-  --claude-api-key-file PATH      Claude API key file (claude only)
-  --pi-auth-file PATH             pi auth store (pi only)
-  --credential-source SPEC         Explicit source, e.g. --credential-source --auth-file PATH
-                                  or --credential-source PATH (backend default)
+  --backend NAME                  pi only (alias: pi-coding-agent)
+  --provider NAME                 pi provider name (default: openai)
+  --model NAME                    pi model pattern (default: gpt-5.5)
+  --pi-auth-file PATH             pi auth store, mounted read-only
+  --api-key-env NAME              Host variable holding the provider key
+  --credential-source SPEC         Explicit source, e.g. --credential-source --pi-auth-file PATH
+                                  or --credential-source PATH (pi auth store)
   --workspace PATH                Benchmark workspace directory
   --task-file PATH                Benchmark task file
   --run-dir PATH                  Benchmark evidence directory
@@ -48,10 +44,9 @@ Options:
   -h, --help                      Show this help
 
 Credential matrix (mismatches are rejected before any stage runs):
-  opencode: --auth-file or --api-key-env
-  codex:    --codex-auth-file or --api-key-env OPENAI_API_KEY
-  claude:   --claude-credentials-file or --claude-api-key-file
-  pi:       --pi-auth-file
+  pi: --pi-auth-file PATH or --api-key-env NAME
+
+Backends other than pi are rejected; there is no fallback default.
 
 The benchmark stage remains the single implementation of Docker E2E,
 verification, and trace scrubbing. This runner only validates and orchestrates.
@@ -100,11 +95,7 @@ set_credential() {
 
 canonical_credential_flag() {
   case "$1" in
-    --auth-file|auth-file) printf '%s' '--auth-file' ;;
     --api-key-env|api-key-env) printf '%s' '--api-key-env' ;;
-    --codex-auth-file|codex-auth-file) printf '%s' '--codex-auth-file' ;;
-    --claude-credentials-file|claude-credentials-file) printf '%s' '--claude-credentials-file' ;;
-    --claude-api-key-file|claude-api-key-file) printf '%s' '--claude-api-key-file' ;;
     --pi-auth-file|pi-auth-file) printf '%s' '--pi-auth-file' ;;
     --bundle|bundle) printf '%s' '--bundle' ;;
     *) return 1 ;;
@@ -112,7 +103,7 @@ canonical_credential_flag() {
 }
 
 # Parse --credential-source in a few explicit, secret-free forms. A bare path
-# is mapped to the backend's auth-store source after backend normalization.
+# is mapped to the pi auth store after backend normalization.
 parse_credential_source() {
   local spec="$1"
   local value="${2:-}"
@@ -134,7 +125,7 @@ parse_credential_source() {
   if [[ -n "$value" ]]; then
     reject "unknown credential source: $spec"
   fi
-  # --credential-source PATH: infer the backend-specific read-only auth file.
+  # --credential-source PATH: infer the pi read-only auth store.
   set_credential '--auto' "$spec"
 }
 
@@ -162,21 +153,9 @@ while (($#)); do
       need_value "$1" "${2:-}"; run_dir="$2"; shift 2 ;;
     --run-dir=*) run_dir="${1#*=}"; [[ -n "$run_dir" ]] || reject 'empty value for --run-dir'; shift ;;
     --allow-unauthenticated) allow_unauthenticated=true; shift ;;
-    --auth-file)
-      need_value "$1" "${2:-}"; set_credential '--auth-file' "$2"; shift 2 ;;
-    --auth-file=*) set_credential '--auth-file' "${1#*=}"; [[ -n "$credential_value" ]] || reject 'empty value for --auth-file'; shift ;;
     --api-key-env)
       need_value "$1" "${2:-}"; set_credential '--api-key-env' "$2"; shift 2 ;;
     --api-key-env=*) set_credential '--api-key-env' "${1#*=}"; [[ -n "$credential_value" ]] || reject 'empty value for --api-key-env'; shift ;;
-    --codex-auth-file)
-      need_value "$1" "${2:-}"; set_credential '--codex-auth-file' "$2"; shift 2 ;;
-    --codex-auth-file=*) set_credential '--codex-auth-file' "${1#*=}"; [[ -n "$credential_value" ]] || reject 'empty value for --codex-auth-file'; shift ;;
-    --claude-credentials-file)
-      need_value "$1" "${2:-}"; set_credential '--claude-credentials-file' "$2"; shift 2 ;;
-    --claude-credentials-file=*) set_credential '--claude-credentials-file' "${1#*=}"; [[ -n "$credential_value" ]] || reject 'empty value for --claude-credentials-file'; shift ;;
-    --claude-api-key-file)
-      need_value "$1" "${2:-}"; set_credential '--claude-api-key-file' "$2"; shift 2 ;;
-    --claude-api-key-file=*) set_credential '--claude-api-key-file' "${1#*=}"; [[ -n "$credential_value" ]] || reject 'empty value for --claude-api-key-file'; shift ;;
     --pi-auth-file)
       need_value "$1" "${2:-}"; set_credential '--pi-auth-file' "$2"; shift 2 ;;
     --pi-auth-file=*) set_credential '--pi-auth-file' "${1#*=}"; [[ -n "$credential_value" ]] || reject 'empty value for --pi-auth-file'; shift ;;
@@ -188,7 +167,7 @@ while (($#)); do
       source_spec="$2"
       shift 2
       case "$source_spec" in
-        --auth-file|auth-file|--api-key-env|api-key-env|--codex-auth-file|codex-auth-file|--claude-credentials-file|claude-credentials-file|--claude-api-key-file|claude-api-key-file|--pi-auth-file|pi-auth-file|--bundle|bundle)
+        --api-key-env|api-key-env|--pi-auth-file|pi-auth-file|--bundle|bundle)
           need_value '--credential-source' "${1:-}"
           parse_credential_source "$source_spec" "$1"
           shift ;;
@@ -206,45 +185,29 @@ while (($#)); do
   esac
 done
 
+# pi is the only supported backend. Another backend is rejected outright rather
+# than coerced to pi.
 case "$backend" in
-  open-code) backend='opencode' ;;
-  claude-code) backend='claude' ;;
-  opencode|codex|claude|pi) ;;
-  *) reject "unsupported backend: $backend" ;;
+  pi|pi-coding-agent) backend='pi' ;;
+  *) reject "unsupported backend: $backend (this Agent supports pi only)" ;;
 esac
 
-case "$backend" in
-  opencode) [[ -n "$provider" ]] || provider='openai'; [[ -n "$model" ]] || model='gpt-5.6' ;;
-  codex) [[ -n "$provider" ]] || provider='openai'; [[ -n "$model" ]] || model='gpt-5.5' ;;
-  claude) [[ -n "$provider" ]] || provider='anthropic'; [[ -n "$model" ]] || model='sonnet' ;;
-  pi) [[ -n "$provider" ]] || provider='openai'; [[ -n "$model" ]] || model='gpt-5.5' ;;
-esac
+[[ -n "$provider" ]] || provider='openai'
+[[ -n "$model" ]] || model='gpt-5.5'
 
 [[ "$agent" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || reject "invalid agent name: $agent"
 [[ -n "$provider" ]] || reject 'provider must not be empty'
 [[ -n "$model" ]] || reject 'model must not be empty'
 
 if [[ "$credential_flag" == '--auto' ]]; then
-  case "$backend" in
-    opencode) credential_flag='--auth-file' ;;
-    codex) credential_flag='--codex-auth-file' ;;
-    claude) credential_flag='--claude-credentials-file' ;;
-    pi) credential_flag='--pi-auth-file' ;;
-  esac
+  credential_flag='--pi-auth-file'
 fi
 
 # Validate the complete source/backend matrix before creating a run directory or
 # starting any of the four stages.
 if [[ -n "$credential_flag" ]]; then
   case "$backend:$credential_flag" in
-    opencode:--auth-file|opencode:--api-key-env) ;;
-    codex:--codex-auth-file|codex:--api-key-env)
-      if [[ "$credential_flag" == '--api-key-env' && "$credential_value" != 'OPENAI_API_KEY' ]]; then
-        reject 'codex --api-key-env must be OPENAI_API_KEY'
-      fi
-      ;;
-    claude:--claude-credentials-file|claude:--claude-api-key-file) ;;
-    pi:--pi-auth-file) ;;
+    pi:--pi-auth-file|pi:--api-key-env) ;;
     *) reject "credential source $credential_flag does not match backend $backend" ;;
   esac
 
@@ -253,11 +216,11 @@ if [[ -n "$credential_flag" ]]; then
       [[ "$credential_value" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || reject "invalid key environment name: $credential_value"
       [[ -n "${!credential_value:-}" ]] || reject "credential environment $credential_value is not set"
       ;;
-    --auth-file|--codex-auth-file|--claude-credentials-file|--claude-api-key-file|--pi-auth-file)
+    --pi-auth-file)
       [[ -f "$credential_value" ]] || reject "credential file does not exist: $credential_value"
       ;;
     --bundle)
-      reject 'provider bundles are not in the C2 credential matrix; use the backend-specific source flag'
+      reject 'provider bundles are not in the C2 credential matrix; use --pi-auth-file or --api-key-env'
       ;;
   esac
 elif [[ "$allow_unauthenticated" != true ]]; then
@@ -360,13 +323,9 @@ elif [[ "$loop_status" -ne 0 ]]; then
 else
   # Pass only the selected credential source into the benchmark convention;
   # the benchmark maps it to the explicit Docker helper flag.
-  unset OPENCODE_AUTH_FILE CODEX_AUTH_FILE CLAUDE_CREDENTIALS_FILE CLAUDE_API_KEY_FILE PI_AUTH_FILE BENCHMARK_API_KEY_ENV BENCHMARK_WORKSPACE
+  unset PI_AUTH_FILE BENCHMARK_API_KEY_ENV BENCHMARK_WORKSPACE
   export AGENT_BACKEND="$backend" LLM_PROVIDER="$provider" LLM_MODEL="$model"
   case "$credential_flag" in
-    --auth-file) export OPENCODE_AUTH_FILE="$credential_value" ;;
-    --codex-auth-file) export CODEX_AUTH_FILE="$credential_value" ;;
-    --claude-credentials-file) export CLAUDE_CREDENTIALS_FILE="$credential_value" ;;
-    --claude-api-key-file) export CLAUDE_API_KEY_FILE="$credential_value" ;;
     --pi-auth-file) export PI_AUTH_FILE="$credential_value" ;;
     --api-key-env)
       export BENCHMARK_API_KEY_ENV="$credential_value"

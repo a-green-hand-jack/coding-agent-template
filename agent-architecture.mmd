@@ -20,13 +20,29 @@ flowchart TB
     end
     subgraph grp_skills["skills"]
       sk_runtime_smoke["runtime-smoke"]
+      sk_time_and_weather["time-and-weather"]
     end
     subgraph grp_workflows["workflows"]
       wf_greeting["greeting.md"]
       wf_infrastructure_smoke["infrastructure-smoke.md"]
+      wf_time_and_weather["time-and-weather.md"]
     end
     subgraph grp_tools["tools (deterministic leaf adapters)"]
       tl_hewo_tool["hewo_tool.py"]
+    end
+    subgraph grp_prompts["prompt templates (slash commands)"]
+      pr_hewo_report["/hewo-report"]
+      pr_hewo_smoke["/hewo-smoke"]
+    end
+    subgraph grp_extensions["extensions (typed tools, hooks, state)"]
+      xt_hewo["hewo"]
+    end
+    subgraph grp_agents["sub-agent definitions"]
+      ag_time_reporter["time-reporter"]
+      ag_weather_reporter["weather-reporter"]
+    end
+    subgraph grp_themes["themes"]
+      th_hewo["hewo.json"]
     end
   end
   subgraph execution["Execution layer (external — not product identity)"]
@@ -59,7 +75,16 @@ flowchart TB
   dv_validation --> dv_benchmark
   dv_benchmark --> dv_loop
   rt_identity --> sk_runtime_smoke
+  rt_identity --> sk_time_and_weather
   rt_identity --> wf_greeting
   rt_identity --> wf_infrastructure_smoke
+  rt_identity --> wf_time_and_weather
   kn_readme --> rt_identity
   tl_hewo_tool --> ev_artifact
+  user_input --> pr_hewo_report
+  user_input --> pr_hewo_smoke
+  rt_identity --> xt_hewo
+  xt_hewo --> ag_time_reporter
+  ag_time_reporter --> ev_artifact
+  xt_hewo --> ag_weather_reporter
+  ag_weather_reporter --> ev_artifact

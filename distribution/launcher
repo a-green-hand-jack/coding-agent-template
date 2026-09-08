@@ -1,15 +1,23 @@
 #!/usr/bin/env bash
+# Product launcher for __AGENT_NAME__. Backend: pi, and only pi.
+#
+# Resources are loaded through pi's own loaders (--skill, --prompt-template,
+# --theme, --extension) from the paths declared in the runtime's package.json,
+# which is the single source of truth. Only the identity/policy and the
+# context files pi has no primitive for are injected as system prompt, one
+# --append-system-prompt segment per file so provenance survives.
 set -euo pipefail
 
 bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-definition_dir="$bin_dir/../lib/__AGENT_NAME__/agent-definition"
+agent_home="$bin_dir/../lib/__AGENT_NAME__"
+definition_dir="$agent_home/agent-definition"
+manifest="$definition_dir/package.json"
 
-test -f "$definition_dir/opencode.json" || {
-  echo "Agent definition is missing: $definition_dir" >&2
-  exit 2
-}
+fail() { printf '%s\n' "$*" >&2; exit 2; }
 
-agent_environment_dir="$bin_dir/../lib/__AGENT_NAME__/environment"
+[[ -f "$manifest" ]] || fail "Agent resource manifest is missing: $manifest"
+
+agent_environment_dir="$agent_home/environment"
 if [[ -d "$agent_environment_dir/bin" ]]; then
   export PATH="$agent_environment_dir/bin:$PATH"
 fi
@@ -17,35 +25,29 @@ fi
 backend="${AGENT_BACKEND:-${HEWO_BACKEND:-pi}}"
 provider="${LLM_PROVIDER:-}"
 model="${LLM_MODEL:-}"
-variant="${LLM_VARIANT:-}"
 mode="run"
+tools_override="${AGENT_TOOLS:-}"
 passthrough=()
 
 usage() {
   cat <<'EOF'
 Usage: __AGENT_NAME__ [OPTIONS] [TASK]
-       __AGENT_NAME__ --backend codex|claude|opencode|pi [TASK]
        __AGENT_NAME__ --tui [OPTIONS]
 
-Backends:
-  pi        pi coding agent CLI (default); provider and model are supplied at runtime.
-  opencode  OpenCode CLI; provider and model are supplied at runtime.
-  codex     Codex CLI; model is supplied at runtime.
-  claude    Claude Code CLI; model is supplied at runtime.
+Backend: pi. This Agent supports no other backend.
 
 Options:
-  --backend NAME   Select the coding-agent backend.
-  --provider NAME  Provider name (required by OpenCode and pi); ignored by Codex/Claude Code.
-  --model NAME     Backend model; supplied by the user/platform when needed.
-  --variant NAME   OpenCode model variant.
-  --tui            Start the selected backend's interactive interface.
+  --provider NAME  Provider name (required; pi's own default is not assumed).
+  --model NAME     Model, optionally "provider/id".
+  --tools LIST     Comma-separated tool allowlist override.
+  --tui            Start pi's interactive interface.
+  --backend NAME   Accepted only as "pi"; any other value is an error.
   -h, --help       Show this help.
   -v, --version    Show the installed Agent version.
 
-The execution backend, provider, model, and credentials are supplied at
-runtime. OpenCode uses its selected provider key or an explicit auth store;
-Codex and Claude Code use their own credential namespaces; pi uses the
-selected provider's credentials. No provider is required by the Agent runtime.
+Provider, model and credentials are supplied at run time and are never part of
+the Agent definition. Outbound network access and elevated capabilities are
+denied unless the runtime manifest opts into them.
 EOF
 }
 
@@ -54,11 +56,11 @@ while (($#)); do
     --backend|-b) backend="${2:?missing value for --backend}"; shift 2 ;;
     --provider) provider="${2:?missing value for --provider}"; shift 2 ;;
     --model|-m) model="${2:?missing value for --model}"; shift 2 ;;
-    --variant) variant="${2:?missing value for --variant}"; shift 2 ;;
+    --tools) tools_override="${2:?missing value for --tools}"; shift 2 ;;
     --tui) mode="tui"; shift ;;
     --help|-h) usage; exit 0 ;;
     --version|-v)
-      sed -n 's/.*"version":"\([^"]*\)".*/\1/p' "$bin_dir/../lib/__AGENT_NAME__/release-manifest.json" | head -n 1
+      sed -n 's/.*"version":"\([^"]*\)".*/\1/p' "$agent_home/release-manifest.json" | head -n 1
       exit 0
       ;;
     --) shift; passthrough+=("$@"); break ;;
@@ -67,14 +69,13 @@ while (($#)); do
 done
 
 case "$backend" in
-  open-code) backend="opencode" ;;
-  claude-code) backend="claude" ;;
-  pi-coding-agent) backend="pi" ;;
+  pi|pi-coding-agent) backend="pi" ;;
+  *) fail "unsupported backend: $backend (this Agent supports pi only)" ;;
 esac
 
 runtime_bin() {
   local name="$1"
-  local bundled="$bin_dir/../lib/__AGENT_NAME__/runtimes/$name/node_modules/.bin/$name"
+  local bundled="$agent_home/runtimes/$name/node_modules/.bin/$name"
   if [[ -x "$bundled" ]]; then
     printf '%s\n' "$bundled"
   else
@@ -82,143 +83,224 @@ runtime_bin() {
   fi
 }
 
-opencode_bin="$(runtime_bin opencode)"
-codex_bin="$(runtime_bin codex)"
-claude_bin="$(runtime_bin claude)"
 pi_bin="$(runtime_bin pi)"
+[[ -n "$pi_bin" ]] || fail "pi runtime is not installed"
+command -v node >/dev/null 2>&1 || fail "node is required to read the Agent resource manifest"
 
-require_backend() {
-  case "$backend" in
-    opencode)
-      [[ -n "$provider" ]] || { echo "--provider or LLM_PROVIDER is required for OpenCode" >&2; exit 2; }
-      key_variable="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')_API_KEY"
-      if [[ -z "${!key_variable:-}" && "${AGENT_AUTH_STORE:-}" != 1 ]]; then
-        echo "$key_variable is required (or provide an explicit runtime auth store)" >&2
-        exit 2
-      fi
-      [[ -n "$opencode_bin" ]] || { echo "OpenCode runtime is not installed" >&2; exit 2; }
-      export OPENCODE_CONFIG="$definition_dir/opencode.json"
-      export OPENCODE_CONFIG_DIR="$definition_dir"
-      ;;
-    codex)
-      if [[ -z "${OPENAI_API_KEY:-}" && "${CODEX_AUTH_STORE:-}" != 1 ]]; then
-        echo "OPENAI_API_KEY is required (or provide an explicit Codex auth store)" >&2
-        exit 2
-      fi
-      [[ -n "$codex_bin" ]] || { echo "Codex CLI is not installed" >&2; exit 2; }
-      export CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
-      ;;
-    claude)
-      if [[ -z "${ANTHROPIC_API_KEY:-}" && -z "${ANTHROPIC_AUTH_TOKEN:-}" && -n "${ANTHROPIC_API_KEY_FILE:-}" ]]; then
-        [[ -r "$ANTHROPIC_API_KEY_FILE" ]] || { echo "Claude API key file is not readable" >&2; exit 2; }
-        export ANTHROPIC_API_KEY="$(<"$ANTHROPIC_API_KEY_FILE")"
-      fi
-      if [[ -z "${ANTHROPIC_API_KEY:-}" && -z "${ANTHROPIC_AUTH_TOKEN:-}" && "${CLAUDE_AUTH_STORE:-}" != 1 ]]; then
-        echo "ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN is required (or provide an explicit Claude auth store)" >&2
-        exit 2
-      fi
-      [[ -n "$claude_bin" ]] || { echo "Claude Code CLI is not installed" >&2; exit 2; }
-      export CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-      ;;
-    pi)
-      [[ -n "$provider" ]] || { echo "--provider or LLM_PROVIDER is required for pi" >&2; exit 2; }
-      key_variable="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')_API_KEY"
-      if [[ -z "${!key_variable:-}" && "${PI_AUTH_STORE:-}" != 1 ]]; then
-        echo "$key_variable is required for pi (or provide an explicit pi auth store)" >&2
-        exit 2
-      fi
-      [[ -n "$pi_bin" ]] || { echo "pi runtime is not installed" >&2; exit 2; }
-      export PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
-      ;;
-  esac
+[[ -n "$provider" ]] || fail "--provider or LLM_PROVIDER is required"
+key_variable="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')_API_KEY"
+if [[ -z "${!key_variable:-}" && "${PI_AUTH_STORE:-}" != 1 ]]; then
+  fail "$key_variable is required (or provide an explicit read-only pi auth store)"
+fi
+export PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
+
+# ---------------------------------------------------------------------------
+# Manifest resolution. Every declared path must be a normalized relative path
+# inside the definition root: absolute paths, ".." traversal, empty names,
+# shell metacharacters, globs and symlinks are refused rather than sanitized.
+# ---------------------------------------------------------------------------
+read -r -d '' resolver <<'RESOLVER' || true
+const fs = require("node:fs");
+const path = require("node:path");
+
+const root = fs.realpathSync(process.argv[2]);
+const out = [];
+const emit = (key, value) => out.push(key + "=" + value);
+const die = (message) => {
+  process.stderr.write("manifest error: " + message + "\n");
+  process.exit(2);
+};
+
+const FORBIDDEN = /[\0\n\r`$;|&<>*?()\[\]{}!\\"']/;
+
+function normalize(relative, label, expect) {
+  if (typeof relative !== "string" || relative.trim() === "") {
+    die(label + ": path must be a non-empty string");
+  }
+  if (FORBIDDEN.test(relative)) {
+    die(label + ": path contains a forbidden character: " + JSON.stringify(relative));
+  }
+  if (relative.startsWith("/") || relative.startsWith("\\") || /^[A-Za-z]:/.test(relative)) {
+    die(label + ": path must be relative: " + relative);
+  }
+  const parts = relative.split("/").filter((part) => part !== "" && part !== ".");
+  if (parts.includes("..")) die(label + ": path must not traverse upward: " + relative);
+  if (parts.length === 0) die(label + ": path resolves to the root itself: " + relative);
+  const absolute = path.join(root, parts.join("/"));
+  let cursor = absolute;
+  while (cursor !== root && cursor !== path.dirname(cursor)) {
+    let entry;
+    try {
+      entry = fs.lstatSync(cursor);
+    } catch {
+      die(label + ": path does not exist: " + relative);
+    }
+    if (entry.isSymbolicLink()) die(label + ": symlink is not allowed: " + relative);
+    cursor = path.dirname(cursor);
+  }
+  const real = fs.realpathSync(absolute);
+  if (real !== root && !real.startsWith(root + path.sep)) {
+    die(label + ": path resolves outside the definition root: " + relative);
+  }
+  const stat = fs.statSync(real);
+  if (expect === "file" && !stat.isFile()) die(label + ": expected a file: " + relative);
+  if (expect === "dir" && !stat.isDirectory()) die(label + ": expected a directory: " + relative);
+  return real;
 }
 
-backend_model="${model:-}"
-if [[ "$backend_model" == */* ]]; then
-  backend_model="${backend_model#*/}"
+function list(section, key, label) {
+  const value = section[key];
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) die(label + " must be an array");
+  return value;
+}
+
+let manifest;
+try {
+  manifest = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
+} catch (error) {
+  die("package.json is not readable JSON: " + error.message);
+}
+if (manifest.scripts && Object.keys(manifest.scripts).length > 0) {
+  die("package.json must not declare npm lifecycle scripts");
+}
+
+const pi = manifest.pi;
+if (!pi || typeof pi !== "object") die("package.json has no pi section");
+const hewo = manifest.hewo;
+if (!hewo || typeof hewo !== "object") die("package.json has no runtime section");
+if (hewo.manifest_version !== 1) die("runtime manifest_version must be 1");
+if (hewo.backend !== "pi") die("runtime backend must be pi");
+
+for (const entry of list(pi, "skills", "pi.skills")) {
+  emit("PIARG", "--skill");
+  emit("PIARG", normalize(entry, "pi.skills"));
+}
+for (const entry of list(pi, "prompts", "pi.prompts")) {
+  emit("PIARG", "--prompt-template");
+  emit("PIARG", normalize(entry, "pi.prompts"));
+}
+for (const entry of list(pi, "themes", "pi.themes")) {
+  emit("PIARG", "--theme");
+  emit("PIARG", normalize(entry, "pi.themes"));
+}
+for (const entry of list(pi, "extensions", "pi.extensions")) {
+  emit("PIARG", "--extension");
+  emit("PIARG", normalize(entry, "pi.extensions", "file"));
+}
+
+for (const entry of list(hewo, "system_prompt", "runtime.system_prompt")) {
+  emit("SYSFILE", normalize(entry, "runtime.system_prompt", "file"));
+}
+for (const entry of list(hewo, "context", "runtime.context")) {
+  const resolved = normalize(entry, "runtime.context");
+  if (fs.statSync(resolved).isDirectory()) {
+    const walk = (directory) => {
+      for (const name of fs.readdirSync(directory).sort()) {
+        const child = path.join(directory, name);
+        if (fs.lstatSync(child).isSymbolicLink()) continue;
+        if (fs.statSync(child).isDirectory()) walk(child);
+        else if (name.endsWith(".md") && name !== "AGENTS.md") emit("CTXFILE", child);
+      }
+    };
+    walk(resolved);
+  } else {
+    emit("CTXFILE", resolved);
+  }
+}
+for (const entry of list(hewo, "agent_definitions", "runtime.agent_definitions")) {
+  emit("AGENTSDIR", normalize(entry, "runtime.agent_definitions", "dir"));
+}
+
+const tools = list(hewo, "default_tools", "runtime.default_tools");
+if (tools.length === 0) die("runtime.default_tools must not be empty");
+for (const name of tools) {
+  if (typeof name !== "string" || !/^[A-Za-z0-9_.-]+$/.test(name)) {
+    die("runtime.default_tools contains an invalid tool name: " + JSON.stringify(name));
+  }
+}
+emit("TOOLS", tools.join(","));
+emit("SUBTOOLS", list(hewo, "subagent_tools", "runtime.subagent_tools").join(","));
+emit("CAPS", list(hewo, "capabilities", "runtime.capabilities").join(","));
+emit("NET", hewo.network === "allow" ? "allow" : "deny");
+emit("WEATHER", hewo.weather_mode === "live" ? "live" : "fixture");
+
+process.stdout.write(out.join("\0") + "\0");
+RESOLVER
+
+pi_resource_args=()
+system_prompt_files=()
+context_files=()
+manifest_tools=""
+subagent_tools=""
+capabilities=""
+network="deny"
+weather_mode="fixture"
+agents_dir=""
+
+while IFS= read -r -d '' record; do
+  key="${record%%=*}"
+  value="${record#*=}"
+  case "$key" in
+    PIARG) pi_resource_args+=("$value") ;;
+    SYSFILE) system_prompt_files+=("$value") ;;
+    CTXFILE) context_files+=("$value") ;;
+    AGENTSDIR) agents_dir="$value" ;;
+    TOOLS) manifest_tools="$value" ;;
+    SUBTOOLS) subagent_tools="$value" ;;
+    CAPS) capabilities="$value" ;;
+    NET) network="$value" ;;
+    WEATHER) weather_mode="$value" ;;
+    *) fail "unexpected manifest record: $key" ;;
+  esac
+done < <(node -e "$resolver" -- "$definition_dir")
+
+[[ -n "$manifest_tools" ]] || fail "the runtime manifest resolved no tool allowlist"
+
+# Runtime posture. Defaults are restrictive; widening is explicit and per-run.
+export HEWO_WORKSPACE="${HEWO_WORKSPACE:-$PWD}"
+export HEWO_CAPABILITIES="${HEWO_CAPABILITIES:-$capabilities}"
+export HEWO_NETWORK="${HEWO_NETWORK:-$network}"
+export HEWO_WEATHER_MODE="${HEWO_WEATHER_MODE:-$weather_mode}"
+export HEWO_SUBAGENT_TOOLS="${HEWO_SUBAGENT_TOOLS:-${subagent_tools:-read}}"
+export HEWO_PI_BIN="${HEWO_PI_BIN:-$pi_bin}"
+# Sub-agents run as independent pi processes and build their environment from an
+# allowlist, so the provider and model must be handed over explicitly.
+export HEWO_PROVIDER="${HEWO_PROVIDER:-$provider}"
+[[ -n "$model" ]] && export HEWO_MODEL="${HEWO_MODEL:-$model}"
+[[ -n "$agents_dir" ]] && export HEWO_AGENT_DEFINITIONS="$agents_dir"
+
+system_prompt_args=()
+for file in "${system_prompt_files[@]}"; do
+  system_prompt_args+=(--append-system-prompt "$(cat "$file")")
+done
+for file in "${context_files[@]}"; do
+  relative="${file#"$definition_dir"/}"
+  system_prompt_args+=(--append-system-prompt "$(printf '# Runtime context: %s\n\n' "$relative"; cat "$file")")
+done
+
+pi_args=(
+  --provider "$provider"
+  --no-context-files
+  --no-approve
+  --no-skills
+  --no-extensions
+  --tools "${tools_override:-$manifest_tools}"
+  "${pi_resource_args[@]}"
+  "${system_prompt_args[@]}"
+)
+[[ -n "$model" ]] && pi_args+=(--model "$model")
+[[ -n "${AGENT_THEME:-}" ]] && pi_args+=(--use-theme "$AGENT_THEME")
+[[ "${AGENT_PI_OFFLINE:-}" == 1 ]] && pi_args+=(--offline)
+
+case "${AGENT_OUTPUT_FORMAT:-}" in
+  "") ;;
+  text|json|rpc) pi_args+=(--mode "$AGENT_OUTPUT_FORMAT") ;;
+  *) fail "unsupported AGENT_OUTPUT_FORMAT: $AGENT_OUTPUT_FORMAT (expected text, json or rpc)" ;;
+esac
+
+if [[ "$mode" == tui || ${#passthrough[@]} -eq 0 ]]; then
+  exec "$pi_bin" "${pi_args[@]}" -- "${passthrough[@]}"
 fi
 
-runtime_context() {
-  local file
-  cat "$definition_dir/identity.md"
-  while IFS= read -r file; do
-    cat "$file"
-  done < <(find "$definition_dir/knowledge" "$definition_dir/skills" "$definition_dir/workflows" \
-    -type f -name '*.md' ! -name AGENTS.md -print | sort)
-}
-
-require_backend
-
-case "$backend" in
-  opencode)
-    model_args=()
-    if [[ -n "$model" ]]; then
-      if [[ "$model" == */* ]]; then
-        model_ref="$model"
-      else
-        model_ref="$provider/$model"
-      fi
-      model_args=(--model "$model_ref")
-    fi
-    [[ -n "$variant" ]] && model_args+=(--variant "$variant")
-    if [[ "$mode" == tui || ${#passthrough[@]} -eq 0 ]]; then
-      exec "$opencode_bin" "${model_args[@]}" "${passthrough[@]}"
-    fi
-    format_args=()
-    [[ -n "${AGENT_OUTPUT_FORMAT:-}" ]] && format_args=(--format "$AGENT_OUTPUT_FORMAT")
-    exec "$opencode_bin" run "${model_args[@]}" "${format_args[@]}" "${passthrough[@]}"
-    ;;
-  codex)
-    [[ -n "$backend_model" ]] || backend_model="${CODEX_MODEL:-}"
-    codex_sandbox="${CODEX_SANDBOX_MODE:-workspace-write}"
-    case "$codex_sandbox" in
-      read-only|workspace-write|danger-full-access) ;;
-      *) echo "unsupported Codex sandbox mode: $codex_sandbox" >&2; exit 2 ;;
-    esac
-    model_args=()
-    [[ -n "$backend_model" ]] && model_args+=(--model "$backend_model")
-    model_args+=(--sandbox "$codex_sandbox")
-    runtime_instructions="$(runtime_context)"
-    if [[ "$mode" == tui || ${#passthrough[@]} -eq 0 ]]; then
-      codex_initial="$runtime_instructions"
-      [[ ${#passthrough[@]} -gt 0 ]] && codex_initial+=$'\n\nInitial user task:\n'"${passthrough[*]}"
-      exec "$codex_bin" "${model_args[@]}" "$codex_initial"
-    fi
-    codex_prompt="$runtime_instructions
-
-User task:
-${passthrough[*]}"
-    codex_args=(exec --skip-git-repo-check --ephemeral "${model_args[@]}" "$codex_prompt")
-    [[ "${AGENT_OUTPUT_FORMAT:-}" == json ]] && codex_args=("${codex_args[@]:0:1}" --json "${codex_args[@]:1}")
-    exec "$codex_bin" "${codex_args[@]}"
-    ;;
-  claude)
-    [[ -n "$backend_model" ]] || backend_model="${CLAUDE_MODEL:-}"
-    model_args=()
-    [[ -n "$backend_model" ]] && model_args+=(--model "$backend_model")
-    runtime_instructions="$(runtime_context)"
-    if [[ "$mode" == tui || ${#passthrough[@]} -eq 0 ]]; then
-      claude_tui_args=(--append-system-prompt "$runtime_instructions" "${model_args[@]}")
-      [[ ${#passthrough[@]} -gt 0 ]] && claude_tui_args+=("${passthrough[*]}")
-      exec "$claude_bin" "${claude_tui_args[@]}"
-    fi
-    claude_args=(-p "${passthrough[*]}" --append-system-prompt "$runtime_instructions" --no-session-persistence "${model_args[@]}")
-    [[ -n "${AGENT_OUTPUT_FORMAT:-}" ]] && claude_args+=(--output-format "$AGENT_OUTPUT_FORMAT")
-    exec "$claude_bin" "${claude_args[@]}"
-    ;;
-  pi)
-    [[ -n "$model" ]] || model="${PI_MODEL:-}"
-    pi_args=(--provider "$provider" --append-system-prompt "$(runtime_context)")
-    [[ -n "$model" ]] && pi_args+=(--model "$model")
-    [[ -n "${AGENT_OUTPUT_FORMAT:-}" ]] && pi_args+=(--mode "$AGENT_OUTPUT_FORMAT")
-    if [[ "$mode" == tui || ${#passthrough[@]} -eq 0 ]]; then
-      exec "$pi_bin" "${pi_args[@]}" "${passthrough[@]}"
-    fi
-    pi_args+=(--print --no-session)
-    exec "$pi_bin" "${pi_args[@]}" "${passthrough[@]}"
-    ;;
-  *)
-    echo "unsupported backend: $backend (expected opencode, codex, claude, or pi)" >&2
-    exit 2
-    ;;
-esac
+exec "$pi_bin" "${pi_args[@]}" --print --no-session -- "${passthrough[@]}"
