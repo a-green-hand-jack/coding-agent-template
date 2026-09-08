@@ -4,6 +4,17 @@ name="${1:?usage: $0 <agent-name> [version]}"
 version="${2:-0.1.0}"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 out="$root/release/$name-$version"
+release_url="${RELEASE_URL:-__RELEASE_URL__}"
+# Validate before touching the filesystem: a rejected invocation must not leave
+# a half-created release directory behind.
+if [[ -n "${AGENT_BACKENDS:-}" && ! "$AGENT_BACKENDS" =~ ^(pi|pi-coding-agent)$ ]]; then
+  echo "invalid AGENT_BACKENDS: $AGENT_BACKENDS (this Agent supports pi only)" >&2
+  exit 2
+fi
+test -f "$root/src/$name/runtime/package.json" || {
+  echo "no runtime resource manifest for $name: src/$name/runtime/package.json" >&2
+  exit 2
+}
 rm -rf "$out"
 mkdir -p "$out/agent-definition" "$out/bin"
 # package.json is the runtime resource manifest and must ship. Only
@@ -12,11 +23,6 @@ tar -C "$root/src/$name/runtime" --exclude=AGENTS.md --exclude=node_modules --ex
 cp "$root/distribution/launcher" "$out/launcher"
 cp "$root/distribution/install.sh" "$out/install.sh"
 cp "$root/distribution/launcher" "$out/bin/$name"
-release_url="${RELEASE_URL:-__RELEASE_URL__}"
-if [[ -n "${AGENT_BACKENDS:-}" && ! "$AGENT_BACKENDS" =~ ^(pi|pi-coding-agent)$ ]]; then
-  echo "invalid AGENT_BACKENDS: $AGENT_BACKENDS (this Agent supports pi only)" >&2
-  exit 2
-fi
 test -f "$out/agent-definition/package.json" || {
   echo "release payload is missing the runtime resource manifest package.json" >&2
   exit 2

@@ -21,6 +21,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Instructions a downstream repository follows literally. These carry no
+# exemption: a retired backend named here becomes someone else's broken build,
+# not this repository's history.
+DOWNSTREAM_GUIDANCE = (
+    ".agents/skills/template-agent-development/**",
+)
+
 # Paths that form the product, release and acceptance contract.
 PRODUCT_CONTRACT = (
     "distribution/**",
@@ -52,7 +59,9 @@ FORBIDDEN = (
     (r"--backend\s+(opencode|codex|claude)", "non-pi backend selection"),
     # Hyphen-guarded so a legitimate pi PROVIDER id such as "openai-codex" is
     # not mistaken for a retired backend.
-    (r"(?<![\w-])(opencode|codex|claude|claude-code)(?![\w-])", "non-pi backend name"),
+    # Also guarded against a leading dot so a reference to this repository's
+    # own `.opencode/` harness directory is not read as a backend name.
+    (r"(?<![\w.-])(opencode|codex|claude|claude-code)(?![\w-])", "non-pi backend name"),
 )
 
 # Development-side files that may still name other CLIs, each with its reason.
@@ -68,14 +77,6 @@ DEVELOPMENT_ALLOWLIST = {
     ".agents/skills/development-machine-profile/references/profile-schema.md": "machine-agnostic prober schema",
     ".agents/skills/development-machine-profile/scripts/probe-host.sh": "probes whichever CLIs exist",
     ".agents/skills/agent-consistency-audit/scripts/audit_agent.py": "audit rules name retired markers deliberately",
-    ".agents/skills/template-release-readiness/scripts/audit_template_release.py": "audit rules name retired markers deliberately",
-    ".agents/skills/agent-definition-validation/SKILL.md": "records the pi-only validation contract",
-    ".agents/skills/agent-infrastructure-health/SKILL.md": "records the pi-only infrastructure contract",
-    ".agents/skills/agent-infrastructure-health/scripts/check_infrastructure.py": "checks the pi runtime only",
-    ".agents/skills/template-agent-development/SKILL.md": "downstream guidance; records the pi-only contract",
-    ".agents/skills/template-agent-development/references/use-template.md": "downstream guidance",
-    ".agents/skills/template-agent-development/references/sync-template.md": "downstream guidance",
-    ".agents/skills/template-agent-development/references/migrate-existing-agent.md": "migration guidance from older layouts",
     ".agents/template-content-registry.json": "registry notes describe historical classes",
     ".opencode/opencode.jsonc": "configuration for the development harness, not the product",
     ".agents/memory/2026-09-08-pi-only-runtime-bridge.md": "records which context files pi discovers and which backends were retired",
@@ -108,9 +109,17 @@ def tracked(root: Path) -> list[str]:
     return [item for item in result.stdout.decode().split("\0") if item]
 
 
-def in_product_contract(path: str) -> bool:
+def matches(path: str, patterns: tuple[str, ...]) -> bool:
     return any(fnmatch.fnmatchcase(path, pattern) or path.startswith(pattern.rstrip("*"))
-               for pattern in PRODUCT_CONTRACT)
+               for pattern in patterns)
+
+
+def in_product_contract(path: str) -> bool:
+    return matches(path, PRODUCT_CONTRACT)
+
+
+def in_downstream_guidance(path: str) -> bool:
+    return matches(path, DOWNSTREAM_GUIDANCE)
 
 
 def main() -> int:
@@ -127,12 +136,29 @@ def main() -> int:
 
     errors: list[str] = []
     checked = 0
+    used_exemptions: set[str] = set()
     patterns = [(re.compile(pattern, re.IGNORECASE), label) for pattern, label in FORBIDDEN]
 
     for relative in tracked(root):
         # Plan files are historical development records; rewriting them to
         # satisfy a later gate would falsify the record.
-        if relative == "PLAN.md" or relative.startswith("PLAN-") or relative in DEVELOPMENT_ALLOWLIST:
+        if relative == "PLAN.md" or relative.startswith("PLAN-"):
+            continue
+        if relative in DEVELOPMENT_ALLOWLIST:
+            if in_downstream_guidance(relative):
+                errors.append(
+                    f"{relative}: downstream guidance must not be exempted; "
+                    "remove it from DEVELOPMENT_ALLOWLIST and make the file pi-only"
+                )
+                continue
+            path = root / relative
+            # Remember whether the exemption is still doing any work.
+            try:
+                content = path.read_text(encoding="utf-8") if path.is_file() else ""
+            except (OSError, UnicodeDecodeError):
+                content = ""
+            if any(re.search(pattern, content, re.IGNORECASE) for pattern, _ in FORBIDDEN):
+                used_exemptions.add(relative)
             continue
         path = root / relative
         if not path.is_file() or path.stat().st_size > 2_000_000:
@@ -149,6 +175,20 @@ def main() -> int:
                 scope = "product contract" if in_product_contract(relative) else "repository"
                 errors.append(f"{relative}:{line}: {label} in the {scope}: {match.group(0)!r}")
                 break
+
+    for relative in sorted(DEVELOPMENT_ALLOWLIST):
+        if in_downstream_guidance(relative):
+            continue
+        path = root / relative
+        if not path.is_file():
+            errors.append(
+                f"{relative}: exempted path no longer exists; remove it from DEVELOPMENT_ALLOWLIST"
+            )
+        elif relative not in used_exemptions:
+            errors.append(
+                f"{relative}: exemption is no longer needed (the file is already pi-only); "
+                "remove it from DEVELOPMENT_ALLOWLIST so the gate protects this file"
+            )
 
     for pattern in FORBIDDEN_RUNTIME_FILES:
         for found in root.glob(pattern):

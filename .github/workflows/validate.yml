@@ -10,6 +10,11 @@ jobs:
       - run: ./scripts/validate-definition.sh hewo
       - run: python3 scripts/check-template-registry.py
       - run: python3 scripts/check-pi-only-backend.py
+      # The consistency audit is what catches manifest and documentation drift.
+      # Without it here, a red audit can sit on the default branch unnoticed.
+      - run: >-
+          python3 .agents/skills/agent-consistency-audit/scripts/audit_agent.py
+          --agent hewo --strict
       - run: docker build --build-arg AGENT_NAME=hewo -t agent-template:test -f docker/Dockerfile .
       - run: >-
           docker run --rm --entrypoint bash agent-template:test -c
