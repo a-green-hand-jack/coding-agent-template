@@ -78,6 +78,7 @@ DEVELOPMENT_ALLOWLIST = {
     ".agents/skills/template-agent-development/references/migrate-existing-agent.md": "migration guidance from older layouts",
     ".agents/template-content-registry.json": "registry notes describe historical classes",
     ".opencode/opencode.jsonc": "configuration for the development harness, not the product",
+    ".agents/memory/2026-09-08-pi-only-runtime-bridge.md": "records which context files pi discovers and which backends were retired",
     "scripts/check-pi-only-backend.py": "this gate names the patterns it forbids",
 }
 

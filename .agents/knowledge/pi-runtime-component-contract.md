@@ -240,3 +240,42 @@ Not documented / unknown:
   a cross-process host is **not documented** beyond the two doors named above.
 - The full `ExtensionAPI` surface is not enumerated here; read the bundled
   extension docs before designing an extension, and state what you verified.
+
+## Verified in practice (2026-09-08)
+
+This contract was exercised end to end by converging `hewo` to a pi-only,
+manifest-driven runtime. What the exercise confirmed or corrected:
+
+- The decision tree held: identity, knowledge, memory policy, skills, prompt
+  templates, workflows and the theme all stayed declarative. Exactly one thin
+  TypeScript extension was needed, for typed tools, lifecycle hooks, the
+  capability/path gate and sub-agent spawning. One leaf Python tool remained a
+  leaf. No new agent loop, model client, session manager or approval loop was
+  written.
+- `--tools` constrains **extension** tools too. An extension tool absent from
+  `runtime.default_tools` is silently unavailable; this is the most likely
+  cause of "my new tool does nothing".
+- `--append-system-prompt` being repeatable means context injection keeps
+  per-file provenance. Never concatenate resources into a single blob again.
+- Globs are supported by pi in package manifests but are **deliberately
+  refused** by this template's launcher and validator: an explicit path list is
+  auditable, a glob is not.
+- Sub-agent budgets that are actually enforceable here are wall-clock timeout,
+  concurrency, retries and output truncation. A turn budget is not, because pi
+  0.85.1 has no `--max-turns`. State the gap; do not simulate the flag.
+
+## Deferred, with the trigger that would revive each
+
+| Capability | Status | Revive when |
+| --- | --- | --- |
+| plan mode | deferred | a product requirement needs staged planning; it is a bundled example extension, not core |
+| MCP | not available | pi gains MCP, or an external adapter is justified as a leaf tool |
+| built-in todos | not available | never as pi core; model it as skill or extension state |
+| RPC/SDK host | verification entry only | a headless host is actually built; note `pi.events` is in-process only |
+| provider registration | verification entry only | the product must ship its own provider adapter |
+| complete theme | partial | pi's 53 colour token names are verified from a real source |
+| durable user memory | disabled by design | a product decision authorises cross-session user memory, with a privacy boundary |
+| turn budget for sub-agents | unenforceable | pi grows `--max-turns` or an equivalent |
+
+Nothing in this table is implemented. Do not report a deferred capability as
+present because a file mentions it.

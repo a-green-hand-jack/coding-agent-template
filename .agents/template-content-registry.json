@@ -365,6 +365,11 @@
         "downstream development-resource directory if it is not .agents/"
       ],
       "note": "Development-side component decision tree and pi capability matrix. Re-verify every flag against the downstream machine's own pi --help before relying on it."
+    },
+    {
+      "path": ".agents/memory/2026-09-08-pi-only-runtime-bridge.md",
+      "class": "template-only",
+      "note": "Development record of this template's pi convergence, verified pi limits and the .agents/ collision hazard; downstream repositories record their own."
     }
   ]
 }
