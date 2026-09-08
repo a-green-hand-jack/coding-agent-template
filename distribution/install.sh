@@ -66,11 +66,11 @@ mkdir -p "$definition_dir"
 # package.json is the runtime resource manifest and must reach the payload.
 # Development instructions and installed dependencies must not.
 if [[ -n "$source_runtime" ]]; then
-  tar -C "$source_runtime" --exclude=AGENTS.md --exclude=node_modules --exclude=__pycache__ --exclude='*.egg-info' --exclude=build -cf - . | tar -C "$definition_dir" -xf -
+  tar -C "$source_runtime" --exclude=AGENTS.md --exclude=CLAUDE.md --exclude=node_modules --exclude=__pycache__ --exclude='*.egg-info' --exclude=build -cf - . | tar -C "$definition_dir" -xf -
   launcher_source="$script_dir/launcher"
   version="dev"
 else
-  tar -C "$release_root/agent-definition" --exclude=AGENTS.md --exclude=node_modules --exclude=__pycache__ --exclude='*.egg-info' --exclude=build -cf - . | tar -C "$definition_dir" -xf -
+  tar -C "$release_root/agent-definition" --exclude=AGENTS.md --exclude=CLAUDE.md --exclude=node_modules --exclude=__pycache__ --exclude='*.egg-info' --exclude=build -cf - . | tar -C "$definition_dir" -xf -
   launcher_source="$release_root/launcher"
   version="$(sed -n 's/.*"version":"\([^"]*\)".*/\1/p' "$release_root/release-manifest.json" | head -n 1)"
   version="${version:-unknown}"

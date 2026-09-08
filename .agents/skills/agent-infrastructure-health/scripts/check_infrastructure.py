@@ -128,7 +128,7 @@ class Health:
                 f"{self.agent} --help >/dev/null",
                 f"{self.agent} --version >/dev/null",
                 f"test -x /opt/install/bin/{self.agent}",
-                f"test -z \"$(find /opt/install -name AGENTS.md -print -quit)\"",
+                f"test -z \"$(find /opt/install \\( -name AGENTS.md -o -name CLAUDE.md \\) -print -quit)\"",
                 f"test ! -d /opt/install/lib/{self.agent}/agent-definition/.agents",
             ]
         )

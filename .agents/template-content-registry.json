@@ -67,6 +67,11 @@
         "note": "Template development policy; write downstream-scoped instructions instead."
       },
       {
+        "path": "CLAUDE.md",
+        "class": "selective",
+        "note": "Symlink to AGENTS.md; recreate downstream with ln -s, never copy."
+      },
+      {
         "path": "DEV.md",
         "class": "template-only-or-adapt",
         "note": "Rewrite development scope and evidence policy for the downstream repository."
@@ -370,6 +375,15 @@
       "path": ".agents/memory/2026-09-08-pi-only-runtime-bridge.md",
       "class": "template-only",
       "note": "Development record of this template's pi convergence, verified pi limits and the .agents/ collision hazard; downstream repositories record their own."
+    },
+    {
+      "path": "CLAUDE.md",
+      "class": "selective",
+      "destination": "CLAUDE.md",
+      "adapt_required": [
+        "nothing in the file itself: it is a symlink to AGENTS.md and has no content of its own"
+      ],
+      "note": "Symlink to AGENTS.md so Claude Code reads the same instructions the other coding agents read. Recreate it downstream with `ln -s AGENTS.md CLAUDE.md`; never copy AGENTS.md to a second file, which would let the two diverge. Excluded from every payload alongside AGENTS.md."
     }
   ]
 }

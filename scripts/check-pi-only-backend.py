@@ -59,9 +59,10 @@ FORBIDDEN = (
     (r"--backend\s+(opencode|codex|claude)", "non-pi backend selection"),
     # Hyphen-guarded so a legitimate pi PROVIDER id such as "openai-codex" is
     # not mistaken for a retired backend.
-    # Also guarded against a leading dot so a reference to this repository's
-    # own `.opencode/` harness directory is not read as a backend name.
-    (r"(?<![\w.-])(opencode|codex|claude|claude-code)(?![\w-])", "non-pi backend name"),
+    # Guarded against a leading dot so a reference to this repository's own
+    # `.opencode/` harness directory is not read as a backend name, and against
+    # a trailing `.md` so the CLAUDE.md symlink's own filename is not either.
+    (r"(?<![\w.-])(opencode|codex|claude|claude-code)(?![\w-])(?!\.md)", "non-pi backend name"),
 )
 
 # Development-side files that may still name other CLIs, each with its reason.
@@ -71,7 +72,6 @@ DEVELOPMENT_ALLOWLIST = {
     "DevelopmentMachine.md": "generated profile of what is actually installed on this machine",
     ".agents/knowledge/development-machine-facts.md": "operator-confirmed facts about installed CLIs",
     ".agents/knowledge/provider-e2e.md": "secret-free credential cheat-sheet for this machine's CLIs",
-    ".agents/knowledge/pi-runtime-component-contract.md": "states which capabilities pi lacks and names alternatives",
     ".agents/memory/2026-09-06-issue1-hewo-evidence.md": "historical evidence; must not be rewritten",
     ".agents/skills/development-machine-profile/SKILL.md": "machine-agnostic prober",
     ".agents/skills/development-machine-profile/references/profile-schema.md": "machine-agnostic prober schema",
@@ -79,7 +79,6 @@ DEVELOPMENT_ALLOWLIST = {
     ".agents/skills/agent-consistency-audit/scripts/audit_agent.py": "audit rules name retired markers deliberately",
     ".agents/template-content-registry.json": "registry notes describe historical classes",
     ".opencode/opencode.jsonc": "configuration for the development harness, not the product",
-    ".agents/memory/2026-09-08-pi-only-runtime-bridge.md": "records which context files pi discovers and which backends were retired",
     "scripts/check-pi-only-backend.py": "this gate names the patterns it forbids",
 }
 
@@ -161,6 +160,10 @@ def main() -> int:
                 used_exemptions.add(relative)
             continue
         path = root / relative
+        # CLAUDE.md is a symlink to AGENTS.md. Scan the target under its own
+        # path instead of twice under two names.
+        if path.is_symlink():
+            continue
         if not path.is_file() or path.stat().st_size > 2_000_000:
             continue
         try:

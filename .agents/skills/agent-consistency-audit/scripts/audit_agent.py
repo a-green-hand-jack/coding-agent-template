@@ -295,7 +295,7 @@ class Audit:
         for path in runtime.rglob("*"):
             if path.is_dir():
                 continue
-            if path.name == "AGENTS.md":
+            if path.name in {"AGENTS.md", "CLAUDE.md"}:
                 self.add(
                     "INFO",
                     "development-in-runtime-source",
@@ -350,6 +350,10 @@ class Audit:
                         yield path
                         continue
                     self.add("INFO", "skipped-credential-file", path, "credential-like file was not read")
+                    continue
+                if path.is_symlink():
+                    # A symlink carries no content of its own; the target is
+                    # walked under its own path.
                     continue
                 if path.suffix.lower() in TEXT_SUFFIXES:
                     yield path
@@ -463,7 +467,7 @@ class Audit:
                 self.add("ERROR", "release-file", archive, f"release is missing {required}")
         for name in names:
             parts = Path(name).parts
-            if "AGENTS.md" in parts or ".agents" in parts or "development" in parts:
+            if {"AGENTS.md", "CLAUDE.md"} & set(parts) or ".agents" in parts or "development" in parts:
                 self.add("ERROR", "development-in-release", archive, f"development-only path is present: {name}")
             if parts and SECRET_FILE_RE.search(parts[-1]):
                 self.add("ERROR", "credential-in-release", archive, f"credential-like path is present: {name}")
