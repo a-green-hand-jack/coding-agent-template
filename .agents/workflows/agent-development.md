@@ -1,10 +1,30 @@
 # Agent Development Evaluation Loop
 
+> **Role of this document**
+> - **Audience:** the development coding agent running one iteration of the product-Agent development loop.
+> - **Authority:** normative. The ordered stages, their commands and their stop conditions bind each iteration.
+> - **Tone:** imperative and procedural; numbered stages, each with the exact command that satisfies it.
+> - **Language:** English.
+> - **Contains:** the ordered loop stages from evaluation design through comparison, background execution of long runs, the evidence each stage must collect, and failure classification.
+> - **Excludes:** product behavior of any kind (see `src/hewo/runtime/`), the evaluation contract's schema (see `.agents/skills/agent-evaluation-loop-design/references/evaluation-contract.md`), and downstream evidence and history (see `.agents/downstream-skeleton/workflows/`).
+
 This workflow is for the **development coding agent**. It lives inside the
 project but outside the product runtime. Do not copy it into
 `src/hewo/runtime/`, and do not treat it as hewo behavior.
 
 Repeat this loop for each product-agent iteration:
+
+-1. **Cold start: confirm the problem with the human before designing anything.**
+   Until the human has confirmed the problem definition and the product
+   positioning, and a functionally complete baseline exists, the loop is not
+   delegated to you. Show real provider-backed output rather than describing
+   it, write your understanding back in plain language and ask for correction,
+   and do not invent a metric to get past this step. If several candidates are
+   rejected in a row, or no stable baseline appears, treat it as
+   `UNDERSTANDING_MISMATCH` — a misread problem, not a weak candidate — and
+   return here instead of tuning. `AGENTS.md` holds the normative rule; the
+   states are `COLD_START_HUMAN_IN_LOOP` and `UNDERSTANDING_MISMATCH` in
+   `agent-optimization-loop.mmd`.
 
 0. **Design the evaluation before changing behavior.** Load
    `.agents/skills/agent-evaluation-loop-design/SKILL.md`. Write or update

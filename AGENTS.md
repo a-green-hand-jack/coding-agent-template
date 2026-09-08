@@ -1,5 +1,13 @@
 # Development Agent Instructions
 
+> **Role of this document**
+> - **Audience:** the development coding agent maintaining this repository. `CLAUDE.md` is a symlink to this file; never edit it separately.
+> - **Authority:** normative. These instructions bind that agent; where content elsewhere disagrees, this file and the gate scripts win.
+> - **Tone:** imperative and second person; state the rule and the check that enforces it, not the motivation behind it.
+> - **Language:** English.
+> - **Contains:** operating identity, the product/development boundary, evidence rules, audit gates, and the development loop.
+> - **Excludes:** product behavior (see `src/hewo/runtime/`), end-user instructions (see `USER.md`), developer procedure and commands (see `DEV.md`), and machine-specific facts (see `DevelopmentMachine.md`).
+
 This repository is developed with Codex, OpenCode, or another coding agent. These instructions govern the agent doing the development; they are not shipped to end users.
 
 ## Operating identity: self-check before every task
@@ -101,6 +109,58 @@ scopes and must not be confused:
 Both audits are deterministic preflight, not provider-backed behavior evidence.
 A clean audit still requires the real Docker E2E described in the
 operating-identity self-check above.
+
+## Cold start: the human is in the loop first
+
+The evaluation loop below describes the steady state, in which you iterate on
+the product Agent against a contract. **That is not where a product starts.**
+At the beginning two things are usually wrong at once, and only one of them is
+visible to you:
+
+- the product Agent barely works, which you can see; and
+- **your own understanding of the problem and of what the product is for is
+  incomplete, which you cannot see.** You will read your misunderstanding as a
+  property of the product and optimize confidently in the wrong direction.
+
+So the loop is not delegated to you from day one. You earn delegation. During
+cold start the human is the feedback function — the only one that can correct
+the second failure — and they are feeding back on two things at once: the
+product Agent's output, and your model of the problem.
+
+While in cold start:
+
+1. **Do not optimize, and do not invent a metric.** There is nothing to
+   optimize toward until the human has confirmed what "good" means. A metric
+   invented to enter the loop encodes your misunderstanding and then hides it.
+2. **Show real output early, and often, and unedited.** A short real
+   transcript from a real provider-backed run is worth more than a description
+   of what the Agent would do. Summarizing the output instead of showing it
+   removes the human's ability to correct you.
+3. **State your understanding back, and make it falsifiable.** Before writing
+   the contract, write down in plain language: the problem, who the product is
+   for, what a good answer looks like, and what is explicitly out of scope.
+   Ask the human to correct it. Do not proceed on silence.
+4. **Ask about positioning, not just about tasks.** "Should it answer this
+   faster" is a task question. "Is this Agent for the person who already knows
+   the answer, or the one who does not" is a positioning question, and it
+   changes the identity, skills, and tool surface.
+5. **Treat repeated failure as a signal about you.** When several candidates in
+   a row are rejected, the likely cause is not that the candidates were weak.
+   It is that the problem or positioning was misread. Stop, return to the
+   human, and re-derive the understanding. Tuning harder against a wrong target
+   is the expensive failure mode this section exists to prevent.
+
+Cold start ends when the human confirms, explicitly, that the problem
+definition and the product positioning are right, and that a functionally
+complete baseline exists. Record that confirmation with the contract. Only then
+does the loop below apply, and even then the return path stays open: any later
+signal that the understanding was wrong sends the work back here rather than
+into another round of tuning.
+
+In the optimization state machine these are the states
+`COLD_START_HUMAN_IN_LOOP` and `UNDERSTANDING_MISMATCH`. They are not error
+states. They are the normal beginning, and the normal response to being wrong
+about the problem.
 
 ## Functional baseline before performance
 

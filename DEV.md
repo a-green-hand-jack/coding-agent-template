@@ -1,5 +1,13 @@
 # Agent 开发者指南
 
+> **Role of this document**
+> - **Audience:** a human developer building, validating or releasing an Agent from this template.
+> - **Authority:** informative. It is the working manual; where it disagrees with `AGENTS.md` or a gate script, those win.
+> - **Tone:** procedural and specific; commands with the conditions under which they fail.
+> - **Language:** Chinese, with English identifiers, paths and commands.
+> - **Contains:** environment setup, the definition/validation/E2E/benchmark procedures, build, install, release, and the pre-submit checklist.
+> - **Excludes:** binding agent operating rules (see `AGENTS.md`), end-user instructions (see `USER.md`), product behavior (see `src/hewo/runtime/`), and machine-specific facts (see `DevelopmentMachine.md`).
+
 本文先定义本仓库中的两个不同身份，避免把“开发者”与“产品”混为一谈：
 
 - **开发 coding agent**：运行 Codex、OpenCode、Claude Code、pi 或其他 coding-agent
@@ -299,6 +307,23 @@ stage、backend/provider/model、credential-source flag、状态、pid、artifac
 
 Benchmark 只是 loop 的一个 stage。它衡量 capability/regression，不定义产品
 行为；不能为了通过 verifier 在 runtime 中加入 benchmark-specific hack。
+
+### 冷启动：一开始 loop 不是自动的
+
+上面的 loop 描述的是稳态。产品不是从稳态开始的。刚开始时通常有两件事同时是
+错的：产品 Agent 效果很差——这一点 coding agent 看得见；以及 coding agent
+自己对问题定义和产品定位的理解不到位——这一点它看不见，于是会把自己的误解当成
+产品的属性，然后**自信地朝错误方向优化**。
+
+所以状态机里进入 `CONTRACT_DESIGNED` 的唯一路径是 `COLD_START_HUMAN_IN_LOOP`：
+在你确认问题定义和产品定位之前，loop 不交给 coding agent。冷启动期间，人是
+反馈函数，而且同时在反馈两件事——产品的输出，以及 coding agent 对问题的建模。
+
+作为开发者，你在冷启动期应该要求 coding agent：给你看真实的、未经转述的运行
+输出；把它对问题、目标用户、什么算好答案、什么明确不在范围内的理解写下来给你
+纠正；问定位问题而不只是任务问题；以及在候选连续被拒时停下来回到你这里，而不是
+继续调参。连续失败更可能说明问题被读错了（`UNDERSTANDING_MISMATCH`），而不是
+候选不够好。
 
 ### 先功能基线，后性能优化
 

@@ -1,5 +1,13 @@
 # Coding Agent Template
 
+> **Role of this document**
+> - **Audience:** a human developer evaluating or adopting this template, plus the development coding agent orienting itself in a fresh checkout.
+> - **Authority:** informative. It explains what exists and points at the normative documents; it decides nothing.
+> - **Tone:** explanatory and concrete; every command shown must be one that actually runs.
+> - **Language:** English.
+> - **Contains:** what the template is, the scaffold/backend/provider layering, the repository layout, and the entry points into each deeper document.
+> - **Excludes:** binding development rules (see `AGENTS.md`), day-to-day development procedure (see `DEV.md`), end-user installation and usage (see `USER.md`), and product behavior (see `src/hewo/runtime/`).
+
 这是一个用于构建可安装 Agent 的开发仓。当前仓库只有一个被开发和交付的产品
 agent：**hewo**；它的全部产品源码位于 `src/hewo/`，行为定义位于
 `src/hewo/runtime/`。其他目录不是 hewo 的产品实现：`AGENTS.md`、`.agents/`
@@ -156,13 +164,12 @@ A release installation installs pi when the user does not already have it; set
 `pi` and is rejected otherwise. Runtime npm dependencies, if a downstream Agent
 declares any, are installed frozen with `npm ci --ignore-scripts`, and a
 dependency without a lockfile is refused rather than resolved at install time.
-A release archive is designed to be installed without cloning this repository:
-download its installer and set `RELEASE_URL` to the matching archive URL. The
-repository currently contains the release builder and installer, but does not
-yet publish a GitHub Release/tag; do not present the example URL as a live
-download until a version is actually published.
+A release archive is installed without cloning this repository: download its
+installer and set `RELEASE_URL` to the matching archive URL. Published versions
+are listed under the repository's GitHub Releases; check there for the current
+version rather than assuming the one written below.
 
-After a version is published, the no-clone installation flow is:
+The no-clone installation flow is:
 
 ```bash
 VERSION=0.1.0
@@ -335,6 +342,8 @@ Source: [`agent-optimization-loop.mmd`](agent-optimization-loop.mmd)
 stateDiagram-v2
   direction TB
   state "INTENT_DEFINED" as INTENT_DEFINED
+  state "COLD_START_HUMAN_IN_LOOP" as COLD_START_HUMAN_IN_LOOP
+  state "UNDERSTANDING_MISMATCH" as UNDERSTANDING_MISMATCH
   state "CONTRACT_DESIGNED" as CONTRACT_DESIGNED
   state "FUNCTIONAL_BASELINE_BUILT" as FUNCTIONAL_BASELINE_BUILT
   state "BASELINE_MEASURED" as BASELINE_MEASURED
@@ -354,7 +363,9 @@ stateDiagram-v2
   state "GENERALIZATION_REQUIRED" as GENERALIZATION_REQUIRED
   state "ACCEPTED_AS_CURRENT_BEST" as ACCEPTED_AS_CURRENT_BEST
   state "STOPPED" as STOPPED
-  INTENT_DEFINED --> CONTRACT_DESIGNED : human intent recorded
+  INTENT_DEFINED --> COLD_START_HUMAN_IN_LOOP : human intent recorded; nothing is delegated yet
+  COLD_START_HUMAN_IN_LOOP --> CONTRACT_DESIGNED : human confirmed the problem and the positioning
+  UNDERSTANDING_MISMATCH --> COLD_START_HUMAN_IN_LOOP : return to human feedback instead of tuning
   CONTRACT_DESIGNED --> FUNCTIONAL_BASELINE_BUILT : contract valid and performance mode
   CONTRACT_DESIGNED --> DESIGN_INCOMPLETE : contract missing or schema invalid
   CONTRACT_DESIGNED --> SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE : contract mode is infrastructure smoke only
@@ -377,6 +388,8 @@ stateDiagram-v2
   ACCEPTED_AS_CURRENT_BEST --> HYPOTHESIS_READY : keep iterating
   ACCEPTED_AS_CURRENT_BEST --> STOPPED : stop condition reached
   CANDIDATE_REJECTED --> HYPOTHESIS_READY : new hypothesis or rollback to previous best
+  CANDIDATE_REJECTED --> UNDERSTANDING_MISMATCH : repeated rejection: suspect a misread problem, not a weak candidate
+  FUNCTIONAL_BASELINE_MISSING --> UNDERSTANDING_MISMATCH : the product is not complete enough to evaluate
   ENVIRONMENT_BLOCKED --> CANDIDATE_EVALUATING : fix the environment and rerun the same candidate
   EVALUATION_BLOCKED --> CANDIDATE_EVALUATING : fix benchmark, verifier or evidence and rerun
   BASELINE_INVALIDATED --> BASELINE_MEASURED : re-measure current best under the new condition identity
@@ -421,6 +434,18 @@ stateDiagram-v2
     Advanced path for optimizing the design skill itself. The self-bootstrap
     candidate runs against the fixed fixture and the base evaluator and cannot
     relax the evaluator, the fixtures or the expected results.
+  end note
+  note right of COLD_START_HUMAN_IN_LOOP
+    Cold start is the normal beginning, not an error state. Two things are wrong at
+    once: the product barely works, which the agent can see, and the agent's model of
+    the problem is incomplete, which it cannot. The human is the feedback function for
+    the second. Do not optimize and do not invent a metric here; show real output,
+    state the understanding back, and get the positioning confirmed.
+  end note
+  note right of UNDERSTANDING_MISMATCH
+    Reached when candidates keep failing or no stable baseline appears. The likely
+    cause is a misread problem, not a weak candidate. Tuning harder against a wrong
+    target is the expensive failure mode; the only exit is back through the human.
   end note
   note right of SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE
     A smoke or infrastructure pass is never performance evidence. A smoke-only

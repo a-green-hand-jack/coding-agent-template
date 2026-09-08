@@ -7,6 +7,14 @@ metadata:
 
 # Agent Evaluation Loop Design
 
+> **Role of this document**
+> - **Audience:** the development coding agent setting up a product Agent's optimization loop, or about to claim that Agent got better.
+> - **Authority:** normative. The normal path, the design rules and the comparator's exit codes bind an improvement claim.
+> - **Tone:** imperative and specific; states and guards with the commands that produce them, and the failure it prevents stated once.
+> - **Language:** English.
+> - **Contains:** the normal product path, the two-phase lifecycle, the progressive-loading order, diagram generation, comparator invocation and exit codes, and the design rules.
+> - **Excludes:** the contract's normative schema (see `references/evaluation-contract.md`), the diagram schema (see `references/agent-architecture-schema.md`), and optimizing this skill itself (see `references/self-bootstrap.md`).
+
 This skill is for the **development coding agent**. It is project-internal and
 product-external: nothing it produces belongs in `src/<agent_name>/runtime/`.
 
@@ -59,16 +67,37 @@ The minimum artifact at each step:
 normal path legitimately stops at `SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE`. Do not
 invent a primary metric just to "enter optimization".
 
+## Cold start comes before either phase
+
+The loop below is the steady state. A product does not begin there. At the
+start the product barely works — which the coding agent can see — and the
+coding agent's model of the problem and of the product's positioning is
+incomplete — which it cannot see. It will read the second failure as a property
+of the product and optimize confidently in the wrong direction.
+
+So `COLD_START_HUMAN_IN_LOOP` is on the only path into `CONTRACT_DESIGNED`: the
+human is the feedback function until they confirm the problem definition and
+the positioning. Do not optimize and do not invent a metric while in cold
+start; a metric invented to enter the loop encodes the misunderstanding and
+then hides it. Show real, unedited output, state the understanding back in
+plain language, and ask about positioning rather than only about tasks.
+
+`UNDERSTANDING_MISMATCH` is the return path. Repeated candidate rejection, or a
+baseline that will not stabilize, is more often a misread problem than a weak
+candidate; its only exit is back through the human. Neither state is an error
+state. `AGENTS.md` carries the normative version of this rule.
+
 ## The two-phase lifecycle
 
 Before saying "optimize", separate these:
 
 ```text
-HUMAN_INTENT_DEFINED → CONTRACT_DESIGNED
+HUMAN_INTENT_DEFINED → COLD_START_HUMAN_IN_LOOP → CONTRACT_DESIGNED
   → FUNCTIONALLY_COMPLETE_BASELINE_BUILT → BASELINE_MEASURED
   → IMPROVEMENT_HYPOTHESIS_READY → CANDIDATE_IMPLEMENTED
   → CANDIDATE_EVALUATED_ON_FIXED_CONDITIONS → EVIDENCE_VALIDATED
   → COMPARE_WITH_CURRENT_BEST
+        ↳ repeated rejection → UNDERSTANDING_MISMATCH → COLD_START_HUMAN_IN_LOOP
 ```
 
 A paper-writing Agent makes the distinction concrete: "it produces a complete

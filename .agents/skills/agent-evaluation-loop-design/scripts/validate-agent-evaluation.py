@@ -95,7 +95,12 @@ def load_protected_schema():
     return module
 
 
-def run_generator(agent: str, agent_root: Path, contract: Path | None, output_dir: Path) -> subprocess.CompletedProcess:
+def run_generator(
+    agent: str, agent_root: Path, contract: Path | None, output_dir: Path, repo_root: Path
+) -> subprocess.CompletedProcess:
+    # --repo-root must be forwarded: the generator renders the runtime path
+    # relative to it, so letting the child fall back to its cwd makes a fresh
+    # generation differ from the committed diagram for no real reason.
     command = [
         sys.executable,
         str(GENERATOR),
@@ -103,6 +108,8 @@ def run_generator(agent: str, agent_root: Path, contract: Path | None, output_di
         agent,
         "--agent-root",
         str(agent_root),
+        "--repo-root",
+        str(repo_root),
         "--output-dir",
         str(output_dir),
         "--no-readme",
@@ -234,8 +241,8 @@ def main() -> int:
         second = Path(scratch) / "second"
         first.mkdir()
         second.mkdir()
-        run_a = run_generator(args.agent, agent_root, args.contract, first)
-        run_b = run_generator(args.agent, agent_root, args.contract, second)
+        run_a = run_generator(args.agent, agent_root, args.contract, first, repo_root)
+        run_b = run_generator(args.agent, agent_root, args.contract, second, repo_root)
         if run_a.returncode or run_b.returncode:
             problems.append(f"generator failed: {(run_a.stderr or run_b.stderr).strip()}")
             report(args, state, problems, warnings)

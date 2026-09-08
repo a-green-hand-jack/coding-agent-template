@@ -41,6 +41,8 @@ TOOL_DENYLIST = {
 
 STATES = (
     "INTENT_DEFINED",
+    "COLD_START_HUMAN_IN_LOOP",
+    "UNDERSTANDING_MISMATCH",
     "CONTRACT_DESIGNED",
     "FUNCTIONAL_BASELINE_BUILT",
     "BASELINE_MEASURED",
@@ -63,7 +65,9 @@ STATES = (
 )
 
 TRANSITIONS = (
-    ("INTENT_DEFINED", "CONTRACT_DESIGNED", "human intent recorded"),
+    ("INTENT_DEFINED", "COLD_START_HUMAN_IN_LOOP", "human intent recorded; nothing is delegated yet"),
+    ("COLD_START_HUMAN_IN_LOOP", "CONTRACT_DESIGNED", "human confirmed the problem and the positioning"),
+    ("UNDERSTANDING_MISMATCH", "COLD_START_HUMAN_IN_LOOP", "return to human feedback instead of tuning"),
     ("CONTRACT_DESIGNED", "FUNCTIONAL_BASELINE_BUILT", "contract valid and performance mode"),
     ("CONTRACT_DESIGNED", "DESIGN_INCOMPLETE", "contract missing or schema invalid"),
     ("CONTRACT_DESIGNED", "SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE", "contract mode is infrastructure smoke only"),
@@ -86,6 +90,8 @@ TRANSITIONS = (
     ("ACCEPTED_AS_CURRENT_BEST", "HYPOTHESIS_READY", "keep iterating"),
     ("ACCEPTED_AS_CURRENT_BEST", "STOPPED", "stop condition reached"),
     ("CANDIDATE_REJECTED", "HYPOTHESIS_READY", "new hypothesis or rollback to previous best"),
+    ("CANDIDATE_REJECTED", "UNDERSTANDING_MISMATCH", "repeated rejection: suspect a misread problem, not a weak candidate"),
+    ("FUNCTIONAL_BASELINE_MISSING", "UNDERSTANDING_MISMATCH", "the product is not complete enough to evaluate"),
     ("ENVIRONMENT_BLOCKED", "CANDIDATE_EVALUATING", "fix the environment and rerun the same candidate"),
     ("EVALUATION_BLOCKED", "CANDIDATE_EVALUATING", "fix benchmark, verifier or evidence and rerun"),
     ("BASELINE_INVALIDATED", "BASELINE_MEASURED", "re-measure current best under the new condition identity"),
@@ -555,6 +561,18 @@ def render_optimization(agent: str, view: dict[str, str]) -> str:
             "    Advanced path for optimizing the design skill itself. The self-bootstrap",
             "    candidate runs against the fixed fixture and the base evaluator and cannot",
             "    relax the evaluator, the fixtures or the expected results.",
+            "  end note",
+            "  note right of COLD_START_HUMAN_IN_LOOP",
+            "    Cold start is the normal beginning, not an error state. Two things are wrong at",
+            "    once: the product barely works, which the agent can see, and the agent's model of",
+            "    the problem is incomplete, which it cannot. The human is the feedback function for",
+            "    the second. Do not optimize and do not invent a metric here; show real output,",
+            "    state the understanding back, and get the positioning confirmed.",
+            "  end note",
+            "  note right of UNDERSTANDING_MISMATCH",
+            "    Reached when candidates keep failing or no stable baseline appears. The likely",
+            "    cause is a misread problem, not a weak candidate. Tuning harder against a wrong",
+            "    target is the expensive failure mode; the only exit is back through the human.",
             "  end note",
             "  note right of SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE",
             "    A smoke or infrastructure pass is never performance evidence. A smoke-only",
