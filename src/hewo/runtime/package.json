@@ -46,7 +46,8 @@
       "bash",
       "hewo_time",
       "hewo_weather",
-      "hewo_report"
+      "hewo_report",
+      "hewo_subagent"
     ],
     "subagent_tools": [
       "read"

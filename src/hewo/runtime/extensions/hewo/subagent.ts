@@ -111,7 +111,15 @@ function extensionDir(): string {
   return path.dirname(decodeURIComponent(raw));
 }
 
-export function agentsDirectory(): string {
+export function agentsDirectory(source?: EnvLike): string {
+  // The runtime manifest declares agent_definitions and the launcher resolves
+  // and exports it, so that path is authoritative. Deriving the location from
+  // this module's own path is only a fallback: under the backend's TypeScript
+  // loader the module path does not reliably resolve back to the payload.
+  const declared = env(source).HEWO_AGENT_DEFINITIONS;
+  if (typeof declared === 'string' && declared.trim() !== '') {
+    return path.resolve(declared.trim());
+  }
   return path.resolve(extensionDir(), '..', '..', 'agents');
 }
 

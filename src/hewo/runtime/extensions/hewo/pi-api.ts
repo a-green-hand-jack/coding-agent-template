@@ -38,11 +38,32 @@ export type ToolHandler = (
   context?: ToolCallContext,
 ) => Promise<unknown> | unknown;
 
+/**
+ * pi returns tool output as content blocks plus opaque details. Verified
+ * against pi 0.85.1 docs/extensions.md: the schema field is `parameters`
+ * (a TypeBox/JSON-Schema object) and the entry point is `execute`, not
+ * `handler`. Naming it `inputSchema` makes pi throw while reading
+ * `parameters.properties`.
+ */
+export interface ToolResult {
+  content: Array<{ type: 'text'; text: string }>;
+  details?: Record<string, unknown>;
+}
+
+export type ToolExecute = (
+  toolCallId: string,
+  params: Record<string, unknown>,
+  signal?: AbortSignal,
+  onUpdate?: (update: unknown) => void,
+  ctx?: unknown,
+) => Promise<ToolResult> | ToolResult;
+
 export interface ToolSpec {
   name: string;
+  label?: string;
   description: string;
-  inputSchema: JsonSchemaObject;
-  handler: ToolHandler;
+  parameters: JsonSchemaObject;
+  execute: ToolExecute;
 }
 
 export type CommandHandler = (
@@ -51,7 +72,6 @@ export type CommandHandler = (
 ) => Promise<unknown> | unknown;
 
 export interface CommandSpec {
-  name: string;
   description: string;
   handler: CommandHandler;
 }
@@ -97,7 +117,7 @@ export interface SessionStateAccessor {
 
 export interface ExtensionAPI {
   registerTool?: (spec: ToolSpec) => unknown;
-  registerCommand?: (spec: CommandSpec) => unknown;
+  registerCommand?: (name: string, spec: CommandSpec) => unknown;
   on?: (event: ExtensionEventName, handler: EventHandler) => unknown;
   sessionState?: SessionStateAccessor;
   getSessionState?: () => SessionStateAccessor | Record<string, unknown> | undefined;

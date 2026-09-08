@@ -154,16 +154,23 @@ fi
 pi_auth_args=()
 if [[ -n "$pi_auth_file" ]]; then
   [[ -f "$pi_auth_file" ]] || { echo "pi auth file does not exist: $pi_auth_file" >&2; exit 2; }
-  pi_auth_args=(--env PI_AUTH_STORE=1 --env PI_CODING_AGENT_DIR=/root/.pi/agent --mount "type=bind,src=$(realpath "$pi_auth_file"),dst=/root/.pi/agent/auth.json,readonly")
+  pi_auth_args=(--env PI_AUTH_STORE=1 --mount "type=bind,src=$(realpath "$pi_auth_file"),dst=/root/.pi/agent/auth.json,readonly")
   credential_sources+=("--pi-auth-file $pi_auth_file")
   if [[ -z "$pi_models_file" ]]; then
     candidate_models_file="$(dirname "$pi_auth_file")/models.json"
     [[ -f "$candidate_models_file" ]] && pi_models_file="$candidate_models_file"
   fi
-  if [[ -n "$pi_models_file" ]]; then
-    [[ -f "$pi_models_file" ]] || { echo "pi models file does not exist: $pi_models_file" >&2; exit 2; }
-    pi_auth_args+=(--mount "type=bind,src=$(realpath "$pi_models_file"),dst=/root/.pi/agent/models.json,readonly")
-  fi
+fi
+
+# The model catalog is a provider DEFINITION, not a credential, so it must be
+# mountable on its own. A custom provider whose key arrives through
+# --api-key-env or --env-file still needs its baseUrl from this catalog.
+if [[ -n "$pi_models_file" ]]; then
+  [[ -f "$pi_models_file" ]] || { echo "pi models file does not exist: $pi_models_file" >&2; exit 2; }
+  pi_auth_args+=(--mount "type=bind,src=$(realpath "$pi_models_file"),dst=/root/.pi/agent/models.json,readonly")
+fi
+if [[ -n "$pi_auth_file" || -n "$pi_models_file" ]]; then
+  pi_auth_args+=(--env PI_CODING_AGENT_DIR=/root/.pi/agent)
 fi
 
 env_file_args=()

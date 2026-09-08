@@ -98,67 +98,85 @@ adversarial check, then run it.
 - hewo's evaluation contract is `infrastructure-smoke-only`. Its honest state
   is `SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE`. Do not invent a metric for it.
 
-## E2E attempt: bridge proven, model call still blocked
+## Provider-backed E2E: PASSED
 
-A real provider-backed run was attempted. What it proved and where it stopped:
+Five runs through `docker/run-hewo-e2e.sh`, all reporting
+`backend=pi provider=gravarc-router model=kimi-k2.7-code
+credential_source=--env-file <path> exit=0 mode=agent-behavior`:
 
-**Proven in a real container, not simulated.** The extension loads through
-`--extension` and prints its posture line:
-`hewo: posture weather-mode=fixture network=deny capabilities=none
-workspace=/workspace clock=system`. The launcher's argv is correct, and it
-fails closed (exit 2) with no provider or key.
+1. **Greeting** - "Say hi to Ada in one short sentence." -> `Hi, Ada!`
+   Identity honored (brief, includes the supplied name).
+2. **Typed tools** - time + weather for Kyoto. The model called `hewo_time`
+   and `hewo_weather`, reported `fixture` mode and, correctly, that Kyoto is
+   `unknown-location`. It did not invent an observation.
+3. **Happy path** - default location: `beijing`, 21C clear, "Data mode:
+   fixture". Data-mode disclosure works as the skill requires.
+4. **Sub-agents** - `hewo_subagent shape=parallel` ran `time-reporter` and
+   `weather-reporter` as independent processes; both records `ok=true
+   exitCode=0`.
+5. **Default deny** - the same sub-agent call with `HEWO_CAPABILITIES` unset
+   was refused with `capability-denied`, `invocations: 0`, no process spawned.
 
-**Blocked, not passed.** Two credential paths were tried:
+### How the credential actually has to be injected
 
-- `deepseek` (built-in provider) with `--api-key-env DEEPSEEK_API_KEY`: pi
-  resolved the provider and reached the endpoint; the provider answered
-  `402 Insufficient Balance`. Infrastructure works, the account does not.
-- `apex-deepseek` (custom provider) with `--pi-auth-file`: pi **loads the
-  provider definition** from the mounted `models.json` — it names
-  `apex-deepseek` in its error — but does not resolve the key from a mounted
-  `auth.json`, even with a writable copy inside `PI_CODING_AGENT_DIR` and the
-  standard `{"<provider>": {"type": "api_key", "key": "..."}}` shape.
+The host tool `accountctl docker-run --providers <name> --env-file-only --out
+<path>` produces the env file and prints the variable name plus base URL. For a
+**custom** pi provider that is not enough on its own: pi needs the provider
+definition too, and it will not read the key from a mounted `auth.json` nor
+from a bare environment variable. The working recipe is a **containerized
+catalog** - a copy of the provider entry from `~/.pi/agent/models.json` with
+`"apiKey": "$<PROVIDER>_API_KEY"` added - mounted with `--pi-models-file`,
+plus the env file. That catalog contains only a variable reference, never a
+key, so it is safe to generate into a temp path.
 
-So the status is `blocked`, never `agent-behavior`. On this machine
-custom-provider keys are supplied by `--api-key-env` (which is what the
-host's own paper-loop runs do), so **`--pi-auth-file` alone is not a
-sufficient credential source for a custom provider here.** Why pi ignores that
-auth store is unresolved; do not assume `--pi-auth-file` is enough.
+`--pi-models-file` used to be mountable only alongside `--pi-auth-file`; it is
+now standalone, because a catalog is a provider definition and not a
+credential.
 
-Secret-free facts learned:
+Model availability is per-account: `kimi-k2.5` returned
+`404 ... or Permission denied` while `kimi-k2.7-code` worked. Probe before
+assuming a listed model is usable, and `deepseek` returned
+`402 Insufficient Balance`.
 
-- `pi --list-models` is **auth-filtered**. An image with no resolvable key
-  legitimately prints "No models available". This looks exactly like a missing
-  or broken model catalog and is not one — do not chase catalogs when the real
-  condition is "no credential".
-- `pi update --models` succeeds and still writes an empty store, so it is not
-  the fix for the above.
+## Four defects the E2E exposed that unit tests could not
+
+1. **False pass in our own helper.** `run-hewo-e2e.sh` printed
+   `mode=agent-behavior` *before* the run, judged only by a credential flag
+   being present, so two failing runs were labelled agent-behavior. The mode
+   now follows the outcome: `infrastructure-only`, `agent-behavior` only on
+   exit 0, otherwise `blocked`; the helper also propagates the exit code.
+2. **The tool API was wrong.** We registered `{inputSchema, handler}`; pi
+   0.85.1 wants `{parameters, execute(toolCallId, params, signal, ...)}`
+   returning `{content, details}`. Every tool call failed with
+   `Cannot read properties of undefined (reading 'properties')` - pi reading
+   `parameters.properties`. `registerCommand` likewise takes the name as its
+   first argument, not inside the spec.
+3. **The sub-agent runner was unreachable.** `subagent.ts` was implemented and
+   unit-tested but no tool exposed it, so the model could never call it. It is
+   now registered as `hewo_subagent` and declared in the manifest's
+   `default_tools` - required, because `--tools` is a strict allowlist that
+   also governs extension tools.
+4. **Agent definitions did not resolve in the container.** `agentsDirectory()`
+   derived its path from the module's own location, which does not survive the
+   backend's TypeScript loader. It now honors the manifest-declared
+   `HEWO_AGENT_DEFINITIONS` that the launcher exports, falling back to the
+   relative guess.
+
+Every one of these passed unit tests and static gates. Only a real
+provider-backed run found them.
+
+## Secret-free facts worth keeping
+
+- `pi --list-models` is **auth-filtered**. A clean image with no resolvable key
+  prints "No models available", which looks exactly like a missing model
+  catalog and is not one. `pi update --models` reports success and still
+  leaves an empty store. Check the credential before chasing catalogs.
 - `PI_CODING_AGENT_DIR` is honored for provider definitions.
-- The custom endpoints `api.apexin.ai` and `api.epicllmrouter.top` are
-  reachable from the container; Docker networking is not the blocker.
+- The custom endpoints are reachable from the container; Docker networking was
+  never the blocker.
 
-## A false-pass bug this attempt exposed
+## Still open
 
-`docker/run-hewo-e2e.sh` printed `mode=agent-behavior` **before** running,
-based only on a credential flag being present. Both failing runs above were
-therefore labelled agent-behavior. The mode now follows the outcome:
-`infrastructure-only` when no source is named, `agent-behavior` only on exit 0,
-and `blocked` when a named credential source still fails. Exactly the false
-pass this repository forbids, produced by our own tooling.
-
-## Still owed
-
-One successful provider-backed run reporting `backend=pi`, the real provider
-and model, the credential-source flag, and `mode=agent-behavior`. The shape is:
-
-```bash
-./docker/run-hewo-e2e.sh --agent hewo --backend pi \
-  --provider <governed-provider> --model <available-model> \
-  --api-key-env <PROVIDER>_API_KEY \
-  --pi-models-file "$HOME/.pi/agent/models.json" \
-  "Say hi to Ada in one short sentence."
-```
-
-It also still needs to settle whether `--no-prompt-templates` and
-`--no-themes` are additive with explicit loads, which is why the launcher does
-not pass them.
+Whether `--no-prompt-templates` and `--no-themes` are additive with explicit
+loads is still undocumented, which is why the launcher does not pass them.
+Ambient global prompt-template and theme discovery therefore remains possible.

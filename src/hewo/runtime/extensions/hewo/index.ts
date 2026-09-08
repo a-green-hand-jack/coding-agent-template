@@ -10,6 +10,7 @@
  */
 
 import type {
+  ToolResult,
   ExtensionAPI,
   ExtensionFactory,
   SessionStartEvent,
@@ -19,6 +20,7 @@ import type {
 } from './pi-api.ts';
 import type { EnvLike, PolicyDecision } from './policy.ts';
 import { decide, describePosture } from './policy.ts';
+import { listAgentDefinitions, runChain, runParallel, runSingle } from './subagent.ts';
 import type { WeatherResult } from './weather.ts';
 import { DEFAULT_LOCATION, getWeather, readWeatherMode, summarizeWeather } from './weather.ts';
 
@@ -164,48 +166,137 @@ const EMPTY_SCHEMA = {
   additionalProperties: false,
 };
 
+const SUBAGENT_SCHEMA = {
+  type: 'object' as const,
+  properties: {
+    shape: {
+      type: 'string',
+      enum: ['single', 'parallel', 'chain'],
+      description: 'Orchestration shape. single runs one sub-agent; parallel runs several concurrency-capped; chain feeds each output into the next.',
+    },
+    agents: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Sub-agent definition names. Omit to use every available definition.',
+    },
+    task: { type: 'string', description: 'The task text handed to the sub-agent(s).' },
+  },
+  required: ['shape', 'task'] as readonly string[],
+  additionalProperties: false,
+};
+
 function buildTools(api: ExtensionAPI): ToolSpec[] {
   const state = resolveSessionState(api);
 
+  // pi hands tool output back to the model as content blocks. The structured
+  // payload is repeated in `details` so a caller can read it without parsing.
+  const reply = (payload: Record<string, unknown>): ToolResult => ({
+    content: [{ type: 'text', text: JSON.stringify(payload) }],
+    details: payload,
+  });
+
   const timeTool: ToolSpec = {
     name: 'hewo_time',
+    label: 'HeWo time',
     description: 'Return the current time. Pinned to HEWO_CLOCK_FIXED when that is set.',
-    inputSchema: EMPTY_SCHEMA,
-    handler: () => {
+    parameters: EMPTY_SCHEMA,
+    execute: () => {
       const invocations = bumpCounter(state);
-      return { ...getTime(), invocations };
+      return reply({ ...getTime(), invocations });
     },
   };
 
   const weatherTool: ToolSpec = {
     name: 'hewo_weather',
+    label: 'HeWo weather',
     description: 'Return weather for a location. Deterministic fixture unless live mode is enabled.',
-    inputSchema: LOCATION_SCHEMA,
-    handler: async (input, context) => {
+    parameters: LOCATION_SCHEMA,
+    execute: async (_toolCallId, params, signal) => {
       const invocations = bumpCounter(state);
-      const location = readLocationInput(input);
+      const location = readLocationInput(params);
       const gate = gateTool('hewo_weather');
-      if (!gate.allowed) return { refused: true, code: gate.code, reason: gate.reason, invocations };
-      const weather = await getWeather(location, { signal: context?.signal });
-      return { ...weather, invocations };
+      if (!gate.allowed) {
+        return reply({ refused: true, code: gate.code, reason: gate.reason, invocations });
+      }
+      const weather = await getWeather(location, { signal });
+      return reply({ ...weather, invocations });
     },
   };
 
   const reportTool: ToolSpec = {
     name: 'hewo_report',
+    label: 'HeWo report',
     description: 'Return the current time and the weather for a location as one structured report.',
-    inputSchema: LOCATION_SCHEMA,
-    handler: async (input, context) => {
+    parameters: LOCATION_SCHEMA,
+    execute: async (_toolCallId, params, signal) => {
       const invocations = bumpCounter(state);
-      const location = readLocationInput(input);
+      const location = readLocationInput(params);
       const gate = gateTool('hewo_report');
-      if (!gate.allowed) return { refused: true, code: gate.code, reason: gate.reason, invocations };
-      const report = await buildReport(location, { signal: context?.signal });
-      return { ...report, invocations };
+      if (!gate.allowed) {
+        return reply({ refused: true, code: gate.code, reason: gate.reason, invocations });
+      }
+      const report = await buildReport(location, { signal });
+      return reply({ ...report, invocations });
     },
   };
 
-  return [timeTool, weatherTool, reportTool];
+  // Sub-agents are capability-gated: with HEWO_CAPABILITIES unset this tool
+  // exists but every call is refused, which is the default-deny posture.
+  const subagentTool: ToolSpec = {
+    name: 'hewo_subagent',
+    label: 'HeWo sub-agent',
+    description:
+      'Delegate a task to one or more read-only sub-agents. Each runs as an independent process with its own minimal tool allowlist and hard time, concurrency, retry and output budgets.',
+    parameters: SUBAGENT_SCHEMA,
+    execute: async (_toolCallId, params, signal) => {
+      const invocations = bumpCounter(state);
+      const gate = gateTool('hewo_subagent');
+      if (!gate.allowed) {
+        return reply({ refused: true, code: gate.code, reason: gate.reason, invocations });
+      }
+      const shape = typeof params.shape === 'string' ? params.shape : 'single';
+      const task = typeof params.task === 'string' ? params.task : '';
+      if (task.trim() === '') {
+        return reply({ refused: true, code: 'task-empty', reason: 'task must not be empty', invocations });
+      }
+      const available = listAgentDefinitions().map((item) => item.name);
+      const requested =
+        Array.isArray(params.agents) && params.agents.length > 0
+          ? params.agents.filter((item): item is string => typeof item === 'string')
+          : available;
+      const names = requested.filter((item) => available.includes(item));
+      if (names.length === 0) {
+        return reply({ refused: true, code: 'no-such-agent', reason: `available definitions: ${available.join(', ') || 'none'}`, invocations });
+      }
+      const options = { signal };
+      const outcome =
+        shape === 'parallel'
+          ? await runParallel(names.map((agent) => ({ agent, task })), options)
+          : shape === 'chain'
+            ? await runChain(names.map((agent) => ({ agent })), task, options)
+            : await runSingle(names[0], task, options);
+      return reply({
+        shape,
+        agents: names,
+        ok: outcome.ok,
+        merged: outcome.merged,
+        records: outcome.records.map((record) => ({
+          agent: record.agent,
+          ok: record.ok,
+          exitCode: record.exitCode,
+          durationMs: record.durationMs,
+          timedOut: record.timedOut,
+          truncated: record.truncated,
+          retries: record.retries,
+          refused: record.refused,
+          refusalCode: record.refusalCode,
+        })),
+        invocations,
+      });
+    },
+  };
+
+  return [timeTool, weatherTool, reportTool, subagentTool];
 }
 
 /** Applies policy.decide() for whatever capability the tool currently needs. */
@@ -276,8 +367,8 @@ const factory: ExtensionFactory = async (api: ExtensionAPI): Promise<void> => {
     }
 
     if (typeof api.registerCommand === 'function') {
-      api.registerCommand({
-        name: 'hewo-report',
+      // pi takes the command name as the first argument, not inside the spec.
+      api.registerCommand('hewo-report', {
         description: 'Show the current time and the weather for the configured location.',
         handler: async (argument) => {
           const location =
