@@ -1,0 +1,51 @@
+{
+  "benchmark": {
+    "holdout_policy_revision": "paper-holdout-policy-none",
+    "task_input_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "task_set_revision": "paper-tasks-1"
+  },
+  "contract": {
+    "revision": "paper-contract-1",
+    "sha256": "415ced1094d38e00cd3ae0815a3fc1e13b42ad00add2af38e85c7157e81759f6"
+  },
+  "execution": {
+    "backend": "fixture-backend",
+    "image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "locale": "C",
+    "model": "fixture-model-v2",
+    "provider": "fixture-provider",
+    "request_parameters": {
+      "max_output_tokens": 4096,
+      "temperature": 0
+    },
+    "retry_policy": {
+      "backoff": "none",
+      "max_attempts": 1
+    },
+    "runtime": "fixture-runtime-1",
+    "sampling": {
+      "top_p": 1
+    },
+    "seed": "fixture-seed-1",
+    "timeout_seconds": 600,
+    "timezone": "UTC",
+    "tool_versions": {
+      "approved-verifier": "paper-verifier-1",
+      "python": "3.12"
+    }
+  },
+  "metric_policy": {
+    "definition_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+    "revision": "paper-metric-policy-1"
+  },
+  "sampling": {
+    "aggregation": "mean",
+    "repetitions": 3
+  },
+  "schema_version": 1,
+  "verifier": {
+    "id": "approved-verifier",
+    "revision": "paper-verifier-1",
+    "source_sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+  }
+}

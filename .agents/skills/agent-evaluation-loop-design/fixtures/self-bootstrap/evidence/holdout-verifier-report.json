@@ -1,0 +1,10 @@
+{
+  "checks": {
+    "abstract-claims-supported": "pass",
+    "all-required-sections-present": "pass",
+    "citations-resolve-to-supplied-sources": "pass"
+  },
+  "task_set": "paper-holdout-fixed",
+  "verifier": "approved-verifier",
+  "verifier_revision": "paper-verifier-1"
+}

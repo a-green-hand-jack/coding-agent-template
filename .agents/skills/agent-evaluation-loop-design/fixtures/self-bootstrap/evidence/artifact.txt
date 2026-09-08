@@ -1,0 +1,4 @@
+# Fixed fixture artifact
+
+Stands in for a generated paper draft. Secret-free, deterministic, and
+pinned by SHA-256 inside the outcome-case results.

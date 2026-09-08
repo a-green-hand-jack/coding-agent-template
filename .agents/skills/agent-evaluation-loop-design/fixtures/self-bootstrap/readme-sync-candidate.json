@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "hypothesis": {
+    "id": "readme-managed-block-sync",
+    "statement": "Add deterministic README synchronization without creating a second source of truth"
+  },
+  "observable_delta": {
+    "kind": "readme-managed-block-sync",
+    "expected_artifacts": [
+      "README.md",
+      "agent-architecture.mmd",
+      "agent-optimization-loop.mmd"
+    ],
+    "required_assertions": [
+      "markers-unique",
+      "blocks-match-mmd",
+      "check-mode-detects-drift"
+    ]
+  },
+  "allowed_candidate_paths": [
+    ".agents/skills/agent-evaluation-loop-design/scripts/generate-agent-diagrams.py",
+    ".agents/skills/agent-evaluation-loop-design/scripts/validate-agent-evaluation.py",
+    "README.md",
+    "AGENTS.md",
+    "DEV.md",
+    ".agents/workflows/agent-development.md",
+    "benchmarks/README.md",
+    "agent-architecture.mmd",
+    "agent-optimization-loop.mmd"
+  ],
+  "base_protected_paths": [
+    ".agents/skills/agent-evaluation-loop-design/SKILL.md",
+    ".agents/skills/agent-evaluation-loop-design/references/",
+    ".agents/skills/agent-evaluation-loop-design/fixtures/",
+    ".agents/skills/agent-evaluation-loop-design/scripts/_evaluation_lib.py",
+    ".agents/skills/agent-evaluation-loop-design/scripts/compare-evaluations.py",
+    ".agents/skills/agent-evaluation-loop-design/scripts/self-bootstrap-check.py",
+    ".agents/skills/agent-evaluation-loop-design/scripts/build-self-bootstrap-fixtures.py"
+  ],
+  "writable_output_roots": [
+    "candidate-output",
+    "fixture-copy"
+  ],
+  "forbidden_write_roots": [
+    "src/hewo/runtime",
+    ".agents/skills/agent-evaluation-loop-design/fixtures",
+    "base-snapshot"
+  ],
+  "external_report_schema": {
+    "schema_version": 1,
+    "required_fields": [
+      "schema_version",
+      "base_ref",
+      "base_sha",
+      "base_tree_sha",
+      "candidate_ref",
+      "candidate_sha",
+      "candidate_tree_sha",
+      "requested_head",
+      "observed_head",
+      "candidate_root_digest",
+      "base_archive_manifest_sha256",
+      "candidate_manifest_sha256",
+      "protected_path_diff",
+      "gates",
+      "start_phase",
+      "end_phase",
+      "cleanup",
+      "state",
+      "reason",
+      "exit_code"
+    ]
+  }
+}

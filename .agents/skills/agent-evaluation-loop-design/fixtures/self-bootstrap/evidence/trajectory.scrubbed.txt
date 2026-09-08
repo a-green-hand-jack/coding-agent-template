@@ -1,0 +1,7 @@
+# Scrubbed trajectory
+
+step 1 load brief
+step 2 apply paper-writing skill
+step 3 emit paper.md and section-coverage.json
+
+No provider payloads, no credentials, no personal data.

@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "agent": "paper-agent",
+  "mode": "performance",
+  "contract_revision": "paper-contract-1",
+  "metric_policy_revision": "paper-metric-policy-1",
+  "product": {
+    "goal": "Draft a structured research paper from a topic brief and a source list.",
+    "input": "Topic brief, required section list, and an explicit source list.",
+    "output": "paper.md containing every required section plus a coverage summary."
+  },
+  "functional_contract": {
+    "checks": [
+      {
+        "id": "all-required-sections-present",
+        "description": "paper.md contains every section named in the brief.",
+        "source": "benchmarks/verifiers/paper-sections.sh"
+      },
+      {
+        "id": "citations-resolve-to-supplied-sources",
+        "description": "Every citation resolves to an entry in the supplied source list.",
+        "source": "benchmarks/verifiers/paper-citations.sh"
+      },
+      {
+        "id": "abstract-claims-supported",
+        "description": "Each abstract claim maps to an experiments-section result.",
+        "source": "benchmarks/verifiers/paper-claims.sh"
+      }
+    ],
+    "required_artifacts": ["paper.md", "section-coverage.json"]
+  },
+  "benchmark": {
+    "task_set": "paper-drafting-fixed",
+    "revision": "paper-tasks-1",
+    "verifier": "approved-verifier",
+    "verifier_revision": "paper-verifier-1"
+  },
+  "environment": {
+    "backend": "fixture-backend",
+    "provider": "fixture-provider",
+    "model": "fixture-model",
+    "runtime": "fixture-runtime-1",
+    "repetitions": 3,
+    "aggregation": "mean"
+  },
+  "metrics": {
+    "primary": {
+      "name": "section_coverage",
+      "direction": "higher-is-better",
+      "unit": "ratio"
+    },
+    "secondary": [
+      {
+        "name": "citation_error_rate",
+        "direction": "lower-is-better",
+        "unit": "ratio"
+      }
+    ]
+  },
+  "acceptance": {
+    "minimum_primary_delta": 0.01,
+    "max_secondary_regression": {"citation_error_rate": 0.02},
+    "require_functional_pass": true
+  },
+  "stop_conditions": [
+    "primary metric reaches 0.95 under the fixed condition identity",
+    "three consecutive candidates without a material improvement",
+    "evaluation budget or wall-clock budget exhausted",
+    "human stop"
+  ],
+  "evidence_policy": {
+    "scrubbed_only": true,
+    "required_kinds": ["artifact", "verifier-report", "scrubbed-trajectory"],
+    "approved_producers": [
+      {"id": "run-benchmark.sh", "revision": "runner-1"},
+      {"id": "approved-verifier", "revision": "paper-verifier-1"}
+    ]
+  },
+  "generalization": {
+    "claim_scope": "benchmark-local",
+    "holdout": null,
+    "human_domain_review_required": false
+  }
+}
