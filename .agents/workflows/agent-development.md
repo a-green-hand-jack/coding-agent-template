@@ -41,10 +41,21 @@ Repeat this loop for each product-agent iteration:
    read-only auth/key mount. A build, CLI startup, or unauthenticated run is
    infrastructure-only evidence, not product-agent behavior evidence.
 6. **Prefer background execution for long validation.** Product-agent tasks can
-   be long. Use the loop runner's registered background mode for long E2E or
-   benchmark runs so the human and development coding agent can keep
-   interacting. Every background run must be queryable, record only
-   secret-free metadata, and be cleaned up after its result is consumed.
+   be long. Submit long E2E or benchmark runs through the loop runner's
+   registered background mode so the human and development coding agent can
+   keep interacting:
+
+   ```bash
+   ./scripts/run-agent-loop.sh --background --provider <provider> --model <model> \
+     --pi-auth-file "$HOME/.pi/agent/auth.json" "<task>"
+   ./scripts/run-agent-loop.sh --run-status <run_id>
+   ./scripts/run-agent-loop.sh --clean-run <run_id>
+   ```
+
+   The whole preflight runs in the foreground, so an invalid invocation is
+   rejected there instead of becoming a background run to chase. The registry
+   records secret-free metadata only and must be cleaned up once the result is
+   consumed.
 7. **Collect evidence**: artifact path, trajectory path, scrubbed trajectory
    path, backend/provider/model, definition revision, and credential-source
    flag. Save only scrubbed artifacts or durable lessons; never save raw

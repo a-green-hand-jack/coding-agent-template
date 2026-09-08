@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 # Project-internal, product-external evaluation loop.
 #
-# This is deliberately a foreground C2 runner.  Background registration and
-# cleanup belong to C3 and are not implemented here.
+# Long provider-backed validation can be submitted as a registered background
+# run (`--background`) so the developer session stays interactive.  A
+# registered run records secret-free metadata only, is queryable
+# (`--list-runs`, `--run-status`) and is removed once its result is consumed
+# (`--clean-run`).
 set -uo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,6 +22,14 @@ allow_unauthenticated=false
 credential_flag=""
 credential_value=""
 positionals=()
+background=false
+query_action=""
+query_id=""
+
+# Registered background runs live outside the repository so evidence is never
+# committed by accident.
+state_root="${AGENT_LOOP_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/agent-loop}"
+runs_root="$state_root/runs"
 
 usage() {
   cat <<'EOF'
@@ -42,6 +53,20 @@ Options:
   --allow-unauthenticated         Skip the provider-backed benchmark stage;
                                   successful runs are infrastructure-only (exit 3)
   -h, --help                      Show this help
+
+Registered background runs (for long provider-backed validation):
+  --background                    Validate the invocation, then detach the loop
+                                  and print the run record as JSON
+  --list-runs                     List registered runs as JSON
+  --run-status ID                 Print one run's record, including its summary
+  --clean-run ID|all              Remove a finished run once consumed
+
+A background run is registered under
+$AGENT_LOOP_STATE_DIR (default ${XDG_STATE_HOME:-$HOME/.local/state}/agent-loop).
+Its metadata records the credential-source flag and path or variable NAME only,
+never a credential value. The whole preflight (backend, credential matrix,
+task, workspace) runs in the foreground, so an invalid invocation is rejected
+before anything is detached.
 
 Credential matrix (mismatches are rejected before any stage runs):
   pi: --pi-auth-file PATH or --api-key-env NAME
@@ -97,7 +122,6 @@ canonical_credential_flag() {
   case "$1" in
     --api-key-env|api-key-env) printf '%s' '--api-key-env' ;;
     --pi-auth-file|pi-auth-file) printf '%s' '--pi-auth-file' ;;
-    --bundle|bundle) printf '%s' '--bundle' ;;
     *) return 1 ;;
   esac
 }
@@ -153,21 +177,30 @@ while (($#)); do
       need_value "$1" "${2:-}"; run_dir="$2"; shift 2 ;;
     --run-dir=*) run_dir="${1#*=}"; [[ -n "$run_dir" ]] || reject 'empty value for --run-dir'; shift ;;
     --allow-unauthenticated) allow_unauthenticated=true; shift ;;
+    --background) background=true; shift ;;
+    --list-runs) query_action='list'; shift ;;
+    --run-status)
+      need_value "$1" "${2:-}"; query_action='status'; query_id="$2"; shift 2 ;;
+    --run-status=*) query_action='status'; query_id="${1#*=}"; [[ -n "$query_id" ]] || reject 'empty value for --run-status'; shift ;;
+    --clean-run)
+      need_value "$1" "${2:-}"; query_action='clean'; query_id="$2"; shift 2 ;;
+    --clean-run=*) query_action='clean'; query_id="${1#*=}"; [[ -n "$query_id" ]] || reject 'empty value for --clean-run'; shift ;;
     --api-key-env)
       need_value "$1" "${2:-}"; set_credential '--api-key-env' "$2"; shift 2 ;;
     --api-key-env=*) set_credential '--api-key-env' "${1#*=}"; [[ -n "$credential_value" ]] || reject 'empty value for --api-key-env'; shift ;;
     --pi-auth-file)
       need_value "$1" "${2:-}"; set_credential '--pi-auth-file' "$2"; shift 2 ;;
     --pi-auth-file=*) set_credential '--pi-auth-file' "${1#*=}"; [[ -n "$credential_value" ]] || reject 'empty value for --pi-auth-file'; shift ;;
-    --bundle)
-      need_value "$1" "${2:-}"; set_credential '--bundle' "$2"; shift 2 ;;
-    --bundle=*) set_credential '--bundle' "${1#*=}"; [[ -n "$credential_value" ]] || reject 'empty value for --bundle'; shift ;;
+    --bundle|--bundle=*)
+      # Accepted by name only so the diagnostic stays specific instead of
+      # degrading to "unknown option". The benchmark stage has no bundle path.
+      reject 'provider bundles are not in this runner'"'"'s credential matrix; use --pi-auth-file or --api-key-env' ;;
     --credential-source)
       need_value "$1" "${2:-}"
       source_spec="$2"
       shift 2
       case "$source_spec" in
-        --api-key-env|api-key-env|--pi-auth-file|pi-auth-file|--bundle|bundle)
+        --api-key-env|api-key-env|--pi-auth-file|pi-auth-file)
           need_value '--credential-source' "${1:-}"
           parse_credential_source "$source_spec" "$1"
           shift ;;
@@ -184,6 +217,128 @@ while (($#)); do
     *) positionals+=("$1"); shift ;;
   esac
 done
+
+# --- Registered background runs ---------------------------------------------
+# Queries are pure reads of the run registry and must not be affected by the
+# backend/credential preflight below.
+
+run_id_re='^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{6}$'
+
+query_error() {
+  printf 'error: %s\n' "$1" >&2
+  python3 -c 'import json,sys; print(json.dumps({"summary_version":1,"result":"rejected","mode":"registry","error":sys.argv[1]},ensure_ascii=False,separators=(",",":")))' "$1"
+  exit 2
+}
+
+# Read one run's directory into a JSON object. `state` is derived from the
+# recorded exit code, or from whether the process is still alive, so a killed
+# run does not stay "running" forever.
+emit_run_record() {
+  python3 - "$1" <<'PY'
+import json
+import os
+import sys
+
+run = sys.argv[1]
+
+
+def read(name):
+    try:
+        with open(os.path.join(run, name), encoding="utf-8") as handle:
+            return handle.read().strip()
+    except OSError:
+        return ""
+
+
+record = {"run_id": os.path.basename(run)}
+try:
+    with open(os.path.join(run, "meta.json"), encoding="utf-8") as handle:
+        record.update(json.load(handle))
+except (OSError, json.JSONDecodeError):
+    record["meta_error"] = "run metadata is missing or unreadable"
+
+exit_code = read("exit_code")
+pid = read("pid")
+if exit_code:
+    code = int(exit_code) if exit_code.lstrip("-").isdigit() else exit_code
+    record["exit_code"] = code
+    record["state"] = {0: "completed", 3: "infrastructure-only"}.get(code, "failed")
+elif pid.isdigit() and os.path.isdir(f"/proc/{pid}"):
+    record["state"] = "running"
+    record["pid"] = int(pid)
+elif pid:
+    record["state"] = "abandoned"
+    record["detail"] = "the run process is gone and recorded no exit code"
+else:
+    record["state"] = "unknown"
+
+record["log"] = os.path.join(run, "output.log")
+summary_path = os.path.join(run, "summary.json")
+if os.path.isfile(summary_path):
+    try:
+        with open(summary_path, encoding="utf-8") as handle:
+            record["summary"] = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        record["summary"] = None
+        record["summary_error"] = "the run produced no machine-readable summary"
+print(json.dumps(record, ensure_ascii=False, separators=(",", ":")))
+PY
+}
+
+if [[ -n "$query_action" ]]; then
+  case "$query_action" in
+    list)
+      if [[ ! -d "$runs_root" ]]; then
+        printf '[]\n'
+        exit 0
+      fi
+      records=()
+      for run in "$runs_root"/*; do
+        [[ -d "$run" ]] || continue
+        records+=("$(emit_run_record "$run")")
+      done
+      if ((${#records[@]} == 0)); then
+        printf '[]\n'
+      else
+        printf '%s\n' "${records[@]}" | python3 -c 'import json,sys; print(json.dumps([json.loads(line) for line in sys.stdin if line.strip()],ensure_ascii=False,separators=(",",":")))'
+      fi
+      exit 0 ;;
+    status)
+      [[ "$query_id" =~ $run_id_re ]] || query_error "invalid run id: $query_id"
+      [[ -d "$runs_root/$query_id" ]] || query_error "no such registered run: $query_id"
+      emit_run_record "$runs_root/$query_id"
+      exit 0 ;;
+    clean)
+      if [[ "$query_id" == all ]]; then
+        removed=()
+        if [[ -d "$runs_root" ]]; then
+          for run in "$runs_root"/*; do
+            [[ -d "$run" ]] || continue
+            # A live run is never removed: that would orphan the process and
+            # lose the only record of it.
+            if [[ "$(emit_run_record "$run" | python3 -c 'import json,sys; print(json.load(sys.stdin)["state"])')" == running ]]; then
+              continue
+            fi
+            rm -rf "$run" && removed+=("$(basename "$run")")
+          done
+        fi
+        printf '%s' "${removed[*]:-}" | python3 -c 'import json,sys; ids=sys.stdin.read().split(); print(json.dumps({"summary_version":1,"result":"cleaned","removed":ids,"count":len(ids)},ensure_ascii=False,separators=(",",":")))'
+        exit 0
+      fi
+      [[ "$query_id" =~ $run_id_re ]] || query_error "invalid run id: $query_id"
+      [[ -d "$runs_root/$query_id" ]] || query_error "no such registered run: $query_id"
+      if [[ "$(emit_run_record "$runs_root/$query_id" | python3 -c 'import json,sys; print(json.load(sys.stdin)["state"])')" == running ]]; then
+        query_error "run $query_id is still running; wait for it or stop it first"
+      fi
+      rm -rf "$runs_root/$query_id"
+      python3 -c 'import json,sys; print(json.dumps({"summary_version":1,"result":"cleaned","removed":[sys.argv[1]],"count":1},ensure_ascii=False,separators=(",",":")))' "$query_id"
+      exit 0 ;;
+  esac
+fi
+
+if [[ "$background" == true && -n "${AGENT_LOOP_BACKGROUND_CHILD:-}" ]]; then
+  reject 'a background run must not request another background run'
+fi
 
 # pi is the only supported backend. Another backend is rejected outright rather
 # than coerced to pi.
@@ -218,9 +373,6 @@ if [[ -n "$credential_flag" ]]; then
       ;;
     --pi-auth-file)
       [[ -f "$credential_value" ]] || reject "credential file does not exist: $credential_value"
-      ;;
-    --bundle)
-      reject 'provider bundles are not in the C2 credential matrix; use --pi-auth-file or --api-key-env'
       ;;
   esac
 elif [[ "$allow_unauthenticated" != true ]]; then
@@ -257,6 +409,107 @@ fi
 if [[ -n "$run_dir" ]]; then
   mkdir -p "$run_dir" || reject "could not create run directory: $run_dir"
   run_dir="$(cd "$run_dir" && pwd)"
+fi
+
+# The full preflight has now passed, so the invocation is known to be valid.
+# Only at this point is it safe to detach: an invalid invocation must fail in
+# the developer's terminal, never inside a background run they have to query.
+if [[ "$background" == true ]]; then
+  run_id="$(date -u +%Y%m%dT%H%M%SZ)-$(od -An -N3 -tx1 /dev/urandom | tr -d ' \n')"
+  run="$runs_root/$run_id"
+  mkdir -p "$run" || reject "could not create the run registry entry: $run"
+  chmod 700 "$state_root" "$run" 2>/dev/null || true
+
+  # The task travels with the run: the parent's temporary directory is removed
+  # when the parent exits, which would delete a prompt written from argv.
+  cp "$task_file" "$run/task.md" || reject "could not stage the task file for the background run"
+
+  child_args=(
+    --agent "$agent"
+    --backend "$backend"
+    --provider "$provider"
+    --model "$model"
+    --task-file "$run/task.md"
+  )
+  [[ -n "$workspace" ]] && child_args+=(--workspace "$workspace")
+  [[ -n "$run_dir" ]] && child_args+=(--run-dir "$run_dir")
+  [[ "$allow_unauthenticated" == true ]] && child_args+=(--allow-unauthenticated)
+  [[ -n "$credential_flag" ]] && child_args+=("$credential_flag" "$credential_value")
+
+  # Secret-free metadata only: the credential-source flag plus its path or the
+  # NAME of the environment variable, never a credential value.
+  python3 - "$run/meta.json" "$run_id" "$agent" "$backend" "$provider" "$model" \
+    "$credential_flag" "$credential_value" "$run/task.md" "$workspace" "$run_dir" \
+    "$allow_unauthenticated" <<'PY'
+import json
+import sys
+from datetime import datetime, timezone
+
+(
+    destination,
+    run_id,
+    agent,
+    backend,
+    provider,
+    model,
+    credential_flag,
+    credential_value,
+    task_file,
+    workspace,
+    run_dir,
+    allow_unauthenticated,
+) = sys.argv[1:]
+
+if credential_flag == "--api-key-env":
+    credential = {"flag": credential_flag, "environment": credential_value,
+                  "display": f"{credential_flag} {credential_value}"}
+elif credential_flag:
+    credential = {"flag": credential_flag, "path": credential_value,
+                  "display": f"{credential_flag} {credential_value}"}
+else:
+    credential = {"flag": None, "display": "none"}
+
+with open(destination, "w", encoding="utf-8") as handle:
+    json.dump(
+        {
+            "registry_version": 1,
+            "run_id": run_id,
+            "submitted_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "agent": agent,
+            "backend": backend,
+            "provider": provider,
+            "model": model,
+            "credential_source": credential["display"],
+            "credential": credential,
+            "task_file": task_file,
+            "workspace": workspace or None,
+            "run_dir": run_dir or None,
+            "mode": "infrastructure-only" if allow_unauthenticated == "true" else "provider-backed",
+        },
+        handle,
+        ensure_ascii=False,
+    )
+PY
+
+  # setsid where available so the run survives the developer's shell; the loop
+  # records its own exit code so a query can tell "finished" from "killed".
+  launcher=(setsid)
+  command -v setsid >/dev/null 2>&1 || launcher=(nohup)
+  AGENT_LOOP_BACKGROUND_CHILD=1 "${launcher[@]}" bash -c '
+    run="$1"; shift
+    script="$1"; shift
+    "$script" "$@" >"$run/summary.json" 2>"$run/output.log"
+    code=$?
+    printf "%s\n" "$code" >"$run/exit_code"
+  ' _ "$run" "$root/scripts/run-agent-loop.sh" "${child_args[@]}" >/dev/null 2>&1 &
+  child_pid=$!
+  printf '%s\n' "$child_pid" >"$run/pid"
+  disown "$child_pid" 2>/dev/null || true
+
+  rm -rf "${tmp_dir:-/nonexistent}"
+  emit_run_record "$run"
+  printf 'registered background run %s; query it with --run-status %s\n' "$run_id" "$run_id" >&2
+  exit 0
 fi
 
 if [[ -z "$tmp_dir" ]]; then

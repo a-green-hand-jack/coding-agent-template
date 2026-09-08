@@ -163,8 +163,11 @@ promotion gate; the comparator never writes it and never updates the best.
 `scripts/run-agent-loop.sh` is a stage runner, not a finished automatic
 optimizer. This skill adds the design contract, the diagrams, a thin
 comparison protocol and a protected self-bootstrap check. It deliberately adds
-no LLM client, session manager, approval loop, tool loop, provider adapter or
-background registry.
+no LLM client, session manager, approval loop, tool loop or provider adapter.
+The runner does keep a registry of detached runs (`--background`,
+`--list-runs`, `--run-status`, `--clean-run`) so long provider-backed
+validation does not block the developer session; that registry holds
+secret-free run metadata and nothing else.
 
 ## Downstream use
 
