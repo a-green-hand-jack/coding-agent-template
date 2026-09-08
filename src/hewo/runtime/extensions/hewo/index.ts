@@ -368,8 +368,12 @@ const factory: ExtensionFactory = async (api: ExtensionAPI): Promise<void> => {
 
     if (typeof api.registerCommand === 'function') {
       // pi takes the command name as the first argument, not inside the spec.
-      api.registerCommand('hewo-report', {
-        description: 'Show the current time and the weather for the configured location.',
+      // The name must not collide with the `hewo-report` prompt template: two
+      // commands answering one slash name is ambiguous, and the collision was
+      // observed to make the invocation produce nothing at all. This one runs
+      // the composition directly, without a model turn.
+      api.registerCommand('hewo-report-direct', {
+        description: 'Show the current time and weather directly, without a model turn.',
         handler: async (argument) => {
           const location =
             typeof argument === 'string' && argument.trim() !== ''

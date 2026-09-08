@@ -175,8 +175,49 @@ provider-backed run found them.
 - The custom endpoints are reachable from the container; Docker networking was
   never the blocker.
 
-## Still open
+## Ambient-discovery flag matrix, measured
 
-Whether `--no-prompt-templates` and `--no-themes` are additive with explicit
-loads is still undocumented, which is why the launcher does not pass them.
-Ambient global prompt-template and theme discovery therefore remains possible.
+Settled empirically with `pi --mode rpc` + `{"type":"get_commands"}`, which
+reports each command's `source` and `path`. Undocumented additivity is now
+measured rather than assumed:
+
+| Flags | Result |
+| --- | --- |
+| `--prompt-template <dir>` alone | templates load |
+| `--no-prompt-templates` + explicit | **templates still load** - additive |
+| `--no-prompt-templates` alone | none |
+| `--skill <dir>` alone | 56 commands: 54 ambient host skills **plus** our 2 |
+| `--no-skills` + explicit | **exactly our 2** - additive, ambient dropped |
+| `--no-skills` alone | none |
+
+So the launcher now passes `--no-prompt-templates` as well. Confirmed in the
+container with the real flag set: `hewo-report` (prompt), `hewo-smoke`
+(prompt), `skill:runtime-smoke`, `skill:time-and-weather` and the extension
+command - six commands total, no ambient leakage.
+
+**The `.agents/` collision is not theoretical.** Loading skills without
+`--no-skills` on this development machine pulled in 54 unrelated host skills.
+`--no-skills` plus explicit `--skill` reduces that to the two the runtime
+declares. That flag is load-bearing, not defensive decoration.
+
+`--no-themes` remains **unverified**: themes are TUI-only, do not appear in
+`get_commands`, and `--use-theme` does not error on a missing theme, so no
+non-TUI observation was possible. The launcher therefore does NOT pass it - an
+unverified flag must not risk silently dropping a declared resource.
+
+## Two more leaks the provenance check caught
+
+1. **`prompts/AGENTS.md` became a `/AGENTS` slash command.** Prompt-template
+   discovery does not skip `AGENTS.md`, so a development instruction file was
+   exposed as a product command - with its heading as the description. The
+   installed payload excludes every `AGENTS.md`, so the shipped product is
+   clean and the container shows no `/AGENTS`; but running from a source
+   checkout does expose it. Keep relying on the payload exclusion, and never
+   assume a directory convention is safe just because the backend ignores it
+   elsewhere.
+2. **A command name collision silently produced nothing.** `hewo-report`
+   existed twice - once from `registerCommand` and once as a prompt template.
+   Invoking `/hewo-report` returned empty output with no error. The extension
+   command is now `hewo-report-direct`, and `/hewo-report` returns the full
+   report. Two sources answering one slash name is ambiguous; check
+   `get_commands` for duplicates after adding either kind.

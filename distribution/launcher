@@ -96,6 +96,14 @@ fi
 export PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
 
 # ---------------------------------------------------------------------------
+# Ambient discovery is closed for every resource type where the backend
+# documents, or local testing proved, that an explicit load stays additive:
+# --no-skills (verified: 54 ambient host skills drop to the 2 this runtime
+# declares), --no-extensions (documented), --no-prompt-templates (verified:
+# explicitly loaded templates survive it). --no-themes is NOT passed, because
+# theme additivity could not be observed from a non-TUI mode and an unverified
+# flag must not silently drop a declared resource.
+#
 # Manifest resolution. Every declared path must be a normalized relative path
 # inside the definition root: absolute paths, ".." traversal, empty names,
 # shell metacharacters, globs and symlinks are refused rather than sanitized.
@@ -286,6 +294,7 @@ pi_args=(
   --no-approve
   --no-skills
   --no-extensions
+  --no-prompt-templates
   --tools "${tools_override:-$manifest_tools}"
   "${pi_resource_args[@]}"
   "${system_prompt_args[@]}"

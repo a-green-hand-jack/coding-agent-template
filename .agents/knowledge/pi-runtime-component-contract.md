@@ -279,3 +279,23 @@ manifest-driven runtime. What the exercise confirmed or corrected:
 
 Nothing in this table is implemented. Do not report a deferred capability as
 present because a file mentions it.
+
+## Ambient discovery: which `--no-*` flags are safe to pass
+
+Measured on pi 0.85.1 with `--mode rpc` + `get_commands` (which reports each
+command's source and path), not assumed from the docs:
+
+- `--no-skills` + explicit `--skill` -> additive. Required: without it, this
+  machine's 54 global skills load into the product agent.
+- `--no-prompt-templates` + explicit `--prompt-template` -> additive. Pass it.
+- `--no-extensions` + explicit `--extension` -> additive per pi's own help.
+- `--no-context-files` -> always pass it, so no `AGENTS.md` reaches the product.
+- `--no-themes` -> **unverified**. Themes are TUI-only and invisible to
+  `get_commands`, and `--use-theme` does not error on a missing theme. Do not
+  pass an unverified `--no-*` flag: silently dropping a declared resource is
+  worse than leaving discovery open.
+
+Use `get_commands` as the provenance check after adding any command-shaped
+resource. It catches two failure modes that produce no error: an `AGENTS.md`
+picked up as a prompt template, and two sources claiming one slash name (which
+makes the invocation return nothing at all).

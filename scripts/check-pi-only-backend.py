@@ -89,6 +89,7 @@ REQUIRED_FACTS = (
     ("distribution/launcher", r"--extension", "launcher must load the extension through pi's own loader"),
     ("distribution/launcher", r"--no-context-files", "launcher must stop pi discovering AGENTS.md into the product"),
     ("distribution/launcher", r"--no-skills", "launcher must disable ambient skill discovery"),
+    ("distribution/launcher", r"--no-prompt-templates", "launcher must disable ambient prompt-template discovery"),
     ("distribution/launcher", r"supports pi only", "launcher must refuse other backends explicitly"),
     ("scripts/validate-definition.sh", r"runtime/package\.json", "validation must require the pi resource manifest"),
     ("docker/Dockerfile", r"pi-coding-agent", "the image must install pi"),
