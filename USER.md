@@ -32,7 +32,7 @@ clone template 仓库。
 不要假定下面示例中的版本号就是最新的。地址格式固定如下：
 
 ```bash
-VERSION=0.1.0
+VERSION=0.2.0
 INSTALLER_URL="https://raw.githubusercontent.com/a-green-hand-jack/coding-agent-template/v${VERSION}/distribution/install.sh"
 RELEASE_URL="https://github.com/a-green-hand-jack/coding-agent-template/releases/download/v${VERSION}/hewo-${VERSION}.tar.gz"
 

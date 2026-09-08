@@ -172,7 +172,7 @@ version rather than assuming the one written below.
 The no-clone installation flow is:
 
 ```bash
-VERSION=0.1.0
+VERSION=0.2.0
 INSTALLER_URL="https://raw.githubusercontent.com/a-green-hand-jack/coding-agent-template/v${VERSION}/distribution/install.sh"
 RELEASE_URL="https://github.com/a-green-hand-jack/coding-agent-template/releases/download/v${VERSION}/hewo-${VERSION}.tar.gz"
 curl --fail --silent --show-error --location "$INSTALLER_URL" -o /tmp/hewo-install.sh

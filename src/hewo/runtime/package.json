@@ -1,6 +1,6 @@
 {
   "name": "hewo-runtime",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "HeWo product Agent runtime resources, loaded by the pi coding agent.",
