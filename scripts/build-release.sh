@@ -8,7 +8,7 @@ rm -rf "$out"
 mkdir -p "$out/agent-definition" "$out/bin"
 # package.json is the runtime resource manifest and must ship. Only
 # development instructions and installed dependencies are excluded.
-tar -C "$root/src/$name/runtime" --exclude=AGENTS.md --exclude=node_modules -cf - . | tar -C "$out/agent-definition" -xf -
+tar -C "$root/src/$name/runtime" --exclude=AGENTS.md --exclude=node_modules --exclude=__pycache__ --exclude='*.egg-info' --exclude=build -cf - . | tar -C "$out/agent-definition" -xf -
 cp "$root/distribution/launcher" "$out/launcher"
 cp "$root/distribution/install.sh" "$out/install.sh"
 cp "$root/distribution/launcher" "$out/bin/$name"

@@ -125,6 +125,14 @@ extra = sorted(scaffold_keys - allowed_scaffold)
 if extra:
     problems.append(f"agent.yaml declares non-scaffold keys (use package.json instead): {extra}")
 
+# Product payload must be text: a NUL byte breaks grep/diff review and is a
+# sign of a generated-source mistake.
+for path in sorted(runtime.rglob("*")):
+    if not path.is_file() or path.suffix not in {".ts", ".js", ".md", ".json", ".py", ".toml"}:
+        continue
+    if b"\x00" in path.read_bytes():
+        problems.append(f"payload file contains a NUL byte: {path.relative_to(runtime)}")
+
 # No residual second-backend product configuration.
 # Names are assembled so this assertion does not itself read as residual
 # non-pi wiring to the backend-convergence scan.

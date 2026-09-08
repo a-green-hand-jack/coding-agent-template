@@ -11,6 +11,7 @@ set -euo pipefail
 bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 agent_home="$bin_dir/../lib/__AGENT_NAME__"
 definition_dir="$agent_home/agent-definition"
+[[ -d "$definition_dir" ]] && definition_dir="$(cd "$definition_dir" && pwd -P)"
 manifest="$definition_dir/package.json"
 
 fail() { printf '%s\n' "$*" >&2; exit 2; }
@@ -103,7 +104,7 @@ read -r -d '' resolver <<'RESOLVER' || true
 const fs = require("node:fs");
 const path = require("node:path");
 
-const root = fs.realpathSync(process.argv[2]);
+const root = fs.realpathSync(process.env.AGENT_DEFINITION_DIR);
 const out = [];
 const emit = (key, value) => out.push(key + "=" + value);
 const die = (message) => {
@@ -253,7 +254,7 @@ while IFS= read -r -d '' record; do
     WEATHER) weather_mode="$value" ;;
     *) fail "unexpected manifest record: $key" ;;
   esac
-done < <(node -e "$resolver" -- "$definition_dir")
+done < <(AGENT_DEFINITION_DIR="$definition_dir" node -e "$resolver")
 
 [[ -n "$manifest_tools" ]] || fail "the runtime manifest resolved no tool allowlist"
 

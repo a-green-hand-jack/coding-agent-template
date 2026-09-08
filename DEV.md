@@ -76,8 +76,8 @@ dev repo scaffold。
 
 变量：
 - Agent 名称：<agent_name>
-- 目标 backend：<opencode|codex|claude|pi，可多选>
-- 目标 provider/model：<provider/model，按 backend 分别填写>
+- 目标 backend：pi（本 template 只支持 pi；不要引入第二个 backend）
+- 目标 provider/model：<provider/model>
 
 初始化边界：
 - 只创建下游仓库基础目录、`src/<agent_name>/agent.yaml`、最小 runtime 配置、
@@ -157,7 +157,25 @@ coding agent 变成 hewo，也不是修改 `.agents/` 来实现 hewo：
 用户已明确授权开始实现 Agent 产品行为。请执行 Phase 1: Implement product
 behavior。先确认 Agent 名称、目标用户和产品边界，再把 Phase 0 中带有
 `TODO: replace during implementation` 的占位内容逐项替换为经过用户确认的
-identity、skills、knowledge、workflows 和 tools。重新运行 definition validation、
+runtime 资源。
+
+在写任何代码之前，先为每一条产品需求提交一次 **component choice + rationale**，
+按 `.agents/knowledge/pi-runtime-component-contract.md` 的决策树自上而下选择：
+
+1. 声明式资源（identity / knowledge / skill / prompt template / theme）；
+2. pi 原生配置（工具白名单、session 模式、project trust、context 策略）；
+3. 很薄的 TypeScript extension（typed tool、生命周期 hook、进程内状态）；
+4. 叶子脚本（无状态适配器，由 skill/extension 调用）；
+5. 外部 CLI/服务。
+
+只有写下"上一层为什么表达不了这个需求"之后才能下降一层。"tools" 不默认等于一个
+Python 项目：直接跳到脚本需要在 issue 中记录具体的 backend 能力缺口（哪个 pi
+primitive 本应覆盖它、为什么没有）。"更快写完" 不是缺口。
+
+脚本作为叶子适配器时必须满足：明确的输入输出契约、幂等性与错误码、超时与取消、
+输出截断、无状态、secret safety，以及一条不需要凭据就能独立跑通的验证命令。
+脚本不得承担 agent loop、session 管理、模型调用、审批循环、sub-agent 编排、
+产品身份、长期状态或跨组件主编排。重新运行 definition validation、
 consistency audit，并用真实 provider-backed Docker E2E 观察产品行为；只有这些
 `agent-behavior` 证据完成后，才能声称 Agent 产品实现完成。不要修改已有 backend
 执行循环、model client、session、approval 或 tool loop，除非用户另行授权且

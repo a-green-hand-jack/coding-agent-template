@@ -66,11 +66,11 @@ mkdir -p "$definition_dir"
 # package.json is the runtime resource manifest and must reach the payload.
 # Development instructions and installed dependencies must not.
 if [[ -n "$source_runtime" ]]; then
-  tar -C "$source_runtime" --exclude=AGENTS.md --exclude=node_modules -cf - . | tar -C "$definition_dir" -xf -
+  tar -C "$source_runtime" --exclude=AGENTS.md --exclude=node_modules --exclude=__pycache__ --exclude='*.egg-info' --exclude=build -cf - . | tar -C "$definition_dir" -xf -
   launcher_source="$script_dir/launcher"
   version="dev"
 else
-  tar -C "$release_root/agent-definition" --exclude=AGENTS.md --exclude=node_modules -cf - . | tar -C "$definition_dir" -xf -
+  tar -C "$release_root/agent-definition" --exclude=AGENTS.md --exclude=node_modules --exclude=__pycache__ --exclude='*.egg-info' --exclude=build -cf - . | tar -C "$definition_dir" -xf -
   launcher_source="$release_root/launcher"
   version="$(sed -n 's/.*"version":"\([^"]*\)".*/\1/p' "$release_root/release-manifest.json" | head -n 1)"
   version="${version:-unknown}"
@@ -111,7 +111,12 @@ if [[ -f "$tools_dir/pyproject.toml" ]]; then
   }
   runtime_env_dir="$PREFIX/lib/$AGENT_NAME/environment"
   uv venv "$runtime_env_dir" --python python3 >/dev/null
-  uv pip install --python "$runtime_env_dir/bin/python" "$tools_dir" >/dev/null
+  # Build from a throwaway copy so build/, *.egg-info/ and __pycache__ never
+  # land in the installed Agent definition.
+  tools_build_dir="$(mktemp -d)"
+  cp -R "$tools_dir/." "$tools_build_dir/"
+  uv pip install --python "$runtime_env_dir/bin/python" "$tools_build_dir" >/dev/null
+  rm -rf "$tools_build_dir"
 fi
 
 sed -e "s/__AGENT_NAME__/$AGENT_NAME/g" "$launcher_source" > "$PREFIX/bin/$AGENT_NAME"

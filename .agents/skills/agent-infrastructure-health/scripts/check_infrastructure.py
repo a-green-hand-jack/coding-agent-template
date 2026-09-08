@@ -106,9 +106,10 @@ class Health:
             )
         commands = [
             "set -eu",
-            "command -v opencode",
-            "command -v codex",
-            "command -v claude",
+            # The product supports pi and only pi; the image must contain it
+            # and must not contain a retired backend.
+            "command -v pi",
+            f"test -f /opt/install/lib/{self.agent}/agent-definition/package.json",
         ]
         tools = self.runtime_tool_commands()
         for tool in tools:
