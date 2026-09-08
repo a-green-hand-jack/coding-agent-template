@@ -1,5 +1,7 @@
 # Time and Weather Skill
 
+> **Role:** development-agent instructions for the shipped time-and-weather skill. Not product behavior, and excluded from every payload.
+
 For the development coding agent only: maintain the user-facing time and
 weather skill. The nested AGENTS file is excluded from release artifacts.
 

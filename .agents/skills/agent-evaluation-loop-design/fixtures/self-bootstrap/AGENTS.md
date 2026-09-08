@@ -1,5 +1,7 @@
 # Self-Bootstrap Fixtures
 
+> **Role:** development-agent instructions for the self-bootstrap protocol's protected fixture inputs. Not product behavior.
+
 Protected inputs for the self-bootstrap protocol: the pre-declared candidate
 manifest, canonical condition manifests, and the fixed comparator outcome
 cases.

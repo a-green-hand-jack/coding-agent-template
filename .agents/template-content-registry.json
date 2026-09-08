@@ -384,6 +384,17 @@
         "nothing in the file itself: it is a symlink to AGENTS.md and has no content of its own"
       ],
       "note": "Symlink to AGENTS.md so Claude Code reads the same instructions the other coding agents read. Recreate it downstream with `ln -s AGENTS.md CLAUDE.md`; never copy AGENTS.md to a second file, which would let the two diverge. Excluded from every payload alongside AGENTS.md."
+    },
+    {
+      "path": ".agents/knowledge/document-roles.md",
+      "class": "selective",
+      "destination": ".agents/knowledge/document-roles.md",
+      "adapt_required": [
+        "the governed set, which depends on the downstream repository's own document layout",
+        "the Contains/Excludes wording of every role block, which is per-document",
+        "the audience vocabulary if the downstream product serves a different set of readers"
+      ],
+      "note": "The role/content separation convention and its governed set. Its executable form is scripts/check-document-roles.py; copy both or neither."
     }
   ]
 }

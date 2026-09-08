@@ -1,5 +1,13 @@
 # Sub-skill: Migrate an Existing Agent Repository
 
+> **Role of this document**
+> - **Audience:** the development coding agent moving an existing coding-agent repository onto this template's scaffold.
+> - **Authority:** normative. The inventory-first order, the target mapping and the migration validation steps bind.
+> - **Tone:** imperative and procedural; numbered steps built around the mapping table they produce.
+> - **Language:** English.
+> - **Contains:** how to inventory without changing behavior, the existing-concern to template-destination mapping, removal of overlapping runtime infrastructure, and migration validation.
+> - **Excludes:** starting a new Agent (see `.agents/skills/template-agent-development/references/use-template.md`) and pulling later template changes (see `.agents/skills/template-agent-development/references/sync-template.md`); the shared contract all three obey (see `.agents/skills/template-agent-development/SKILL.md`).
+
 Use this sub-skill when an existing coding-agent repository should adopt this
 template's scaffold, runtime boundary, and backend composition model.
 

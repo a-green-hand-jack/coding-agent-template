@@ -1,5 +1,13 @@
 # Development Agent Resources
 
+> **Role of this document**
+> - **Audience:** the development coding agent orienting itself in `.agents/` before adding or copying a development resource.
+> - **Authority:** informative. It maps the directory; the registry and the scoped `AGENTS.md` files are what bind.
+> - **Tone:** orienting and brief; a directory map plus the one boundary that is easy to get wrong.
+> - **Language:** English.
+> - **Contains:** what each subdirectory of `.agents/` holds, and which classes of content may travel to a downstream repository.
+> - **Excludes:** product material (see `src/hewo/`), and the authoritative per-path copy list (see `.agents/template-content-registry.json`).
+
 This directory is for the **development coding agent** that maintains this
 repository and develops the `hewo` product agent. It is not part of the installed
 product. Keep reusable development memory, knowledge, and skills here; keep

@@ -1,5 +1,13 @@
 # Sub-skill: Synchronize Template Updates
 
+> **Role of this document**
+> - **Audience:** the development coding agent bringing a newer template change into an existing downstream repository.
+> - **Authority:** normative. Registry-driven selection and narrow application are requirements, not advice.
+> - **Tone:** imperative and procedural; numbered steps naming the exact check each one runs.
+> - **Language:** English.
+> - **Contains:** how to read the content registry and its classes, establish the upstream relationship, bootstrap downstream-owned directories, select implementation skills individually, apply repository updates narrowly, and revalidate.
+> - **Excludes:** the classification data itself (see `.agents/template-content-registry.json`), and first-time bootstrap or migration (see `.agents/skills/template-agent-development/references/use-template.md` and `.agents/skills/template-agent-development/references/migrate-existing-agent.md`).
+
 Use this sub-skill when a downstream Agent repository derives from this
 template and needs a newer template change. Synchronization is selective and
 registry-driven: a downstream repository must never copy `.agents/` wholesale.

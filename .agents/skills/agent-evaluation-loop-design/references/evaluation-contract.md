@@ -1,5 +1,13 @@
 # Evaluation Contract, Condition Manifest and Result Schema (v1)
 
+> **Role of this document**
+> - **Audience:** the development coding agent writing or reviewing an evaluation contract, condition manifest, or result document.
+> - **Authority:** normative. Where this document and a script disagree, one of the two is a defect and must be fixed.
+> - **Tone:** specification-style; field tables, canonical byte rules, precedence order, and exit codes as a contract.
+> - **Language:** English.
+> - **Contains:** canonical JSON and hashing, contract v1 fields, the canonical condition manifest, the result and evidence schema, promotion and generalization blocks, comparator precedence, CLI and exit codes.
+> - **Excludes:** when to run the loop at all (see `.agents/skills/agent-evaluation-loop-design/SKILL.md`), and the diagram and README sync rules (see `.agents/skills/agent-evaluation-loop-design/references/agent-architecture-schema.md`).
+
 Normative for `validate-agent-evaluation.py` and `compare-evaluations.py`. When
 this document and a script disagree, that is a defect in one of them — fix it,
 do not work around it.

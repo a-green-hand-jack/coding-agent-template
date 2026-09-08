@@ -1,5 +1,13 @@
 # Benchmark Contract
 
+> **Role of this document**
+> - **Audience:** the development coding agent running a benchmark or reporting what its result means.
+> - **Authority:** normative. What a benchmark result may and may not be claimed to support is binding.
+> - **Tone:** constraining and unambiguous; short rules about comparability and the scope of a claim.
+> - **Language:** English.
+> - **Contains:** what every run must pin, the run pipeline, condition-identity rules, the failure classes that never update the current best, and why a pass is not a product claim.
+> - **Excludes:** product behavior and any benchmark-specific runtime hack (see `src/<agent_name>/runtime/`), and the acceptance rules themselves (see `src/<agent_name>/development/evaluation-contract.json`).
+
 Benchmarks measure general capability and regression; they do not define product behavior. They are one stage in the project-internal evaluation loop, not the whole loop and not product runtime content. Pin task-set revision, model, runtime, Agent Definition commit, and verifier version for every run. Store only scrubbed trajectories and derived results.
 
 ```text

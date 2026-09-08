@@ -1,5 +1,13 @@
 # hewo 用户指南
 
+> **Role of this document**
+> - **Audience:** an end user who installs and runs the product Agent's command.
+> - **Authority:** informative. It describes what the installed product does; it imposes nothing on developers.
+> - **Tone:** direct and task-oriented; no repository internals, no development vocabulary.
+> - **Language:** Chinese, with English identifiers, paths and commands.
+> - **Contains:** installation, the command surface, provider/model selection at run time, credential handling, and troubleshooting.
+> - **Excludes:** how the Agent is developed or released (see `DEV.md`), development-agent rules (see `AGENTS.md`), and template internals (see `README.md`).
+
 `hewo` 是一个面向最终用户的 Agent CLI/TUI 入口。它把一个 Agent
 scaffold 的行为定义交给成熟的 coding-agent backend 执行，再由 backend
 连接具体的 LLM provider 和 model。
@@ -20,9 +28,8 @@ release archive 自带 hewo 的 runtime definition、launcher 和 installer。
 用户只需要下载 release 中的 `install.sh`，再让它下载对应 archive；不需要
 clone template 仓库。
 
-当前仓库已经实现了 release 构建和安装逻辑，但截至目前还没有公开发布的
-GitHub Release/tag。下面的地址是发布后的固定格式，只有在对应版本真正发布
-后才能使用：
+已发布的版本在仓库的 GitHub Releases 页面列出；请以那里的最新版本为准，
+不要假定下面示例中的版本号就是最新的。地址格式固定如下：
 
 ```bash
 VERSION=0.1.0

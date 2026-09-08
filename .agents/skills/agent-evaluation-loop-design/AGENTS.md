@@ -1,5 +1,7 @@
 # Agent Evaluation Loop Design Skill
 
+> **Role:** development-agent instructions for the agent-evaluation-loop-design skill. Not product behavior.
+
 Development-only instructions for the skill that teaches the development coding
 agent how to design a product-Agent optimization loop.
 

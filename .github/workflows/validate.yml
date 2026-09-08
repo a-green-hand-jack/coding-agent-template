@@ -10,6 +10,9 @@ jobs:
       - run: ./scripts/validate-definition.sh hewo
       - run: python3 scripts/check-template-registry.py
       - run: python3 scripts/check-pi-only-backend.py
+      # Every governed document must declare who it is for, so a document's
+      # audience cannot drift away from its content unnoticed.
+      - run: python3 scripts/check-document-roles.py
       # The consistency audit is what catches manifest and documentation drift.
       # Without it here, a red audit can sit on the default branch unnoticed.
       - run: >-

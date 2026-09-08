@@ -1,5 +1,13 @@
 # Sub-skill: Use the Template to Build an Agent
 
+> **Role of this document**
+> - **Audience:** the development coding agent bootstrapping a new Agent scaffold in a downstream repository during Phase 0.
+> - **Authority:** normative. The Phase 0 scope, the neutral-placeholder rule and the stop-for-authorization condition bind.
+> - **Tone:** imperative and procedural; numbered steps ending in an explicit report-and-stop condition.
+> - **Language:** English.
+> - **Contains:** how to establish the boundary, create the Phase 0 scaffold, compose backend and provider at run time, validate the infrastructure boundary, and write the completion report.
+> - **Excludes:** real product identity and domain resources, which Phase 1 authorizes (see `src/<agent>/runtime/`); later template updates and migrations (see `.agents/skills/template-agent-development/references/sync-template.md` and `.agents/skills/template-agent-development/references/migrate-existing-agent.md`).
+
 Use this sub-skill when the target repository is starting a new Agent from the
 template or when adding a new `src/<agent>` scaffold. It defines Phase 0
 initialization; Phase 1 product implementation and Phase 2 release require

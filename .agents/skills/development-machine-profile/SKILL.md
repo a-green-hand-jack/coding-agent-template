@@ -7,6 +7,14 @@ metadata:
 
 # Development Machine Profile
 
+> **Role of this document**
+> - **Audience:** the development coding agent recording or refreshing a repository's development-machine record.
+> - **Authority:** normative. The capture pipeline, the iteration loop and the secret-safety rules are binding and never relaxed.
+> - **Tone:** imperative and procedural; a probe-and-render pipeline followed by rules stated as prohibitions.
+> - **Language:** English.
+> - **Contains:** the progressive-loading order, the one-shot probe-and-render command, how to extend the probe when it misses a capability, the secret-safety rules, and downstream use.
+> - **Excludes:** the field-by-field contract (see `references/profile-schema.md`), this machine's non-probeable facts (see `.agents/knowledge/development-machine-facts.md`), and the rendered record (see `DevelopmentMachine.md`).
+
 Produce (or refresh) a repository's `DevelopmentMachine.md`: a secret-free,
 one-shot record of everything on the development machine that could affect
 developing the product Agent. The skill is **generic and discovery-driven** —

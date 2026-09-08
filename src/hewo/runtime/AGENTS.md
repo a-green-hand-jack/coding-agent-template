@@ -1,5 +1,7 @@
 # HeWo Runtime Definition
 
+> **Role:** development-agent instructions for the hewo runtime definition, the payload installed and released to users. Not product behavior, and excluded from every payload.
+
 For the **development coding agent** only. This directory is the hewo product
 Agent definition: the payload installed and released to users. Do not act as
 hewo while editing it, and never put development instructions in a file other

@@ -1,5 +1,7 @@
 # Agent Evaluation Loop Design Fixtures
 
+> **Role:** development-agent instructions for the agent-evaluation-loop-design skill's test fixtures. Not product behavior.
+
 Fixed, provider-free fixtures used to verify the skill's own scripts.
 
 `paper-agent/` is an abstract sample product Agent used to prove the diagram

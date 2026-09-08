@@ -7,6 +7,14 @@ metadata:
 
 # Template Release Readiness
 
+> **Role of this document**
+> - **Audience:** the development coding agent auditing this template repository before publishing a version or tag.
+> - **Authority:** normative. The release gates and the handling of errors versus warnings are binding.
+> - **Tone:** imperative and procedural; the audit command, then the ordered gates that must also pass.
+> - **Language:** English.
+> - **Contains:** the deterministic release-audit invocation, what that audit checks, the remaining release gates, and the downstream-reusability condition for publishing.
+> - **Excludes:** product-behavior evidence (see `.agents/skills/agent-definition-validation/SKILL.md`), and the classification data the audit reads (see `.agents/template-content-registry.json`).
+
 Use this skill before publishing a new template version or tag. It evaluates
 the template as a reusable development base, not only the sample `hewo`
 product. It does not replace provider-backed behavior evidence.

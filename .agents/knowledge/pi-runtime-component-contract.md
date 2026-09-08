@@ -1,5 +1,13 @@
 # Pi runtime component contract
 
+> **Role of this document**
+> - **Audience:** the development coding agent composing a product Agent on the pi backend in this repository.
+> - **Authority:** normative. The decision tree, the script boundary and the discovery guards bind every component choice.
+> - **Tone:** imperative and specific; a decision tree, per-component tables, and exact flag spellings with what each one does not do.
+> - **Language:** English.
+> - **Contains:** the component decision tree, the per-component pi loader contract, the leaf-script boundary, the pi capability matrix, the `.agents/` discovery hazard and its required guards, and dated provenance.
+> - **Excludes:** product payload of any kind (see `src/hewo/runtime/`), and this machine's credential and provider selection facts (see `.agents/knowledge/provider-e2e.md`).
+
 For the **development coding agent** only. Development-side knowledge: it governs
 how this repository composes a product Agent. It is never product payload and must
 never be copied into `src/*/runtime/`. Backend in scope: pi `0.85.1`

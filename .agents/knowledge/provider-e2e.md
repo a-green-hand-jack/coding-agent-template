@@ -1,5 +1,13 @@
 # Provider-backed E2E injection cheat-sheet
 
+> **Role of this document**
+> - **Audience:** the development coding agent injecting a provider credential into a Docker E2E run; the document scopes itself to that agent alone.
+> - **Authority:** normative. The fail-closed rule, the injection flags and the do-not list bind every provider-backed run.
+> - **Tone:** terse and operational; flags, host paths and named gotchas, never credential contents.
+> - **Language:** English.
+> - **Contains:** the injection-flag to host-credential mapping, secret-free provider discovery, the secret-bearing paths that must never be printed, and the pi "No models available" gotcha.
+> - **Excludes:** key values and auth payloads; this machine's confirmed provider facts (see `.agents/knowledge/development-machine-facts.md`), and the validation procedure that consumes these flags (see `.agents/skills/agent-definition-validation/SKILL.md`).
+
 For the **development coding agent** only. Secret-free: flags and paths only,
 never key contents. Re-verify device facts before relying on them.
 

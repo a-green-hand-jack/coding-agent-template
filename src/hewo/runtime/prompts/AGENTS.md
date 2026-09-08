@@ -1,5 +1,7 @@
 # HeWo Prompt Templates
 
+> **Role:** development-agent instructions for hewo's shipped slash-command prompt templates. Not product behavior, and excluded from every payload.
+
 For the development coding agent only: maintain the shipped slash commands.
 Exclude this development guidance from releases.
 

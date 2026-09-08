@@ -1,5 +1,7 @@
 # Development Memory
 
+> **Role:** development-agent instructions for the development memory records in this directory. Not product behavior.
+
 This directory is for the development coding agent only.
 
 Store durable, repository-specific decisions and lessons here. Never store

@@ -1,5 +1,7 @@
 # HeWo Themes
 
+> **Role:** development-agent instructions for hewo's shipped theme. Not product behavior, and excluded from every payload.
+
 For the development coding agent only: maintain the shipped theme. Exclude
 this development guidance from releases.
 

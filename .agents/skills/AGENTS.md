@@ -1,5 +1,7 @@
 # Development Skills
 
+> **Role:** development-agent instructions for the reusable development skills in this directory. Not product behavior.
+
 This directory is for reusable skills used by the development coding agent.
 
 Skills here describe repository maintenance, validation, packaging, and

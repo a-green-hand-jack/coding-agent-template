@@ -7,6 +7,14 @@ metadata:
 
 # Agent Infrastructure Health
 
+> **Role of this document**
+> - **Audience:** the development coding agent proving the execution foundation works before Agent orchestration, or before handing the template to a downstream developer.
+> - **Authority:** normative. The preflight, the separate provider-backed gate, and the blocking readiness rule are binding.
+> - **Tone:** imperative and procedural; commands with what each one proves and, explicitly, what it does not.
+> - **Language:** English.
+> - **Contains:** when to run the deterministic preflight, its invocation and options, why the provider-backed smoke is a separate gate, and how to treat the readiness result.
+> - **Excludes:** provider-backed behavior evidence itself (see `.agents/skills/agent-definition-validation/SKILL.md`), stale and contradictory content (see `.agents/skills/agent-consistency-audit/SKILL.md`), and credential-injection detail (see `.agents/knowledge/provider-e2e.md`).
+
 Use this skill before starting substantial Agent orchestration work, after
 changing installer/Docker/backend/tool plumbing, and before handing the
 template to a downstream Agent developer. It checks infrastructure separately

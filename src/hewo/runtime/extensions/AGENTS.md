@@ -1,5 +1,7 @@
 # HeWo Extensions
 
+> **Role:** development-agent instructions for hewo's runtime extension and its tool surface. Not product behavior, and excluded from every payload.
+
 For the development coding agent only: maintain the runtime extension that
 exposes the product tool surface. Exclude this development guidance from
 releases.

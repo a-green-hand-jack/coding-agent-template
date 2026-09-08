@@ -1,5 +1,7 @@
 # Agent Evaluation Loop Design References
 
+> **Role:** development-agent instructions for the agent-evaluation-loop-design skill's reference documents. Not product behavior.
+
 Development-only reference material loaded progressively by `SKILL.md`.
 
 These documents are normative for the schemas and state machine the scripts
