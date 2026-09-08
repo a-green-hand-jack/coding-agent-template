@@ -18,7 +18,7 @@ provider.
 | opencode | `--auth-file` or `--api-key-env <ENV>` | `~/.local/share/opencode/auth.json` |
 | codex | `--codex-auth-file` or `--api-key-env` (`OPENAI_API_KEY`) | `~/.codex/auth.json` |
 | claude | `--claude-api-key-file` or `--claude-credentials-file` or `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN` | key file or env; this host has no `~/.claude/.credentials.json` |
-| pi | `--pi-auth-file` | `~/.pi/agent/auth.json` (+ auto-discovered `~/.pi/agent/models.json`) |
+| pi | `--api-key-env <PROVIDER>_API_KEY` (preferred) plus `--pi-models-file` for a custom provider; `--pi-auth-file` mounts `~/.pi/agent/auth.json` but was **not** sufficient on its own for a custom provider in 2026-09-08 testing | `~/.pi/agent/auth.json`, `~/.pi/agent/models.json` |
 
 ## Discover providers without exposing credentials
 
@@ -60,3 +60,15 @@ the credential class, and recommend rotation.
   Git, release archive, or `src/hewo/runtime/`.
 - Print, `cat`, or read into a transcript any auth store, `*-key` file, `.env`,
   or `opencode debug config` output (all can contain resolved key material).
+
+## pi gotcha: "No models available" is usually a credential condition
+
+`pi --list-models` is auth-filtered. A clean container with no resolvable
+provider key prints "No models available", which reads like a missing model
+catalog and is not one. `pi update --models` will report success and still
+leave an empty store. Check the credential before touching catalogs.
+
+A custom provider defined in `~/.pi/agent/models.json` loads fine from a
+read-only mount — pi will name the provider in its errors — but a mounted
+`auth.json` did not supply its key. Use `--api-key-env` for custom providers
+and treat `--pi-auth-file` as unverified for them.

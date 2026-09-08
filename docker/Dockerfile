@@ -14,6 +14,12 @@ ARG PI_VERSION=latest
 ARG PI_PACKAGE=@earendil-works/pi-coding-agent
 RUN apt-get update && apt-get install -y --no-install-recommends bash ca-certificates python3 && rm -rf /var/lib/apt/lists/*
 RUN npm install --global ${PI_PACKAGE}@${PI_VERSION} --ignore-scripts --no-audit --no-fund
+# Lifecycle scripts stay disabled for supply-chain reasons, so any catalog
+# refresh is explicit rather than a postinstall hook. Note: this is NOT what
+# makes models appear. `pi --list-models` is auth-filtered, so an image with no
+# resolvable provider key legitimately reports "No models available"; that is a
+# credential condition, not a missing catalog.
+RUN pi update --models || echo 'warning: model catalog refresh failed'
 COPY --from=builder /opt/install /opt/install
 COPY --from=builder /opt/agent/distribution/container-entrypoint.sh /usr/local/bin/agent-entrypoint
 RUN chmod +x /usr/local/bin/agent-entrypoint && mkdir -p /root/.pi/agent /run/secrets

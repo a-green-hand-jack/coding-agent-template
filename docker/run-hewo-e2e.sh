@@ -178,13 +178,28 @@ if ((${#credential_sources[@]} > 0)); then
   credential_source="$(printf '%s,' "${credential_sources[@]}")"
   credential_source="${credential_source%,}"
 fi
-run_mode="agent-behavior"
-[[ "$credential_source" == none ]] && run_mode="infrastructure-only"
-printf 'evidence: backend=%s provider=%s model=%s credential_source=%s mode=%s\n' \
-  "$backend" "$provider" "$model" "$credential_source" "$run_mode" >&2
+# Intent is printed before the run; the MODE is decided by the outcome, never
+# by the presence of a credential flag. A named credential source that still
+# fails to answer is blocked, not agent-behavior.
+printf 'run: backend=%s provider=%s model=%s credential_source=%s\n' \
+  "$backend" "$provider" "$model" "$credential_source" >&2
 
 tty_args=()
 if [[ -t 0 && -t 1 ]]; then
   tty_args=(-it)
 fi
+set +e
 docker run --rm "${tty_args[@]}" "${env_file_args[@]}" "${env_args[@]}" "${bundle_args[@]}" "${workspace_args[@]}" "${pi_auth_args[@]}" "$name:e2e" "${task[@]}"
+run_status=$?
+set -e
+
+if [[ "$credential_source" == none ]]; then
+  run_mode="infrastructure-only"
+elif ((run_status == 0)); then
+  run_mode="agent-behavior"
+else
+  run_mode="blocked"
+fi
+printf 'evidence: backend=%s provider=%s model=%s credential_source=%s exit=%s mode=%s\n' \
+  "$backend" "$provider" "$model" "$credential_source" "$run_status" "$run_mode" >&2
+exit "$run_status"
