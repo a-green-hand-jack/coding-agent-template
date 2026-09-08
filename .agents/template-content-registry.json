@@ -354,6 +354,17 @@
       "path": "src/hewo/development/evaluation-contract.json",
       "class": "template-only-or-adapt",
       "note": "hewo's infrastructure-smoke-only evaluation contract. A downstream Agent writes its own contract; a smoke-only contract never demonstrates a performance improvement."
+    },
+    {
+      "path": ".agents/knowledge/pi-runtime-component-contract.md",
+      "class": "selective",
+      "destination": ".agents/knowledge/pi-runtime-component-contract.md",
+      "adapt_required": [
+        "pi version and the locally verified loader flags",
+        "downstream runtime resource layout and manifest paths",
+        "downstream development-resource directory if it is not .agents/"
+      ],
+      "note": "Development-side component decision tree and pi capability matrix. Re-verify every flag against the downstream machine's own pi --help before relying on it."
     }
   ]
 }
