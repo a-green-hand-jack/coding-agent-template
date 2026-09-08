@@ -123,7 +123,8 @@ permission to overwrite a downstream repository wholesale.
 After applying changes:
 
 - update stale template URLs or command names in downstream docs;
-- keep `opencode.json` valid even when the selected backend is Codex or Claude;
+- keep `runtime/package.json` valid; a non-pi backend configuration file must
+  not exist, and `validate-definition.sh` rejects one;
 - preserve independent scaffold/backend/provider layering;
 - review launchers, Docker, installers, and tool environments for credential
   exposure and runtime `PATH` behavior;
@@ -158,8 +159,7 @@ successful Agent test.
 When release behavior changed, inspect a fresh archive:
 
 ```bash
-AGENT_BACKENDS=opencode,codex,claude \
-  ./scripts/build-release.sh <agent_name> <version>
+./scripts/build-release.sh <agent_name> <version>
 ```
 
 Confirm development instructions, `.agents/`, credentials, and raw sessions

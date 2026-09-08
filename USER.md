@@ -32,7 +32,6 @@ RELEASE_URL="https://github.com/a-green-hand-jack/coding-agent-template/releases
 curl --fail --silent --show-error --location "$INSTALLER_URL" -o /tmp/hewo-install.sh
 RELEASE_URL="$RELEASE_URL" \
 AGENT_NAME=hewo \
-AGENT_NAME=hewo \
 bash /tmp/hewo-install.sh
 rm -f /tmp/hewo-install.sh
 ```
@@ -100,8 +99,8 @@ AGENT_NAME=my-agent ./distribution/install.sh
 my-agent "运行我的 Agent"
 ```
 
-当前版本默认优先使用 pi，也可以在运行时切换 backend 和 provider/model；但还不能用
-`hewo --scaffold another-agent` 在多个 scaffold 之间切换。
+本产品只支持 pi，backend 不可切换；provider/model 在运行时选择。当前也还不能用
+`hewo --scaffold another-agent` 在多个 scaffold 之间切换：一次只安装一个 scaffold。
 
 ## 3. Backend：只有 pi
 

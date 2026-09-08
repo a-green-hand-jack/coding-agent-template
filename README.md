@@ -16,6 +16,7 @@ reused, not an additional product in this repository.
 
 ```bash
 cp .env.example .env
+# Edit .env and set OPENAI_API_KEY: the run below fails closed without it.
 ./scripts/validate-definition.sh hewo
 docker build --build-arg AGENT_NAME=hewo -t hewo:dev -f docker/Dockerfile .
 docker run --rm -it --env-file .env hewo:dev "Say hello to Ada"
@@ -84,8 +85,8 @@ For a short-lived read-only provider runtime bundle, create it and pass it to Do
 
 ```bash
 bundle=$(mktemp -d)
-./scripts/create-provider-bundle.sh openai gpt-5.6 OPENAI_API_KEY "$bundle"
-./docker/run-hewo-e2e.sh --agent hewo --provider openai --model gpt-5.6 --bundle "$bundle" "完成这个任务"
+./scripts/create-provider-bundle.sh openai gpt-5.5 OPENAI_API_KEY "$bundle"
+./docker/run-hewo-e2e.sh --agent hewo --provider openai --model gpt-5.5 --bundle "$bundle" "完成这个任务"
 rm -rf "$bundle"
 ```
 
@@ -188,9 +189,13 @@ BENCHMARK_RUN_DIR=/tmp/hewo-evidence \
 The benchmark writes only disposable workspace artifacts and a scrubbed
 trajectory; never commit the evidence directory or raw provider output. For
 full product-agent iteration, run the project-internal evaluation loop from
-`.agents/workflows/agent-development.md`; long E2E or benchmark validation
-should be submitted through the loop helper's registered background mode so it
-can be queried and cleaned up without blocking the developer session.
+`.agents/workflows/agent-development.md`. Long E2E or benchmark validation is
+submitted through the loop helper's registered background mode
+(`./scripts/run-agent-loop.sh --background ...`, then `--list-runs`,
+`--run-status <id>` and `--clean-run <id>`), so it can be queried and cleaned
+up without blocking the developer session. The preflight still runs in the
+foreground, so an invalid invocation fails there rather than inside a detached
+run.
 
 ## Development environments
 

@@ -80,8 +80,8 @@ infrastructure and development skills the target project needs.
   excluded from installation, release archives, and final Docker images.
 - Follow the reuse-first principle. Extend the runtime definition or a thin
   backend adapter before adding a parallel CLI, model client, session manager,
-  approval loop, or tool loop already provided by OpenCode, Codex, Claude Code,
-  or another supported backend.
+  approval loop, or tool loop already provided by pi, which is the only
+  supported backend.
 - Never put provider credentials, auth stores, raw sessions, `.env` files, or
   private user data in Git, runtime definitions, release archives, or images.
   Inject credentials only at execution time.

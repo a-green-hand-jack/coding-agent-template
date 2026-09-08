@@ -14,26 +14,27 @@ is missing, label the run `infrastructure-only` or `blocked`, never E2E-passed:
 
 1. Run product tests through this repository's E2E helper
    `docker/run-hewo-e2e.sh` (or the downstream renamed equivalent), not an
-   ad-hoc `docker run` and not a bare host `opencode run`.
+   ad-hoc `docker run` and not a bare host CLI invocation.
 2. Inject a real provider runtime from **this development machine** through the
-   helper's explicit flags: `--auth-file`, `--codex-auth-file`,
-   `--claude-credentials-file`, `--claude-api-key-file`, `--pi-auth-file`,
-   `--api-key-env`, or `--bundle`. Credentials are mounted read-only at
+   helper's explicit flags: `--pi-auth-file`, `--api-key-env`,
+   `--api-key-stdin`, or `--bundle`. These are the only credential flags the
+   helper accepts; anything else exits 2. Credentials are mounted read-only at
    execution time; never bake them into the image, Git, or the runtime.
 3. State `backend`, `provider`, `model`, and the credential-source flag in the
    report (e.g. `--pi-auth-file ~/.pi/agent/auth.json`). If you cannot name a
    credential source, the run is not E2E evidence.
 4. Discover provider/model availability through secret-free enumeration only
-   (`opencode models <provider>`, `pi --list-models`, or the host private
-   skills' read-only audit scripts). Never print auth stores, `*-key` files,
-   `.env`, or run `opencode debug config` to learn about providers. If a
-   credential is printed, stop, do not repeat it, name the credential class,
-   and recommend rotation.
+   (`pi --list-models`, or the host private skills' read-only audit scripts).
+   Never print auth stores, `*-key` files, `.env`, or any CLI's
+   resolved-configuration dump to learn about providers. If a credential is
+   printed, stop, do not repeat it, name the credential class, and recommend
+   rotation.
 
 Resolve which providers actually exist on this machine from the host-level
-private skills (`opencode-providers-private`, `pi-providers-private`) and the
-secret-free cheat-sheet in `.agents/knowledge/provider-e2e.md`; never guess a
-provider/model.
+private skill `pi-providers-private` and the secret-free cheat-sheet in
+`.agents/knowledge/provider-e2e.md`; never guess a provider/model. Other
+coding-agent CLIs on this machine are development tools: their provider
+catalogues say nothing about what the product can reach.
 
 ## Two distinct identities
 
@@ -59,10 +60,10 @@ provider/model.
   workflows, and tools in the scaffold; do not reimplement a coding-agent
   runtime that an established backend already provides.
 - Keep the Agent scaffold, coding-agent backend, and LLM provider/model as
-  independent layers. OpenCode, Codex, and Claude Code provide the execution,
-  model-adapter, approval, and terminal foundations; this repository should
-  add only the composition, runtime injection, and provider wiring needed to
-  make those foundations usable by an installed Agent.
+  independent layers. pi provides the execution, model-adapter, approval, and
+  terminal foundations; this repository should add only the composition,
+  runtime injection, and provider wiring needed to make those foundations
+  usable by an installed Agent.
 - Prefer extending the runtime definition or backend adapter over adding a
   parallel CLI, model client, session manager, or tool loop. Record a concrete
   reason in the issue before introducing infrastructure that overlaps a
@@ -148,7 +149,7 @@ it must not be copied into `src/hewo/runtime/` or treated as hewo behavior.
 2. Select a skill from `.agents/skills` when a workflow matches.
 3. Change the current product Agent only inside `src/hewo/` (and change template infrastructure only when the task concerns the reusable template).
 4. Validate the definition, run the self-audit gates for the repository scope (template internal or downstream, as scoped above), run the clean-container checks, and—when validating product behavior—run a real provider-backed Docker E2E through `docker/run-hewo-e2e.sh` or the loop wrapper using the development machine's intended provider injected via an explicit flag.
-5. For long product-agent validation, prefer a registered background loop run instead of a foreground terminal command. The run must be queryable, must record backend/provider/model and credential-source flag without secret values, and must be cleaned up after the result is consumed.
+5. For long product-agent validation, prefer a registered background loop run instead of a foreground terminal command: `./scripts/run-agent-loop.sh --background ...`, then `--run-status <id>` to query and `--clean-run <id>` once the result is consumed. The registry records backend/provider/model and the credential-source flag without secret values.
 6. Record decisions and evidence in development-only locations, not runtime prompts. A missing credential/provider injection is a blocked behavior validation, not a passing test.
 
 Do not add benchmark-specific hacks to `src/hewo/runtime/` behavior. Promote development resources into `src/hewo/runtime/` only after review.

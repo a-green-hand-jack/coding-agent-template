@@ -38,10 +38,9 @@ credentials.
 
 3. Before claiming Agent behavior, run a real request through
    `docker/run-hewo-e2e.sh` or the downstream repository's renamed equivalent.
-   Inject the selected backend's credential through one explicit flag
-   (`--auth-file`, `--codex-auth-file`, `--claude-credentials-file`,
-   `--claude-api-key-file`, `--pi-auth-file`, `--api-key-env`, or `--bundle`),
-   never an ad-hoc `docker run` and never a bare host CLI. The helper fails
+   Inject the credential through one explicit flag (`--pi-auth-file`,
+   `--api-key-env`, `--api-key-stdin`, or `--bundle`), never an ad-hoc
+   `docker run` and never a bare host CLI. The helper fails
    closed without a credential source; pass `--allow-unauthenticated` only for
    infrastructure-only smokes (build/`--help`). Observe the model response and
    inspect any requested workspace artifact.
@@ -52,8 +51,7 @@ credentials.
    changes:
 
    ```bash
-   AGENT_BACKENDS=opencode,codex,claude \
-     ./scripts/build-release.sh <agent_name> <version>
+   ./scripts/build-release.sh <agent_name> <version>
    tar -tzf release/<agent_name>-<version>.tar.gz
    ./scripts/publish-release.sh <agent_name> <version>
    ```

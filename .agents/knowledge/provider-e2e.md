@@ -11,27 +11,33 @@ credential exits with an error and prints the injection options. Pass
 version checks). Product-behavior evidence always requires a real injected
 provider.
 
-## Backend -> flag -> host credential source
+## Injection flag -> host credential source
 
-| Backend | Injection flag(s) | Host credential source (read-only mount) |
-| --- | --- | --- |
-| opencode | `--auth-file` or `--api-key-env <ENV>` | `~/.local/share/opencode/auth.json` |
-| codex | `--codex-auth-file` or `--api-key-env` (`OPENAI_API_KEY`) | `~/.codex/auth.json` |
-| claude | `--claude-api-key-file` or `--claude-credentials-file` or `ANTHROPIC_API_KEY`/`ANTHROPIC_AUTH_TOKEN` | key file or env; this host has no `~/.claude/.credentials.json` |
-| pi | `--api-key-env <PROVIDER>_API_KEY` (preferred) plus `--pi-models-file` for a custom provider; `--pi-auth-file` mounts `~/.pi/agent/auth.json` but was **not** sufficient on its own for a custom provider in 2026-09-08 testing | `~/.pi/agent/auth.json`, `~/.pi/agent/models.json` |
+The helper supports pi and only pi, so these are the only credential flags it
+accepts. Anything else exits 2 as an unknown option; run
+`./docker/run-hewo-e2e.sh --help` for the authoritative list.
+
+| Injection flag | Host credential source (read-only mount) |
+| --- | --- |
+| `--api-key-env <PROVIDER>_API_KEY` (preferred) | the named host variable, never a file |
+| `--api-key-stdin` | stdin, so the key stays out of shell history |
+| `--pi-auth-file PATH` | `~/.pi/agent/auth.json`; was **not** sufficient on its own for a custom provider in 2026-09-08 testing |
+| `--pi-models-file PATH` | `~/.pi/agent/models.json`, for a custom provider catalog |
+| `--bundle PATH` | a short-lived bundle from `scripts/create-provider-bundle.sh` |
 
 ## Discover providers without exposing credentials
 
 When you need to know which providers/models actually exist on this machine,
 use secret-free enumeration only — never print credential files:
 
-- OpenCode: `opencode models <provider>` (add `--verbose` for metadata/variants).
-  Never run `opencode debug config`: it resolves `{file:...}` and prints keys.
-- pi: `pi --list-models` and filter for the intended provider. Never cat
-  `~/.pi/agent/auth.json`.
+- pi: `pi --list-models` and filter for the intended provider. It is
+  auth-filtered, so it is a readiness probe rather than a catalog: "No models
+  available" is a credential condition. Never cat `~/.pi/agent/auth.json`.
 - Host private skills expose read-only, allowlisted audits:
-  `opencode-providers-private` -> `audit-opencode-providers.sh` and
-  `provider-health.sh`; `pi-providers-private` -> `verify-pi-providers.sh`.
+  `pi-providers-private` -> `verify-pi-providers.sh`.
+- Other coding-agent CLIs installed on this machine are development tools. Their
+  provider catalogues say nothing about what the product can reach, because the
+  product resolves providers through pi alone.
 
 These are secret-bearing and must never be printed or read into a transcript:
 `~/.local/share/opencode/auth.json`, `~/.codex/auth.json`,
@@ -44,12 +50,10 @@ the credential class, and recommend rotation.
 
 ## Host provider facts (pointers, not secrets)
 
-- OpenCode providers on this development machine are governed by the host-level
-  private skill `opencode-providers-private`; the governed default model is
-  `openai-evelyn/gpt-6-astra`. Read that skill for the current allowlist and
-  device facts before choosing a provider/model.
-- pi providers are governed by `pi-providers-private`: `apex`,
-  `apex-deepseek`, `opencode-go`. Read that skill for current device facts.
+- pi providers are governed by the host-level private skill
+  `pi-providers-private`: `apex`, `apex-deepseek`, `opencode-go` (a pi provider
+  id, not a backend). Read that skill for current device facts before choosing
+  a provider/model.
 - Do not hardcode a provider/model that is not currently available on the host.
   Check availability first, then record the exact `backend/provider/model`
   actually used in the E2E memory entry.
@@ -59,7 +63,8 @@ the credential class, and recommend rotation.
 - Bake a key, `.env`, auth store, or credential bundle into the Docker image,
   Git, release archive, or `src/hewo/runtime/`.
 - Print, `cat`, or read into a transcript any auth store, `*-key` file, `.env`,
-  or `opencode debug config` output (all can contain resolved key material).
+  or any coding-agent CLI's resolved-configuration dump (all can contain
+  resolved key material).
 
 ## pi gotcha: "No models available" is usually a credential condition
 

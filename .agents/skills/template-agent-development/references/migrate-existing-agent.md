@@ -44,18 +44,23 @@ Generic skills may be copied only after removing hardcoded template names,
 paths, helper commands, provider assumptions, and evidence destinations.
 
 Create `src/<agent>/agent.yaml` with the runtime and development directory
-declarations. Keep the scaffold self-contained and give it a valid
-`runtime/opencode.json` with:
+declarations. `agent.yaml` stays scaffold metadata and must never grow a second
+resource list. Keep the scaffold self-contained and give it a valid
+`runtime/package.json`, which is the single source of truth for what the
+runtime loads:
 
-- `$schema: https://opencode.ai/config.json`;
-- `default_agent` equal to `<agent>`;
-- a matching `agent.<agent>` entry and prompt path;
-- `./skills` in the skills list;
-- knowledge/workflow instruction paths appropriate to the runtime.
+- the `pi-package` keyword, and no npm lifecycle `scripts`;
+- a `pi` section for what pi loads natively: `skills` (including `./skills`),
+  `prompts`, `themes`, `extensions`;
+- an `agent` section for everything pi has no primitive for:
+  `manifest_version: 1`, `backend: "pi"`, `system_prompt`, `context`,
+  `agent_definitions`, `leaf_tools`, `default_tools`, `network`, and any
+  `tool_checks` the Agent's own tools support;
+- every path a normalized relative path inside the runtime directory.
 
-The OpenCode config is part of the scaffold contract even when a run selects
-Codex or Claude Code; the template launcher injects the same runtime context
-into all supported backends.
+A non-pi backend configuration file must not exist in the runtime;
+`scripts/validate-definition.sh` and `scripts/check-pi-only-backend.py` both
+reject one.
 
 ## 3. Remove overlapping runtime infrastructure
 
@@ -90,8 +95,7 @@ payload:
 
 ```bash
 rg -n "AGENT_NAME|old/runtime/path|old-agent-name" .
-AGENT_BACKENDS=opencode,codex,claude \
-  ./scripts/build-release.sh <agent> <version>
+./scripts/build-release.sh <agent> <version>
 tar -tzf release/<agent>-<version>.tar.gz
 git diff --check
 ```

@@ -52,8 +52,8 @@ After the deterministic audit passes:
    launcher check, or backend version check is infrastructure evidence only.
 3. Build a fresh release with `scripts/build-release.sh`, inspect its file list,
    and rerun the audit with `--release`.
-4. Run real provider-backed Docker E2E for every backend/provider combination
-   promised by the template. Inject credentials only at runtime and record
+4. Run real provider-backed Docker E2E for every provider/model combination
+   promised by the template; the backend is always pi. Inject credentials only at runtime and record
    scrubbed response evidence in the normal issue/evidence location.
 5. Confirm `DEV.md`, `USER.md`, the registry, and the sync sub-skill describe
    the same current commands, repository identity, backend/provider boundary,

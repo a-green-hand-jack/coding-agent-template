@@ -45,7 +45,7 @@ benchmark 或 runtime 文件中出现 “Agent” 就切换身份，也不要把
 同步或创建下游仓库前，必须先阅读登记表
 `.agents/template-content-registry.json`。它是 template 专属内容、可选择
 同步的实现、以及 memory/knowledge/workflows 中性占位符的唯一清单；同步
-细节见 `template-agent-development/references/sync-template.md`。不要复制
+细节见 `.agents/skills/template-agent-development/references/sync-template.md`。不要复制
 `.agents/` 整目录。
 
 登记表覆盖整个仓库，而不只是 `.agents/`。新增或同步 template 内容后，先
@@ -211,7 +211,7 @@ https://github.com/a-green-hand-jack/coding-agent-template.git 当作基础设�
    `.agents/memory/`、`.agents/workflows/` 和 scoped AGENTS.md。可以把中性
    PLACEHOLDER.md 作为目录起点，但必须替换成项目专属内容。
 4. 不要创建 `src/<agent_name>/agent.yaml`、Agent runtime identity、
-   `runtime/opencode.json` 或 Agent 产品 release，除非项目需求后来明确改变。
+   `runtime/package.json` 或 Agent 产品 release，除非项目需求后来明确改变。
    不要运行或声称通过只适用于 Agent scaffold 的 definition validation 或
    provider-backed Agent E2E；为当前项目定义自己的 smoke/acceptance contract。
 5. 如果复用 Docker/backend CLI/uv 工具环境，删除 HeWo 默认值和 Agent 专属
@@ -278,12 +278,24 @@ Loop 的阶段是：
 6. 把失败分类为 definition、infrastructure、provider、benchmark/verifier 或
    product-behavior 问题，再回到 runtime 定义或开发基础设施中修复。
 
-产品 Agent 的长程任务验证通常不应阻塞前台终端。对耗时验证，应通过 loop
-runner 的后台模式登记任务；登记内容只包含 run id、stage、backend/provider/model、
-credential-source flag、状态、pid/owner、artifact 路径和 scrubbed evidence 路径，
-不得包含 key、auth store 内容、raw provider output 或个人数据。开发者需要用
-`--status` 查询，结果消费后用 `--cleanup` 清除登记；如果验证中断，下次 loop
-运行应能识别 stale/orphaned 状态并安全清理或重跑。
+产品 Agent 的长程任务验证通常不应阻塞前台终端。对耗时验证，用 loop runner 的
+后台登记模式：
+
+```bash
+./scripts/run-agent-loop.sh --background --provider openai --model gpt-5.5 \
+  --pi-auth-file "$HOME/.pi/agent/auth.json" "<task>"
+./scripts/run-agent-loop.sh --list-runs
+./scripts/run-agent-loop.sh --run-status <run_id>
+./scripts/run-agent-loop.sh --clean-run <run_id>      # 结果消费后清除
+```
+
+完整 preflight（backend、credential matrix、task、workspace）在前台执行，
+无效调用当场拒绝，不会变成一个需要事后查询的后台任务。登记内容只包含 run id、
+stage、backend/provider/model、credential-source flag、状态、pid、artifact 路径
+和 scrubbed evidence 路径，不得包含 key、auth store 内容、raw provider output
+或个人数据。登记目录默认在 `$XDG_STATE_HOME/agent-loop`（仓库之外，避免误提交）。
+进程消失但没有记录 exit code 的 run 会被报告为 `abandoned`，而不是一直停在
+`running`；`--clean-run all` 只清理已结束的 run。
 
 Benchmark 只是 loop 的一个 stage。它衡量 capability/regression，不定义产品
 行为；不能为了通过 verifier 在 runtime 中加入 benchmark-specific hack。
@@ -362,9 +374,9 @@ benchmark、verifier、metric policy 或 contract schema 是独立的设计变�
 - workflows
 - tools
 
-OpenCode、Codex、Claude Code、pi 等成熟 coding-agent 负责执行循环、模型适配、
-工具调用、审批和终端交互。本仓库只实现必要的 scaffold、runtime context
-注入、backend 选择和 provider wiring，不重复实现 coding-agent runtime。
+成熟的 coding-agent（本产品用 pi）负责执行循环、模型适配、工具调用、审批和
+终端交互。本仓库只实现必要的 scaffold、runtime context 注入和 provider
+wiring，不重复实现 coding-agent runtime。
 
 三层必须保持独立：
 
@@ -395,7 +407,7 @@ src/hewo/
 └── runtime/
     ├── identity.md
     ├── memory-policy.md
-    ├── opencode.json
+    ├── package.json           # runtime 资源清单，唯一 source of truth
     ├── knowledge/
     ├── skills/
     ├── workflows/
@@ -405,12 +417,13 @@ src/hewo/
 下游仓库将上图的 `hewo` 替换为自己的 `<agent_name>`；本仓库不要新增第二个
 产品目录。
 
-`distribution/launcher` 会把 `identity.md` 以及 runtime 下的 knowledge、
-skills、workflows 注入 OpenCode、Codex 或 Claude Code。若存在
-`runtime/tools/pyproject.toml`，安装器会用 uv 创建独立的
-`<prefix>/lib/<agent>/environment/` 并安装其中的 tools；launcher 会把该
-环境的 `bin/` 放进 backend 的 PATH。每个 scaffold 都应
-保留 `opencode.json`，即使某次运行选择的是 Codex 或 Claude Code。
+`distribution/launcher` 读 `runtime/package.json`，把每类资源交给 pi 自己的
+loader（`--skill`、`--prompt-template`、`--theme`、`--extension`、`--tools`），
+只有 identity/memory-policy/knowledge/workflows 走 `--append-system-prompt`，
+因为 pi 没有对应原语。若存在 `runtime/tools/pyproject.toml`，安装器会用 uv
+创建独立的 `<prefix>/lib/<agent>/environment/` 并安装其中的 tools；launcher
+会把该环境的 `bin/` 放进 PATH。runtime 中不得存在非 pi 的 backend 配置文件，
+`validate-definition.sh` 会拒绝。
 
 不要在 `src/hewo/runtime/` 中放置（下游适配后对应其 `src/<agent_name>/runtime/`）：
 
@@ -435,35 +448,29 @@ tar -C src/hewo --exclude=AGENTS.md -cf - . | tar -C src/my-agent -xf -
 
 ### Backend
 
-当前 Docker image 安装：
+当前 Docker image 只安装一个 backend：
 
 ```text
-OpenCode      opencode-ai
-Codex         @openai/codex
-Claude Code   @anthropic-ai/claude-code
-pi            @mariozechner/pi-coding-agent
+pi            @earendil-works/pi-coding-agent
 ```
 
-产品命令通过 `--backend` 或 `AGENT_BACKEND` 选择 backend：
+`--backend`（或 `AGENT_BACKEND`）只接受 `pi`（别名 `pi-coding-agent`），其他
+取值一律报错退出，不存在回退默认值：
 
 ```bash
-hewo --backend opencode ...
-hewo --backend codex ...
-hewo --backend claude ...
-hewo --backend pi ...
+hewo --backend pi --provider openai --model gpt-5.5 ...
 ```
 
-`--provider` 改变 OpenCode 或 pi 的 provider；Codex 和 Claude Code 保持各自的
-认证、模型命名空间和 CLI 约定。
+`--provider` 选择 pi 的 provider。
 
 ### Provider/model
 
-scaffold 不应写死 provider。OpenCode provider/model 在运行时传入：
+scaffold 不应写死 provider。provider/model 在运行时传入：
 
 ```bash
-LLM_PROVIDER=opencode-go LLM_MODEL=glm-5.3 \
+LLM_PROVIDER=openai LLM_MODEL=gpt-5.5 \
   ./docker/run-hewo-e2e.sh --agent hewo \
-  --auth-file "$HOME/.local/share/opencode/auth.json" \
+  --pi-auth-file "$HOME/.pi/agent/auth.json" \
   "Reply with exactly: hi"
 ```
 
@@ -475,16 +482,16 @@ API key 环境变量按 provider ID 转换为 `<PROVIDER>_API_KEY`；Docker help
 `runtime/tools/pyproject.toml` 只安装 `hewo-tool`，用于验证 Agent 是否真的
 能调用自己的产品环境；不要让它依赖 template 根目录的开发 `.venv`。
 
-非 Docker release 可通过 `AGENT_BACKENDS=opencode,codex,claude,pi` 选择要安装
-的 CLI；Docker image 固定包含四个 backend。
+`AGENT_BACKENDS` 只接受 `pi`，其他取值被 installer 和 build-release 拒绝
+（exit 2），所以正常情况下不要设置它。用户没有 pi 时 release 安装会自动装；
+`SKIP_RUNTIME_INSTALL=1` 可跳过。
 
 ## 4. 构建、安装和发布
 
 ### 源码安装检查
 
 ```bash
-AGENT_NAME=hewo AGENT_BACKENDS=opencode,codex,claude,pi \
-  PREFIX=/tmp/hewo-install \
+AGENT_NAME=hewo PREFIX=/tmp/hewo-install \
   ./distribution/install.sh
 ```
 
@@ -498,11 +505,10 @@ docker build --build-arg AGENT_NAME=hewo \
   -t hewo:e2e -f docker/Dockerfile .
 ```
 
-Docker 使用 Node 22，并安装当前四个 CLI。验证版本时绕过产品 entrypoint：
+Docker 使用 Node 22，只安装 pi。验证版本时绕过产品 entrypoint：
 
 ```bash
-docker run --rm --entrypoint /bin/bash hewo:e2e -lc \
-  'opencode --version; codex --version; claude --version; pi --version'
+docker run --rm --entrypoint /bin/bash hewo:e2e -lc 'pi --version'
 ```
 
 ### Release
@@ -513,8 +519,7 @@ GitHub release），不要把未发布的改动一直堆积。`scripts/publish-r
 创建 GitHub release（archive 作为 asset 附带）：
 
 ```bash
-AGENT_BACKENDS=opencode,pi,codex,claude \
-  ./scripts/publish-release.sh hewo 0.2.0
+./scripts/publish-release.sh hewo 0.2.0
 ```
 
 脚本内部先跑 `validate-definition.sh`，再用
@@ -545,28 +550,28 @@ runtime，并观察容器中的真实模型响应。
 ```bash
 ./docker/run-hewo-e2e.sh \
   --agent hewo \
-  --backend opencode \
-  --auth-file "$HOME/.local/share/opencode/auth.json" \
-  --provider opencode-go \
-  --model glm-5.3 \
+  --provider openai \
+  --model gpt-5.5 \
+  --pi-auth-file "$HOME/.pi/agent/auth.json" \
   "Reply with exactly: hi"
 ```
 
-Codex 和 Claude 使用各自的 `--codex-auth-file`、
-`--claude-credentials-file` 或 `--claude-api-key-file`。credentials 只读
+helper 只接受 `--pi-auth-file`、`--api-key-env`、`--api-key-stdin` 和
+`--bundle` 作为凭据来源，其他 flag 以 unknown option 退出 2。credentials 只读
 挂载，不能复制进镜像。
 
 ### 完整 infrastructure smoke
 
 ```bash
-AGENT_BACKEND=opencode \
-LLM_PROVIDER=opencode-go \
-LLM_MODEL=glm-5.3 \
-OPENCODE_AUTH_FILE="$HOME/.local/share/opencode/auth.json" \
-ENV_FILE=/dev/null \
+PI_AUTH_FILE="$HOME/.pi/agent/auth.json" \
+LLM_PROVIDER=openai \
+LLM_MODEL=gpt-5.5 \
 BENCHMARK_RUN_DIR=/tmp/hewo-evidence \
 ./scripts/run-benchmark.sh hewo
 ```
+
+`run-benchmark.sh` 只读 `PI_AUTH_FILE`、`PI_MODELS_FILE` 和
+`BENCHMARK_API_KEY_ENV` 作为凭据来源。
 
 成功的 verifier 必须确认 Agent 在独立 workspace 中：
 
@@ -580,25 +585,25 @@ BENCHMARK_RUN_DIR=/tmp/hewo-evidence \
 trajectory 和 benchmark 输出只能放在 disposable 目录，提交前必须 scrub，
 不能包含 raw provider output 或 secrets。
 
-### 当前 provider/model 验证矩阵
+### provider/model 验证记录
 
-已通过真实 Docker 请求并返回精确 `hi`：
+以下是历史观测，不是当前契约。收敛到 pi-only 之前的记录按当时的 backend
+保留（不改写既有证据），但只有 pi 行仍适用于今天的产品路径：
 
-- `openai/gpt-5.5`（OpenCode）
-- `opencode-go/gpt-5.6-luna`
-- `opencode-go/glm-5.3`
-- `opencode-go/qwen3.7-plus`
-- `opencode-go/kimi-k2.7-code`
-- `opencode-go/grok-4.6`
-- Codex `gpt-5.5`
-- Claude Code `sonnet`（通过授权的 Apex-compatible Anthropic endpoint）
-- pi `openai-codex/gpt-5.5`（通过只读 pi auth store）
+- 当前后端（pi）：`openai-codex/gpt-5.5`（通过只读 pi auth store）
+- 收敛前的历史记录（backend 已下线，仅作存档）：`openai/gpt-5.5`、
+  `opencode-go/gpt-5.6-luna`、`opencode-go/glm-5.3`、`opencode-go/qwen3.7-plus`、
+  `opencode-go/kimi-k2.7-code`、`opencode-go/grok-4.6`、`gpt-5.5`、
+  `sonnet`（通过授权的 Apex-compatible Anthropic endpoint）
 
-`opencode-go` 还提供其他模型，但不能因为模型出现在列表中就声称测试
-通过。每个下游 Agent 应记录实际使用的 provider、model、CLI version、
+新增记录时必须写明 backend/provider/model 与 credential-source flag。
+
+provider 通常还提供列表里的其他模型，但不能因为模型出现在
+`pi --list-models` 中就声称测试通过（该命令是 auth-filtered 的可达性探针，
+不是目录）。每个下游 Agent 应记录实际使用的 provider、model、CLI version、
 runtime revision 和 artifact 路径。
 
-当前 Ubuntu 宿主机上，Codex 的完整工具任务可能受到 nested bubblewrap
+当前 Ubuntu 宿主机上，容器内的完整工具任务可能受到 nested bubblewrap
 user namespace 限制；简单请求通过不代表该宿主机的工具 sandbox 一定可用。
 不要用默认关闭安全隔离的方式掩盖这个限制。
 
@@ -609,14 +614,15 @@ user namespace 限制；简单请求通过不代表该宿主机的工具 sandbox
 ```bash
 ./scripts/validate-definition.sh hewo
 bash -n distribution/launcher distribution/install.sh \
-  docker/run-hewo-e2e.sh scripts/build-release.sh scripts/run-benchmark.sh
+  distribution/container-entrypoint.sh docker/run-hewo-e2e.sh \
+  scripts/build-release.sh scripts/run-benchmark.sh scripts/run-agent-loop.sh
 git diff --check
 ```
 
 变更 backend、Docker 或 release 时，还应：
 
 1. 构建 Docker image；
-2. 检查三个 CLI 版本；
+2. 检查 pi 版本；
 3. 运行真实 provider-backed 最小 E2E；
 4. 运行至少一个完整 infrastructure smoke；
 5. 扫描镜像和 release payload 中的开发指令与 credentials；
@@ -642,8 +648,7 @@ issue 证据。
 ```text
 Agent name: <agent_name>
 Scaffold path: src/<agent_name>/runtime/
-Default backend: opencode
-Supported backends: opencode, codex, claude, pi
+Backend: pi (only)
 Validated provider/models: <实际 E2E 结果>
 CLI command: <agent_name>
 ```

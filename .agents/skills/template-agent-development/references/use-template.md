@@ -36,10 +36,15 @@ infrastructure. HeWo's name, identity, domain semantics, historical evidence,
 and product assumptions must not be inherited.
 
 Create only the structural definition and generic runtime configuration needed to
-start the backend. `agent.yaml`, `runtime/opencode.json`, `identity.md`, and any
+start the backend. `agent.yaml`, `runtime/package.json`, `identity.md`, and any
 placeholder knowledge, skill, workflow, or tool files may exist, but their content
 must be neutral and visibly marked `TODO: replace during implementation`. Do not
 write the real product identity or domain resources until Phase 1 is authorized.
+
+`runtime/package.json` is the resource manifest: a `pi` section for what pi
+loads natively, and an `agent` section for everything pi has no primitive for.
+A non-pi backend configuration file must not exist in the runtime;
+`scripts/validate-definition.sh` rejects one.
 
 Keep product resources self-contained under `src/<agent_name>/`. Development
 guidance belongs in scoped `AGENTS.md` files or `.agents/`, never in runtime
@@ -68,18 +73,17 @@ the backend execution loop, model client, session, approval, or tool loop.
 
 ## 3. Compose backend and provider at runtime
 
-Do not bake a provider or model into the scaffold. The same command can select
-the mature coding-agent backend at runtime:
+Do not bake a provider or model into the scaffold. The backend is pi and only
+pi; the provider and model are chosen per run:
 
 ```bash
-hewo --backend opencode --provider opencode-go --model glm-5.3 "<task>"
-hewo --backend codex --model gpt-5.5 "<task>"
-hewo --backend claude --model sonnet "<task>"
+hewo --provider openai --model gpt-5.5 "<task>"
 ```
 
-For a downstream Agent, replace `hewo` with its installed command. `--provider`
-is an OpenCode provider selector; Codex and Claude Code keep their own model
-and credential namespaces. Never copy auth stores into the scaffold.
+For a downstream Agent, replace `hewo` with its installed command. `--backend`
+accepts only `pi` (alias `pi-coding-agent`) and errors on anything else, so a
+second backend is never a silent fallback. Never copy auth stores into the
+scaffold.
 
 ## 4. Validate the Phase 0 infrastructure boundary
 
@@ -96,14 +100,14 @@ value or commit it. For example:
 ```bash
 ./docker/run-hewo-e2e.sh \
   --agent <agent_name> \
-  --backend opencode \
-  --provider opencode-go \
-  --model glm-5.3 \
-  --auth-file "$HOME/.local/share/opencode/auth.json" \
+  --provider openai \
+  --model gpt-5.5 \
+  --pi-auth-file "$HOME/.pi/agent/auth.json" \
   "Reply with exactly: hi"
 ```
 
-Use the backend-specific credential option for Codex or Claude. Label directory
+The helper accepts `--pi-auth-file`, `--api-key-env`, `--api-key-stdin`, and
+`--bundle` as credential sources; anything else exits 2. Label directory
 and configuration checks `structure`. Label Docker, CLI, tool-environment,
 provider-injection, and model-response checks `infrastructure`. An image build,
 CLI startup, tool check, or provider response is never `agent-behavior` evidence;
@@ -146,9 +150,11 @@ release work only after that gate and separate release authorization.
 Build only the selected Agent's runtime payload:
 
 ```bash
-AGENT_BACKENDS=opencode,codex,claude \
-  ./scripts/build-release.sh <agent_name> <version>
+./scripts/build-release.sh <agent_name> <version>
 ```
+
+`AGENT_BACKENDS` is accepted only as `pi` and is rejected otherwise, so leave
+it unset.
 
 Inspect the archive and confirm it contains runtime definition, launcher, and
 installer only. It must not contain `AGENTS.md`, `.agents/`, development
