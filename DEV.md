@@ -270,6 +270,69 @@ credential-source flag、状态、pid/owner、artifact 路径和 scrubbed eviden
 Benchmark 只是 loop 的一个 stage。它衡量 capability/regression，不定义产品
 行为；不能为了通过 verifier 在 runtime 中加入 benchmark-specific hack。
 
+### 先功能基线，后性能优化
+
+"优化"不是 loop 的第一步。两个阶段必须分开，且顺序不可颠倒：
+
+1. **功能完备基线**：第一版可以质量一般，但必须是可工作的：输入输出契约成立、
+   必要 artifact 存在、功能 verifier 能稳定判断 pass/fail。如果这些条件还不
+   成立，状态是 `FUNCTIONAL_BASELINE_MISSING`，这不是"低性能版本"，而是产品
+   功能或契约尚未完成。
+2. **性能优化**：只有在基线成立并被测量之后，才能谈改进。声称"更好"之前必须
+   先有 contract、primary metric、固定运行条件、重复次数、阈值和停止条件。
+
+以论文写作 Agent 为例："能产出包含全部必需章节的论文"是功能契约；"论文更好"
+是性能声明，需要指标、基线、重复运行和阈值才能成立。
+
+设计入口是开发侧 skill `.agents/skills/agent-evaluation-loop-design/`：
+
+```bash
+python3 .agents/skills/agent-evaluation-loop-design/scripts/generate-agent-diagrams.py \
+  --agent hewo --repo-root . --output-dir . --readme README.md
+python3 .agents/skills/agent-evaluation-loop-design/scripts/validate-agent-evaluation.py \
+  --agent hewo --repo-root . --output-dir . --readme README.md --strict
+```
+
+它同时生成 `agent-architecture.mmd`（产品 Agent 由什么组成）和
+`agent-optimization-loop.mmd`（产品 Agent 如何被迭代），并把两者同步到
+README 的 generated blocks；`.mmd` 是唯一真源，README 不保存第二份。
+
+**评估条件身份（condition identity）**：被测对象的 revision 与评估条件必须
+分开。`subject.definition_revision` 在 current best 和 candidate 之间不同，
+这是比较的前提，不是 baseline 失效的原因；只有 canonical condition manifest
+（benchmark、verifier、metric policy、backend/provider/model、runtime、image
+digest、请求/采样/重试/超时参数、locale/timezone/seed、重复次数与聚合方式）
+发生变化，才使 baseline 失效，必须在新条件下重测 current best。任何无法写入
+manifest 的 run-affecting 输入都使比较 blocked，而不是默认通过。
+
+**失败必须分类**，不能都折叠成"Agent 变差"或"Agent 变好"：
+
+| 状态 | 含义 | 是否更新 current best |
+| --- | --- | --- |
+| `DESIGN_INCOMPLETE` | contract 缺失或 schema 无效 | 否 |
+| `FUNCTIONAL_BASELINE_MISSING` | 无有效、已 promotion、功能通过的基线 | 否 |
+| `SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE` | 只有 smoke 契约 | 否 |
+| `ENVIRONMENT_BLOCKED` | credential/provider/基础设施失败 | 否 |
+| `EVALUATION_BLOCKED` | benchmark/verifier/evidence 失败 | 否 |
+| `BASELINE_INVALIDATED` | 评估条件已改变 | 否 |
+| `CANDIDATE_REJECTED` | 功能失败、未达阈值或次要指标回归 | 否 |
+| `CANDIDATE_MEETS_BENCHMARK_ACCEPTANCE` | 固定 benchmark 上的接受建议 | 否，需单独 promotion gate |
+| `GENERALIZATION_REQUIRED` | 缺独立 holdout/canary 或人工领域评审 | 否 |
+
+**禁止的自欺行为**：在同一个 candidate 变更里放宽 verifier、修改 benchmark、
+改动 metric policy 或阈值；用一次 provider response 声称改进；跨 provider/
+model/runtime 直接比较结果；把 provider 或基础设施失败写成产品回归。修改
+benchmark、verifier、metric policy 或 contract schema 是独立的设计变更，需要
+人工评审，并使旧 baseline 失效。
+
+**当前 hewo 的定位**：`src/hewo/development/evaluation-contract.json` 是
+`infrastructure-smoke-only`，没有声明任何 primary metric。因此 hewo 的状态
+只能是 `SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE`；不要为了"进入优化"给它虚构
+质量指标。
+
+`scripts/run-agent-loop.sh` 是 stage runner，`compare-evaluations.py` 是薄
+比较协议；两者都不是已实现的自动性能优化器，不要这样描述它们。
+
 ## 1. 设计原则：reuse-first
 
 开发 Agent 的主要工作是设计和组合：

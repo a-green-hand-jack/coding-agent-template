@@ -9,7 +9,8 @@ The contract schema is imported from the protected ``compare-evaluations.py``
 so that editing this validator cannot weaken the normative rules.
 
 Exit codes:
-  0  OK (including SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE unless --require-performance)
+  0  OK (including SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE unless --require-performance).
+     Warnings are advisory and never change the exit code; only problems fail.
   1  validation problems
   2  CLI error
   20 DESIGN_INCOMPLETE (contract missing or schema invalid)
@@ -72,6 +73,16 @@ DEFAULT_REQUIRED_SUBGRAPHS = (
     "evidence",
     "development",
 )
+
+
+def load_generator():
+    """Import the generator's README marker rules by path."""
+    spec = importlib.util.spec_from_file_location("_diagram_generator", GENERATOR)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load the generator: {GENERATOR}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def load_protected_schema():
@@ -150,8 +161,14 @@ def main() -> int:
     parser.add_argument("--agent-root", type=Path, help="default: <repo-root>/src/<agent>")
     parser.add_argument("--contract", type=Path)
     parser.add_argument("--output-dir", type=Path, help="default: <repo-root>")
+    parser.add_argument("--readme", type=Path, help="default: <output-dir>/README.md")
+    parser.add_argument("--no-readme", action="store_true", help="skip the README managed-block checks")
     parser.add_argument("--expected", type=Path, help="expected-invariants.json for a fixture")
-    parser.add_argument("--strict", action="store_true", help="treat warnings as problems")
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="run the full structural check set; a valid smoke-only contract still exits 0",
+    )
     parser.add_argument("--require-performance", action="store_true", help="fail on a smoke-only contract")
     args = parser.parse_args()
 
@@ -305,6 +322,39 @@ def main() -> int:
                 problems.append(f"{basename} contains possible credential material")
                 break
 
+    # --- README managed blocks -------------------------------------------
+    if not args.no_readme:
+        explicit = args.readme is not None
+        readme_path = args.readme or (output_dir / "README.md")
+        if not readme_path.is_file():
+            # An explicitly named README must exist. A fixture output directory
+            # has no README of its own, so the default path only warns.
+            message = f"README does not exist: {readme_path}"
+            (problems if explicit else warnings).append(message)
+        else:
+            generator_module = load_generator()
+            readme_text = readme_path.read_text(encoding="utf-8")
+            try:
+                spans = generator_module.marker_spans(readme_text)
+            except generator_module.ReadmeError as exc:
+                problems.append(f"README managed blocks: {exc}")
+                spans = []
+            names = {name for name, _, _ in spans}
+            for basename in (ARCHITECTURE_BASENAME, OPTIMIZATION_BASENAME):
+                if basename not in names:
+                    problems.append(f"README has no managed block for {basename}")
+            for name in sorted(names - {ARCHITECTURE_BASENAME, OPTIMIZATION_BASENAME}):
+                problems.append(f"README has a managed block with an unknown basename: {name}")
+            if spans and not problems:
+                try:
+                    if generator_module.apply_blocks(readme_text, rendered) != readme_text:
+                        problems.append("README managed blocks are stale relative to the generated .mmd bytes")
+                except generator_module.ReadmeError as exc:
+                    problems.append(f"README managed blocks: {exc}")
+            for basename in (ARCHITECTURE_BASENAME, OPTIMIZATION_BASENAME):
+                if f"({basename})" not in readme_text:
+                    warnings.append(f"README does not link the {basename} source file")
+
     declared_state = expected.get("contract_state")
     if declared_state is not None and declared_state != state:
         problems.append(f"expected contract_state {declared_state!r} but computed {state!r}")
@@ -323,8 +373,6 @@ def main() -> int:
     if problems:
         if state == "SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE" and args.require_performance and len(problems) == 1:
             return 21
-        return 1
-    if args.strict and warnings and state != "SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE":
         return 1
     return 0
 

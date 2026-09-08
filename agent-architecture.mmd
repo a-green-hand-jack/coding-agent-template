@@ -1,0 +1,65 @@
+%% GENERATED FILE - do not edit by hand.
+%% Regenerate with the agent-evaluation-loop-design skill's generate-agent-diagrams.py.
+%% Agent: hewo
+%% Contract mode: infrastructure-smoke-only
+%% Contract state: SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE
+%% Product goal: Serve as a complete, intentionally scoped Hello World Agent that proves the installation, runtime-injection, skill-loading, workspace and artifact path work end to end.
+%% Product input: A greeting request with a name, or an infrastructure smoke task naming a required artifact.
+%% Product output: A short greeting including the supplied name, or the requested smoke artifact plus a verified hewo-tool --check result.
+%% Functional checks: greeting-includes-supplied-name, smoke-artifact-written, tool-check-result-inspected
+flowchart TB
+  subgraph user["Human / User"]
+    user_input["Input<br/>A greeting request with a name, or an infrastructure smoke task naming a required artifact."]
+    user_output["Output<br/>A short greeting including the supplied name, or the requested smoke artifact plus a verified hewo-tool --che…"]
+  end
+  subgraph runtime["Product runtime: src/hewo/runtime"]
+    rt_identity["identity.md<br/>product identity and instructions"]
+    rt_memory_policy["memory-policy.md<br/>durable memory boundary"]
+    subgraph grp_knowledge["knowledge"]
+      kn_readme["README.md"]
+    end
+    subgraph grp_skills["skills"]
+      sk_runtime_smoke["runtime-smoke"]
+    end
+    subgraph grp_workflows["workflows"]
+      wf_greeting["greeting.md"]
+      wf_infrastructure_smoke["infrastructure-smoke.md"]
+    end
+    subgraph grp_tools["tools (deterministic leaf adapters)"]
+      tl_hewo_tool["hewo_tool.py"]
+    end
+  end
+  subgraph execution["Execution layer (external — not product identity)"]
+    ex_backend["coding-agent backend<br/>supplied at run time"]
+    ex_provider["LLM provider<br/>credentials injected at run time"]
+    ex_model["model<br/>selected at run time"]
+  end
+  subgraph evidence["Evidence outputs"]
+    ev_artifact["required artifacts<br/>smoke artifact named by the task"]
+    ev_trajectory["scrubbed trajectory<br/>no credentials, no raw sessions"]
+    ev_verifier["verifier report<br/>functional pass or fail"]
+  end
+  subgraph development["Development-only (not product behavior)"]
+    dv_contract["evaluation contract<br/>mode=infrastructure-smoke-only, scope=not applicable"]
+    dv_validation["validate-agent-evaluation.py<br/>structure and determinism"]
+    dv_benchmark["benchmark and comparator<br/>primary metric none declared (smoke-only contract)"]
+    dv_loop["run-agent-loop.sh<br/>stage runner, not an auto-optimizer"]
+  end
+  user_input --> rt_identity
+  rt_identity --> rt_memory_policy
+  rt_identity --> ex_backend
+  ex_backend --> ex_provider
+  ex_provider --> ex_model
+  ex_model --> user_output
+  rt_identity --> ev_artifact
+  ev_artifact --> ev_trajectory
+  ev_artifact --> ev_verifier
+  ev_verifier --> dv_benchmark
+  dv_contract --> dv_validation
+  dv_validation --> dv_benchmark
+  dv_benchmark --> dv_loop
+  rt_identity --> sk_runtime_smoke
+  rt_identity --> wf_greeting
+  rt_identity --> wf_infrastructure_smoke
+  kn_readme --> rt_identity
+  tl_hewo_tool --> ev_artifact
