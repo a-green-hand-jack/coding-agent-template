@@ -176,10 +176,28 @@ if (manifest.scripts && Object.keys(manifest.scripts).length > 0) {
 
 const pi = manifest.pi;
 if (!pi || typeof pi !== "object") die("package.json has no pi section");
-const hewo = manifest.hewo;
-if (!hewo || typeof hewo !== "object") die("package.json has no runtime section");
-if (hewo.manifest_version !== 1) die("runtime manifest_version must be 1");
-if (hewo.backend !== "pi") die("runtime backend must be pi");
+const agent = manifest.agent;
+if (!agent || typeof agent !== "object") {
+  // A pre-1.0 scaffold named this section after the product ("hewo"), which
+  // forced every downstream Agent to keep a foreign key. The section is now
+  // always "agent". Name the offender instead of failing opaquely.
+  const legacy = Object.keys(manifest).find(
+    (key) =>
+      key !== "agent" &&
+      manifest[key] &&
+      typeof manifest[key] === "object" &&
+      manifest[key].manifest_version !== undefined,
+  );
+  die(
+    legacy
+      ? 'package.json has no runtime section: rename the legacy "' +
+          legacy +
+          '" section to "agent"'
+      : "package.json has no runtime section",
+  );
+}
+if (agent.manifest_version !== 1) die("runtime manifest_version must be 1");
+if (agent.backend !== "pi") die("runtime backend must be pi");
 
 for (const entry of list(pi, "skills", "pi.skills")) {
   emit("PIARG", "--skill");
@@ -198,10 +216,10 @@ for (const entry of list(pi, "extensions", "pi.extensions")) {
   emit("PIARG", normalize(entry, "pi.extensions", "file"));
 }
 
-for (const entry of list(hewo, "system_prompt", "runtime.system_prompt")) {
+for (const entry of list(agent, "system_prompt", "runtime.system_prompt")) {
   emit("SYSFILE", normalize(entry, "runtime.system_prompt", "file"));
 }
-for (const entry of list(hewo, "context", "runtime.context")) {
+for (const entry of list(agent, "context", "runtime.context")) {
   const resolved = normalize(entry, "runtime.context");
   if (fs.statSync(resolved).isDirectory()) {
     const walk = (directory) => {
@@ -217,11 +235,11 @@ for (const entry of list(hewo, "context", "runtime.context")) {
     emit("CTXFILE", resolved);
   }
 }
-for (const entry of list(hewo, "agent_definitions", "runtime.agent_definitions")) {
+for (const entry of list(agent, "agent_definitions", "runtime.agent_definitions")) {
   emit("AGENTSDIR", normalize(entry, "runtime.agent_definitions", "dir"));
 }
 
-const tools = list(hewo, "default_tools", "runtime.default_tools");
+const tools = list(agent, "default_tools", "runtime.default_tools");
 if (tools.length === 0) die("runtime.default_tools must not be empty");
 for (const name of tools) {
   if (typeof name !== "string" || !/^[A-Za-z0-9_.-]+$/.test(name)) {
@@ -229,10 +247,10 @@ for (const name of tools) {
   }
 }
 emit("TOOLS", tools.join(","));
-emit("SUBTOOLS", list(hewo, "subagent_tools", "runtime.subagent_tools").join(","));
-emit("CAPS", list(hewo, "capabilities", "runtime.capabilities").join(","));
-emit("NET", hewo.network === "allow" ? "allow" : "deny");
-emit("WEATHER", hewo.weather_mode === "live" ? "live" : "fixture");
+emit("SUBTOOLS", list(agent, "subagent_tools", "runtime.subagent_tools").join(","));
+emit("CAPS", list(agent, "capabilities", "runtime.capabilities").join(","));
+emit("NET", agent.network === "allow" ? "allow" : "deny");
+emit("WEATHER", agent.weather_mode === "live" ? "live" : "fixture");
 
 process.stdout.write(out.join("\0") + "\0");
 RESOLVER

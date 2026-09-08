@@ -42,9 +42,21 @@ unknown = sorted(set(pi) - {"extensions", "skills", "prompts", "themes", "video"
 if unknown:
     problems.append(f"pi section declares keys pi does not recognise: {unknown}")
 
-section = manifest.get("hewo")
+section = manifest.get("agent")
 if not isinstance(section, dict):
-    problems.append("runtime package.json has no runtime section")
+    # The section used to be named after the product, which made every
+    # downstream Agent carry a foreign key. It is now always "agent".
+    legacy = sorted(
+        key
+        for key, value in manifest.items()
+        if key != "agent" and isinstance(value, dict) and "manifest_version" in value
+    )
+    if legacy:
+        problems.append(
+            f"runtime package.json has no agent section: rename the legacy {legacy[0]!r} section to 'agent'"
+        )
+    else:
+        problems.append("runtime package.json has no agent section")
     section = {}
 if section.get("manifest_version") != 1:
     problems.append("runtime manifest_version must be the integer 1")
@@ -108,6 +120,33 @@ for entry in section.get("agent_definitions") or []:
     check_path(entry, "runtime.agent_definitions", "dir")
 for entry in section.get("leaf_tools") or []:
     check_path(entry, "runtime.leaf_tools", "file")
+
+# Each declared tool self-check becomes a shell assertion in a clean container,
+# so the Agent names its own sentinel instead of the infrastructure hardcoding
+# one product's tool. Tokens stay shell-safe by construction.
+SAFE_TOKEN = re.compile(r"^[A-Za-z0-9_.:=/-]+$")
+checks = section.get("tool_checks", [])
+if not isinstance(checks, list):
+    problems.append("runtime tool_checks must be an array")
+    checks = []
+for index, check in enumerate(checks):
+    label = f"runtime.tool_checks[{index}]"
+    if not isinstance(check, dict):
+        problems.append(f"{label}: each tool check must be an object")
+        continue
+    command = check.get("command")
+    if not isinstance(command, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+", command):
+        problems.append(f"{label}: command must be a plain executable name, got {command!r}")
+    expect = check.get("expect")
+    if not isinstance(expect, str) or not SAFE_TOKEN.match(expect):
+        problems.append(f"{label}: expect must be a single safe token, got {expect!r}")
+    args = check.get("args", [])
+    if not isinstance(args, list):
+        problems.append(f"{label}: args must be an array")
+    else:
+        for argument in args:
+            if not isinstance(argument, str) or not SAFE_TOKEN.match(argument):
+                problems.append(f"{label}: args must be safe tokens, got {argument!r}")
 
 # agent.yaml is scaffold metadata only. It must never become a second
 # resource list competing with package.json.

@@ -23,8 +23,9 @@ python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.
 ```
 
 The check validates required infrastructure files, shell/Python syntax, the
-Agent definition, host prerequisites for declared runtime tools, a clean Docker
-build, final-image backend binaries, the isolated `uv` tool environment,
+Agent definition, host prerequisites for declared runtime tools, the tool
+self-checks the runtime manifest declares in `agent.tool_checks`, a clean Docker
+build, the final image's pi binary, the isolated `uv` tool environment,
 launcher help/version behavior, and release payload exclusions. Use
 `--skip-build` only when a known-good image was built from the exact current
 worktree; the script then reports which image it reused.
@@ -47,13 +48,13 @@ proves only that the execution foundation is wired correctly.
 After the deterministic preflight, run at least one real Docker request through
 `docker/run-hewo-e2e.sh` (or the downstream renamed helper) with the intended
 provider/model and an explicit runtime key or read-only auth mount. Verify the
-actual model response and any workspace artifact. Exercise each backend that
-the downstream Agent promises to support. A build, `--help`, or binary version
-check without provider injection is infrastructure-only evidence.
+actual model response and any workspace artifact. Exercise every provider/model
+the downstream Agent promises to support; the backend is always pi. A build,
+`--help`, or binary version check without provider injection is
+infrastructure-only evidence.
 
 The helper fails closed without a credential source: pass one explicit flag
-(`--auth-file`, `--codex-auth-file`, `--claude-credentials-file`,
-`--claude-api-key-file`, `--pi-auth-file`, `--api-key-env`, or `--bundle`) and
+(`--pi-auth-file`, `--api-key-env`, `--api-key-stdin`, or `--bundle`) and
 record the exact flag plus backend/provider/model used. `--allow-unauthenticated`
 is for infrastructure-only smokes only and never counts as provider-backed
 evidence.

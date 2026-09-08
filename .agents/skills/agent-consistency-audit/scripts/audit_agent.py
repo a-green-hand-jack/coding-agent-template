@@ -67,6 +67,13 @@ STALE_MARKERS = {
     "tests/install/test-install.sh": "removed install-test workflow",
     "opencode-agent-template": "renamed repository identifier",
 }
+# Files that record what was observed rather than instructing anyone. A retired
+# name inside them is evidence, not drift, so rewriting it to satisfy a later
+# gate would falsify the record. Treated like `.agents/memory/`.
+RECORDED_EVIDENCE_FILES = {
+    "DevelopmentMachine.md": "generated profile of what this machine actually had",
+    ".agents/knowledge/development-machine-facts.md": "operator-confirmed smoke evidence",
+}
 PLACEHOLDER_RE = re.compile(r"(?:<[^>]+>|\$\{[^}]+\}|\$[A-Z_][A-Z0-9_]*)")
 SRC_REF_RE = re.compile(r"(?<![A-Za-z0-9_])src/([A-Za-z0-9._-]+)(?:/|\b)")
 MD_LINK_RE = re.compile(r"!?(?:\[[^\]]*\])\(([^)]+)\)")
@@ -182,41 +189,107 @@ class Audit:
 
         config_path = runtime / "package.json"
         if config_path.is_file():
-            self.check_opencode_config(name, runtime, config_path)
+            self.check_runtime_manifest(name, runtime, config_path)
         skills_dir = runtime / "skills"
         if skills_dir.is_dir() and not list(skills_dir.rglob("SKILL.md")):
             self.add("ERROR", "no-runtime-skill", skills_dir, "runtime has no SKILL.md")
         self.check_runtime_boundary(name, runtime)
 
-    def check_opencode_config(self, name: str, runtime: Path, path: Path) -> None:
+    def check_runtime_manifest(self, name: str, runtime: Path, path: Path) -> None:
+        """Audit the pi resource manifest.
+
+        `scripts/validate-definition.sh` owns the exhaustive structural
+        contract. This audit covers the drift a repository accumulates over
+        time: a manifest that stopped being pi-only, resource paths that no
+        longer resolve, and a declared tool surface that went empty.
+        """
         try:
-            config = json.loads(path.read_text(encoding="utf-8"))
+            manifest = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            self.add("ERROR", "invalid-opencode-json", path, f"cannot parse JSON: {exc}")
+            self.add("ERROR", "invalid-runtime-manifest", path, f"cannot parse JSON: {exc}")
             return
-        if config.get("$schema") != "https://opencode.ai/config.json":
-            self.add("WARN", "opencode-schema", path, "unexpected or missing OpenCode schema")
-        if config.get("default_agent") != name:
+        if manifest.get("scripts"):
             self.add(
                 "ERROR",
-                "default-agent-drift",
+                "runtime-manifest-scripts",
                 path,
-                f"default_agent is {config.get('default_agent')!r}, expected {name!r}",
+                "runtime package.json must not declare npm lifecycle scripts",
             )
-        agents = config.get("agent")
-        if not isinstance(agents, dict) or name not in agents:
-            self.add("ERROR", "agent-entry-drift", path, f"missing agent.{name} entry")
-        else:
-            prompt = agents[name].get("prompt") if isinstance(agents[name], dict) else None
-            if not isinstance(prompt, str) or not prompt:
-                self.add("ERROR", "missing-agent-prompt", path, f"agent.{name}.prompt is missing")
-            elif prompt.startswith("{file:") and prompt.endswith("}"):
-                prompt_path = runtime / prompt[6:-1]
-                if not prompt_path.is_file():
-                    self.add("ERROR", "broken-prompt", path, f"prompt file does not exist: {prompt_path.name}")
-        skills = config.get("skills", [])
-        if "./skills" not in skills:
-            self.add("ERROR", "skills-path", path, "OpenCode config does not include ./skills")
+        if "pi-package" not in (manifest.get("keywords") or []):
+            self.add("WARN", "pi-package-keyword", path, 'manifest lacks the "pi-package" keyword')
+
+        pi = manifest.get("pi")
+        if not isinstance(pi, dict):
+            self.add("ERROR", "missing-pi-section", path, "manifest has no pi section")
+            pi = {}
+        elif "./skills" not in (pi.get("skills") or []):
+            self.add("ERROR", "skills-path", path, "pi.skills does not include ./skills")
+
+        section = manifest.get("agent")
+        if not isinstance(section, dict):
+            legacy = sorted(
+                key
+                for key, value in manifest.items()
+                if key != "agent" and isinstance(value, dict) and "manifest_version" in value
+            )
+            hint = f": rename the legacy {legacy[0]!r} section to 'agent'" if legacy else ""
+            self.add("ERROR", "missing-agent-section", path, f"manifest has no agent section{hint}")
+            return
+        if section.get("manifest_version") != 1:
+            self.add(
+                "ERROR",
+                "manifest-version",
+                path,
+                f"agent.manifest_version is {section.get('manifest_version')!r}, expected 1",
+            )
+        if section.get("backend") != "pi":
+            self.add(
+                "ERROR",
+                "backend-drift",
+                path,
+                f"agent.backend is {section.get('backend')!r}, expected 'pi'",
+            )
+        if section.get("network") not in {"deny", "allow"}:
+            self.add(
+                "ERROR",
+                "network-policy",
+                path,
+                f"agent.network is {section.get('network')!r}, expected 'deny' or 'allow'",
+            )
+        tools = section.get("default_tools")
+        if not isinstance(tools, list) or not tools:
+            self.add("ERROR", "empty-tool-surface", path, "agent.default_tools is missing or empty")
+
+        # Every declared resource must still resolve inside the runtime, so a
+        # renamed or deleted file fails the audit instead of the user's first run.
+        declared = [
+            (f"pi.{key}", entry)
+            for key in ("skills", "prompts", "themes", "extensions")
+            for entry in (pi.get(key) or [])
+        ] + [
+            (f"agent.{key}", entry)
+            for key in ("system_prompt", "context", "agent_definitions", "leaf_tools")
+            for entry in (section.get(key) or [])
+        ]
+        for label, entry in declared:
+            if not isinstance(entry, str) or not entry.strip():
+                self.add("ERROR", "invalid-resource-path", path, f"{label} has a non-string path")
+                continue
+            if entry.startswith("/") or ".." in entry.split("/"):
+                self.add(
+                    "ERROR",
+                    "unsafe-resource-path",
+                    path,
+                    f"{label} must be a relative path inside the runtime: {entry}",
+                )
+                continue
+            if not (runtime / entry).exists():
+                self.add(
+                    "ERROR",
+                    "broken-resource-path",
+                    path,
+                    f"{label} declares a path that does not exist: {entry}",
+                )
 
     def check_runtime_boundary(self, name: str, runtime: Path) -> None:
         for path in runtime.rglob("*"):
@@ -298,7 +371,7 @@ class Audit:
                     if marker not in line:
                         continue
                     relative = path.relative_to(self.root)
-                    if "memory" in relative.parts:
+                    if "memory" in relative.parts or relative.as_posix() in RECORDED_EVIDENCE_FILES:
                         self.add("INFO", "historical-marker", path, f"historical/template-only reference: {explanation}", index)
                     elif marker == "tests/install/test-install.sh" and re.search(r"obsolete|removed|deprecated|do not restore", line, re.IGNORECASE):
                         self.add("INFO", "documented-obsolete-marker", path, explanation, index)
@@ -351,7 +424,7 @@ class Audit:
             backend_match = re.search(r'AGENT_BACKENDS="\$\{AGENT_BACKENDS:-([^}]+)\}"', text)
             if backend_match:
                 for backend in backend_match.group(1).split(","):
-                    if backend not in {"opencode", "codex", "claude", "claude-code", "pi"}:
+                    if backend not in {"pi", "pi-coding-agent"}:
                         self.add("ERROR", "installer-backend", install, f"unsupported default backend {backend!r}")
         dockerfile = self.root / "docker" / "Dockerfile"
         if dockerfile.is_file():

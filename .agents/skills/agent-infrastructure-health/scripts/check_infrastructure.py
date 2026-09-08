@@ -26,6 +26,7 @@ REQUIRED_FILES = (
 )
 SHELL_DIRS = ("distribution", "docker", "scripts")
 TOOL_NAME_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
+SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9_.:=/-]+$")
 
 
 @dataclass
@@ -117,8 +118,11 @@ class Health:
                 self.add("ERROR", "tool-command-name", f"invalid runtime tool command name: {tool}")
                 continue
             commands.append(f"command -v {tool}")
-            if tool == "hewo-tool":
-                commands.append('test "$(hewo-tool --check)" = HEWO_TOOL_OK')
+        # The Agent declares its own tool sentinels in the runtime manifest, so
+        # this check stays product-agnostic instead of asserting one template
+        # example's tool.
+        for assertion in self.tool_check_assertions(tools):
+            commands.append(assertion)
         commands.extend(
             [
                 f"{self.agent} --help >/dev/null",
@@ -141,6 +145,51 @@ class Health:
             return []
         scripts = data.get("project", {}).get("scripts", {})
         return sorted(scripts) if isinstance(scripts, dict) else []
+
+    def tool_check_assertions(self, tools: list[str]) -> list[str]:
+        """Turn the manifest's declared tool self-checks into shell assertions.
+
+        `agent.tool_checks` entries look like
+        `{"command": "<name>", "args": ["--check"], "expect": "<sentinel>"}`.
+        Tokens are re-validated here even though `validate-definition.sh`
+        already refuses unsafe ones, because the result is interpolated into a
+        container shell command.
+        """
+        manifest_path = self.root / "src" / self.agent / "runtime" / "package.json"
+        if not manifest_path.is_file():
+            return []
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            self.add("ERROR", "tool-check-manifest", f"cannot read runtime manifest: {exc}")
+            return []
+        section = manifest.get("agent")
+        checks = section.get("tool_checks", []) if isinstance(section, dict) else []
+        if not isinstance(checks, list):
+            self.add("ERROR", "tool-check-manifest", "agent.tool_checks must be an array")
+            return []
+        assertions: list[str] = []
+        for check in checks:
+            if not isinstance(check, dict):
+                self.add("ERROR", "tool-check-manifest", "each agent.tool_checks entry must be an object")
+                continue
+            command = check.get("command")
+            expect = check.get("expect")
+            args = check.get("args", [])
+            tokens = [command, expect, *(args if isinstance(args, list) else [None])]
+            if not all(isinstance(token, str) and SAFE_TOKEN_RE.fullmatch(token) for token in tokens):
+                self.add("ERROR", "tool-check-manifest", f"unsafe tool check declaration: {check!r}")
+                continue
+            if command not in tools:
+                self.add(
+                    "ERROR",
+                    "tool-check-manifest",
+                    f"agent.tool_checks names {command!r}, which the runtime tools do not install",
+                )
+                continue
+            invocation = " ".join([command, *args])
+            assertions.append(f'test "$({invocation})" = {expect}')
+        return assertions
 
     def release_check(self) -> None:
         if not self.release_archive:

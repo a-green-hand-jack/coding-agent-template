@@ -14,7 +14,7 @@ Two sections, with different meanings:
 
 - `pi` — resources pi loads natively: `skills`, `prompts`, `themes`,
   `extensions`. These are the only keys pi recognises; there is no `pi.agents`.
-- `hewo` — everything pi has no primitive for: the system-prompt files, the
+- `agent` — everything pi has no primitive for: the system-prompt files, the
   context files injected with per-file provenance, the agent definitions read
   by this runtime's own extension, the leaf tools, the tool allowlist, and the
   default capability/network posture.

@@ -22,7 +22,7 @@
       "./extensions/hewo/index.ts"
     ]
   },
-  "hewo": {
+  "agent": {
     "manifest_version": 1,
     "backend": "pi",
     "system_prompt": [
@@ -38,6 +38,15 @@
     ],
     "leaf_tools": [
       "./tools/hewo_tool.py"
+    ],
+    "tool_checks": [
+      {
+        "command": "hewo-tool",
+        "args": [
+          "--check"
+        ],
+        "expect": "HEWO_TOOL_OK"
+      }
     ],
     "default_tools": [
       "read",
