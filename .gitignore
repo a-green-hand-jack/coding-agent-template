@@ -6,6 +6,8 @@ node_modules/
 .venv/
 *.log
 .pytest_cache/
+__pycache__/
+*.pyc
 
 .omx/
 outputs/
