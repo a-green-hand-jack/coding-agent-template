@@ -74,7 +74,7 @@ There is no other lookup path.
 | `metrics.primary.unit` | string | non-empty |
 | `metrics.secondary` | array | may be empty; each entry needs `name`, `direction`, `unit` |
 | `acceptance.minimum_primary_delta` | number | ≥0 |
-| `acceptance.max_secondary_regression` | object | metric name → non-negative allowed regression |
+| `acceptance.max_secondary_regression` | object | metric name → non-negative allowed regression; must contain an entry for every declared secondary metric |
 | `acceptance.require_functional_pass` | boolean | |
 | `stop_conditions` | array | ≥1 non-empty string |
 | `evidence_policy.scrubbed_only` | boolean | must be `true` in v1 |
@@ -84,7 +84,9 @@ There is no other lookup path.
 | `generalization.holdout` | object \| null | required object when scope is `product-general` |
 | `generalization.human_domain_review_required` | boolean | |
 
-`environment` describes the *expected/selected* conditions. The exact
+`environment` must agree with the condition manifest's `execution` and
+`sampling` sections field by field. `environment` describes the
+*expected/selected* conditions. The exact
 per-run values (image digest, tool versions, request/sampling/retry/timeout
 settings) live in the condition manifest. A mismatch between the two is
 `EVALUATION_BLOCKED`, not a silent pass.

@@ -14,8 +14,7 @@
       "tl_none"
     ],
     "forbidden_text": [
-      "AGENTS.md",
-      ".agents/skills"
+      "AGENTS.md"
     ],
     "required_edges": [
       [

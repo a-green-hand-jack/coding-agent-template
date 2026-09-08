@@ -10,9 +10,9 @@
   },
   "execution": {
     "backend": "fixture-backend",
-    "image_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "locale": "C",
-    "model": "fixture-model-v2",
+    "model": "fixture-model",
     "provider": "fixture-provider",
     "request_parameters": {
       "max_output_tokens": 4096,
@@ -26,7 +26,7 @@
     "sampling": {
       "top_p": 1
     },
-    "seed": "fixture-seed-1",
+    "seed": "fixture-seed-2",
     "timeout_seconds": 600,
     "timezone": "UTC",
     "tool_versions": {

@@ -106,7 +106,14 @@ def evidence_entries(root: Path, spec) -> list[dict]:
     return entries
 
 
-def condition_manifest(contract_revision: str, contract_sha: str, model: str, holdout_policy: str) -> dict:
+def condition_manifest(
+    contract_revision: str,
+    contract_sha: str,
+    holdout_policy: str,
+    *,
+    image_digest: str = "sha256:" + "a" * 64,
+    seed: str = "fixture-seed-1",
+) -> dict:
     return {
         "schema_version": 1,
         "contract": {"revision": contract_revision, "sha256": contract_sha},
@@ -127,13 +134,13 @@ def condition_manifest(contract_revision: str, contract_sha: str, model: str, ho
         "execution": {
             "backend": "fixture-backend",
             "provider": "fixture-provider",
-            "model": model,
+            "model": "fixture-model",
             "runtime": "fixture-runtime-1",
-            "image_digest": "sha256:" + "a" * 64,
+            "image_digest": image_digest,
             "tool_versions": {"approved-verifier": "paper-verifier-1", "python": "3.12"},
             "request_parameters": {"max_output_tokens": 4096, "temperature": 0},
             "sampling": {"top_p": 1},
-            "seed": "fixture-seed-1",
+            "seed": seed,
             "retry_policy": {"backoff": "none", "max_attempts": 1},
             "timeout_seconds": 600,
             "locale": "C",
@@ -212,8 +219,12 @@ def result(role: str, run_id: str, revision: str, identity: dict, samples: list[
     }
 
 
+GENERATED: set[str] = set()
+
+
 def write(path: Path, document: dict) -> None:
     lib.atomic_write_text(path, lib.dump_canonical_json(document) + "\n")
+    GENERATED.add(path.name)
 
 
 def write_promoted(path: Path, document: dict, reference: str) -> None:
@@ -271,13 +282,20 @@ def main() -> int:
 
     manifests = {
         "condition-manifest.json": condition_manifest(
-            "paper-contract-1", base_sha, "fixture-model", "paper-holdout-policy-none"
+            "paper-contract-1", base_sha, "paper-holdout-policy-none"
         ),
+        # Same declared environment, different *actual* run conditions: the
+        # image digest and seed changed. The contract does not pin those, so
+        # this is exactly what invalidates a baseline rather than blocking it.
         "condition-manifest-changed.json": condition_manifest(
-            "paper-contract-1", base_sha, "fixture-model-v2", "paper-holdout-policy-none"
+            "paper-contract-1",
+            base_sha,
+            "paper-holdout-policy-none",
+            image_digest="sha256:" + "b" * 64,
+            seed="fixture-seed-2",
         ),
         "condition-manifest-general.json": condition_manifest(
-            "paper-contract-general-1", general_sha, "fixture-model", "paper-holdout-1"
+            "paper-contract-general-1", general_sha, "paper-holdout-1"
         ),
     }
     shas = {}
@@ -448,7 +466,7 @@ def main() -> int:
     }
     write(boot / "generalization-satisfied-candidate-result.json", satisfied)
 
-    problems = verify(boot, fixtures)
+    problems = verify(boot, fixtures, GENERATED)
     if problems:
         for problem in problems:
             print(f"ERROR {problem}", file=sys.stderr)
@@ -460,12 +478,17 @@ def main() -> int:
     return 0
 
 
-def verify(boot: Path, fixtures: Path) -> list[str]:
-    """Re-read every generated fixture and confirm the pinned hashes hold."""
+def verify(boot: Path, fixtures: Path, generated: set[str]) -> list[str]:
+    """Re-read every generated fixture and confirm the pinned hashes hold.
+
+    Round-trip stability is asserted only for documents this builder writes;
+    hand-authored manifests such as the candidate manifest keep their own
+    readable layout.
+    """
     problems: list[str] = []
     for path in sorted(boot.glob("*.json")):
         document = lib.load_json_exact(path)
-        if lib.dump_canonical_json(document) + "\n" != path.read_text(encoding="utf-8"):
+        if path.name in generated and lib.dump_canonical_json(document) + "\n" != path.read_text(encoding="utf-8"):
             problems.append(f"not round-trip stable: {path.name}")
         if not isinstance(document, dict):
             continue
