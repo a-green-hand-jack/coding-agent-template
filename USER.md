@@ -6,10 +6,11 @@ scaffold 的行为定义交给成熟的 coding-agent backend 执行，再由 bac
 
 ```text
 Agent scaffold  ->  coding-agent backend  ->  LLM provider/model
-hewo runtime        pi/OpenCode/Codex/Claude    user-selected provider/model
+hewo runtime        pi                        user-selected provider/model
 ```
 
-用户通常只需要使用 `hewo`，不需要直接调用 OpenCode、Codex、Claude Code 或 pi。
+用户通常只需要使用 `hewo`，不需要直接调用 pi。三层保持独立：runtime 定义产品
+行为，pi 提供执行循环、工具和会话，provider/model 在运行时选择。
 
 ## 1. 安装
 
@@ -31,7 +32,7 @@ RELEASE_URL="https://github.com/a-green-hand-jack/coding-agent-template/releases
 curl --fail --silent --show-error --location "$INSTALLER_URL" -o /tmp/hewo-install.sh
 RELEASE_URL="$RELEASE_URL" \
 AGENT_NAME=hewo \
-AGENT_BACKENDS=opencode,codex,claude,pi \
+AGENT_NAME=hewo \
 bash /tmp/hewo-install.sh
 rm -f /tmp/hewo-install.sh
 ```
@@ -44,9 +45,8 @@ hewo --version
 hewo --help
 ```
 
-如果只需要 OpenCode，请在上面的安装命令中把
-`AGENT_BACKENDS=opencode,codex,claude,pi` 改成 `AGENT_BACKENDS=opencode`，
-这样可以避免下载不使用的 backend。
+安装器只会在本机没有 pi 时才安装它。已经装好 pi 的机器可以设置
+`SKIP_RUNTIME_INSTALL=1` 跳过这一步。
 
 不要把 API key、auth store 或 `.env` 放入命令、release archive 或 Git。
 
@@ -57,13 +57,13 @@ hewo --help
 ```bash
 AGENT_NAME=hewo \
 PREFIX="$HOME/.local" \
-AGENT_BACKENDS=opencode,codex,claude \
 ./distribution/install.sh
 ```
 
-源码安装默认安装 OpenCode 和 pi，并把 hewo 的工具安装到独立的
-`~/.local/lib/hewo/environment/`，不会使用开发仓库的 `.venv`。如需同时安装
-Codex 或 Claude Code，可显式设置 `AGENT_BACKENDS=opencode,pi,codex,claude`。
+源码安装会在需要时安装 pi，并把 hewo 的工具安装到独立的
+`~/.local/lib/hewo/environment/`，不会使用开发仓库的 `.venv`。如果 runtime
+声明了 npm 依赖，安装器要求同时提供 lockfile，并以 `npm ci --ignore-scripts`
+冻结安装；没有 lockfile 会直接拒绝，而不是在安装时解析版本。
 
 ### 使用 Docker
 
@@ -77,17 +77,19 @@ docker run --rm -it \
   "完成这个任务"
 ```
 
-Docker 镜像内置 OpenCode、Codex 和 Claude Code。镜像不包含开发目录、
-`AGENTS.md`、`.agents/` 或 provider credentials。
+Docker 镜像只内置 pi。镜像不包含开发目录、`AGENTS.md`、`.agents/`、
+评估契约或 provider credentials。
 
 ## 2. Agent scaffold、backend 和 LLM
 
-这三层是独立的。pi 是当前第一选择的 backend，但不是 runtime 定义的依赖；provider、model 和 credentials 始终由用户或平台在运行时提供。HeWo 是一个功能完整、刻意限定范围的 Hello World Agent，不是通过故意裁剪形成的不完整版本：
+这三层是独立的。provider、model 和 credentials 始终由用户或平台在运行时提供。
+HeWo 是一个功能完整、刻意限定范围的 Hello World Agent，不是通过故意裁剪形成的
+不完整版本：
 
-- **Agent scaffold**：一个 Agent 的 Identity、Knowledge、Skills、Memory
-  policy 和 Workflows。
-- **Backend**：执行 Agent 的成熟 coding-agent，例如 OpenCode、Codex、
-  Claude Code。
+- **Agent scaffold**：一个 Agent 的 Identity、Knowledge、Skills、Prompt
+  templates、Memory policy、Workflows、Theme 和 Extension，全部由 runtime 的
+  `package.json` 清单声明。
+- **Backend**：执行这些资源的成熟 coding-agent。本产品只支持 pi。
 - **Provider/model**：运行时选择的模型服务和模型名称。
 
 当前一个安装好的命令对应一个 scaffold：`hewo` 对应 `hewo` scaffold。要
@@ -101,129 +103,93 @@ my-agent "运行我的 Agent"
 当前版本默认优先使用 pi，也可以在运行时切换 backend 和 provider/model；但还不能用
 `hewo --scaffold another-agent` 在多个 scaffold 之间切换。
 
-## 3. 选择 backend
+## 3. Backend：只有 pi
 
-### OpenCode
-
-```bash
-hewo --backend opencode \
-  --provider opencode-go \
-  --model glm-5.3 \
-  "分析这个项目"
-```
-
-OpenCode 使用 `[provider/]model` 命名空间；`--provider` 主要用于 OpenCode。
-
-### pi
+hewo 只在 **pi** 上运行。没有第二个 backend，也没有回退：请求其他 backend 会
+直接报错，而不是悄悄换一个默认值。
 
 ```bash
-hewo --backend pi \
-  --provider openai-codex \
-  --model gpt-5.5 \
-  "分析这个项目"
+hewo --provider openai --model gpt-5.5 "你好"
 ```
 
-pi 使用自己的 provider/model 命名空间，并可通过 pi auth store 或对应
-provider 的 API key 进行运行时认证。
+`--backend` 只接受 `pi`（以及别名 `pi-coding-agent`）。
 
-### Claude Code
+hewo 的运行时资源不是被拼成一段提示词，而是交给 pi 自己的加载器：skills 通过
+`--skill`、slash 命令模板通过 `--prompt-template`、主题通过 `--theme`、
+TypeScript extension 通过 `--extension`、工具白名单通过 `--tools`。只有
+identity、memory policy、knowledge 和 workflow 使用 `--append-system-prompt`
+注入，因为 pi 没有对应的原生资源类型；它们按文件逐段注入并带来源标注。
 
-```bash
-hewo --backend claude \
-  --model sonnet \
-  "分析这个项目"
-```
+启动时 hewo 会关闭隐式发现：`--no-context-files` 让 pi 不会把任何
+`AGENTS.md` 读进产品 agent，`--no-skills` 与 `--no-extensions` 阻止环境里的
+全局/项目资源被混入（显式的 `--skill`、`--extension` 仍然生效），
+`--no-approve` 阻止隐式信任项目本地文件。
 
-Claude Code 使用 `sonnet`、`opus` 等自己的 model alias。
+默认拒绝：出站网络和额外能力都是关闭的。天气能力默认使用不联网的确定性
+fixture provider；实时查询需要显式开启、指定允许的主机并设置超时，任何失败都
+会退回 fixture 结果并明确标注，而不是让任务失败。
 
 ## 4. 配置 provider 和 credentials
 
-credentials 只在运行时提供，不要写入 Git、scaffold、Dockerfile 或镜像。
-
-### OpenCode
+provider、model 和凭据都在运行时提供，永远不属于 Agent 定义。
 
 ```bash
-export AGENT_BACKEND=opencode
-export LLM_PROVIDER=opencode-go
-export LLM_MODEL=glm-5.3
-```
-
-使用 API key 时，变量名是 `<PROVIDER>_API_KEY`。例如：
-
-```bash
-export OPENAI_API_KEY="..."
 export LLM_PROVIDER=openai
 export LLM_MODEL=gpt-5.5
+export OPENAI_API_KEY="..."
 hewo "你好"
 ```
 
-如果 OpenCode 已通过自己的标准 auth store 登录，运行 hewo 前设置：
+如果 pi 已经通过自己的 auth store 登录，运行 hewo 前设置：
 
 ```bash
-export AGENT_AUTH_STORE=1
+export PI_AUTH_STORE=1
 ```
 
-### Codex
+pi 解析凭据的顺序是：`--api-key`、其 `auth.json`、环境变量、`models.json` 中
+的自定义 provider key。`pi --list-models` 会按已有凭据过滤，因此它是可用性探
+针，而不是完整目录。
 
-```bash
-export OPENAI_API_KEY="..."
-export CODEX_MODEL=gpt-5.5
-hewo --backend codex "你好"
-```
-
-也可以使用 Codex 的标准 `CODEX_HOME/auth.json`。使用外部 auth store 时，
-设置 `CODEX_AUTH_STORE=1`。
-
-### Claude Code
-
-```bash
-export ANTHROPIC_API_KEY="..."
-export ANTHROPIC_BASE_URL="https://api.example.com"
-hewo --backend claude --model sonnet "你好"
-```
-
-也可以使用 `ANTHROPIC_AUTH_TOKEN`、`ANTHROPIC_API_KEY_FILE` 或 Claude
-credentials store。使用 credentials store 时，设置 `CLAUDE_AUTH_STORE=1`。
+凭据永远不会写进镜像、Git 或 Agent 定义。缺少凭据时 hewo 会直接失败，而不是
+静默降级。
 
 ## 5. CLI 和 TUI
 
 ### CLI：一次性任务
 
-带任务参数时，hewo 使用 backend 的非交互模式：
+带任务参数时，hewo 以 pi 的非交互模式运行（`--print --no-session`），不保存
+会话：
 
 ```bash
 hewo "总结当前目录的代码"
-hewo --backend codex "检查这个错误"
-hewo --backend claude --model sonnet "设计一个修复方案"
+hewo --provider openai --model gpt-5.5 "检查这个错误"
+hewo /hewo-report            # slash 命令来自 runtime 的 prompt template
 ```
+
+需要机器可读输出时：
+
+```bash
+AGENT_OUTPUT_FORMAT=json hewo "总结当前目录的代码"
+```
+
+`AGENT_OUTPUT_FORMAT` 只接受 `text`、`json`、`rpc`，对应 pi 的 `--mode`。
 
 ### TUI：交互式工作
 
-不带任务时，hewo 默认进入选定 backend 的交互界面：
+不带任务时，hewo 进入 pi 的交互界面：
 
 ```bash
 hewo
-hewo --backend codex
-hewo --backend claude
+hewo --tui
 ```
 
-也可以显式指定：
+### 工具白名单
+
+hewo 的工具白名单来自 runtime 的 `package.json`，同时覆盖 pi 的内建工具和本
+runtime extension 提供的工具。临时收紧：
 
 ```bash
-hewo --tui
-hewo --backend opencode --tui
-```
-
-CLI 和 TUI 都使用同一个 scaffold runtime；变化的只是 backend 和
-provider/model。
-
-常用环境变量：
-
-```text
-AGENT_BACKEND   opencode、codex、claude 或 pi
-LLM_PROVIDER    OpenCode/pi provider ID
-LLM_MODEL       默认模型
-LLM_VARIANT     OpenCode model variant
+hewo --tools read "只读地看一下这个仓库"
 ```
 
 ## 6. 安全边界和故障排查
@@ -231,7 +197,11 @@ LLM_VARIANT     OpenCode model variant
 - 不要提交 API key、auth store、session、`.env` 或个人数据。
 - 不要把宿主机整个 `HOME` 目录挂入容器。
 - Docker 场景只挂载明确指定的 credentials，并使用只读挂载。
-- `--provider` 对 Codex/Claude Code 不起作用；它们使用自己的认证和模型命名空间。
+- `--provider` 是必填的：hewo 不假设 pi 自己的默认 provider。
+- 默认拒绝出站网络和额外能力；放宽需要显式设置 `HEWO_NETWORK` 和
+  `HEWO_CAPABILITIES`，这是产品决策而不是便利开关。
+- 子 agent 以独立进程运行，使用 `--no-session` 和最小只读工具白名单，
+  不继承父级权限或会话，并受墙钟超时、并发上限、重试上限和输出截断约束。
 - 缺少 provider key 或 auth store 时，hewo 会拒绝启动。
 - `hewo --version` 和 `hewo --help` 可用于确认安装是否成功。
 

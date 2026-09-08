@@ -8,8 +8,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.x' }
       - run: ./scripts/validate-definition.sh hewo
+      - run: python3 scripts/check-template-registry.py
+      - run: python3 scripts/check-pi-only-backend.py
       - run: docker build --build-arg AGENT_NAME=hewo -t agent-template:test -f docker/Dockerfile .
       - run: >-
           docker run --rm --entrypoint bash agent-template:test -c
-          'command -v opencode && command -v codex && command -v claude &&
-          command -v hewo-tool && hewo-tool --check | grep -Fx HEWO_TOOL_OK'
+          'command -v pi && command -v hewo-tool &&
+          hewo-tool --check | grep -Fx HEWO_TOOL_OK'

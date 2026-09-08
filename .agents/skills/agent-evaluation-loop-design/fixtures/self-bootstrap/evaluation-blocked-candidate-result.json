@@ -1,0 +1,106 @@
+{
+  "aggregate": {
+    "primary_value": null,
+    "secondary_values": {}
+  },
+  "condition_identity": {
+    "aggregation": "mean",
+    "backend": "fixture-backend",
+    "benchmark_revision": "paper-tasks-1",
+    "condition_manifest_path": "condition-manifest.json",
+    "condition_manifest_sha256": "a0e682b3211bfd468d27ceaf3720e167c9f4a01dfb7a055a7ffb94ae5c0d47b7",
+    "contract_revision": "paper-contract-1",
+    "contract_sha256": "415ced1094d38e00cd3ae0815a3fc1e13b42ad00add2af38e85c7157e81759f6",
+    "metric_policy_revision": "paper-metric-policy-1",
+    "model": "fixture-model",
+    "provider": "fixture-provider",
+    "repetitions": 3,
+    "runtime": "fixture-runtime-1",
+    "verifier_revision": "paper-verifier-1"
+  },
+  "condition_manifest_path": "condition-manifest.json",
+  "condition_manifest_sha256": "a0e682b3211bfd468d27ceaf3720e167c9f4a01dfb7a055a7ffb94ae5c0d47b7",
+  "role": "candidate",
+  "run_id": "candidate-run-6",
+  "samples": [
+    {
+      "evidence": [
+        {
+          "kind": "artifact",
+          "path": "evidence/artifact.txt",
+          "producer": "run-benchmark.sh",
+          "producer_revision": "runner-1",
+          "sha256": "6b387a894d881c6006c39757fa5f542e029fa398314ce4cf394ca5abd11297d0"
+        },
+        {
+          "kind": "verifier-report",
+          "path": "evidence/verifier-report.json",
+          "producer": "approved-verifier",
+          "producer_revision": "paper-verifier-1",
+          "sha256": "a873638d41caa97394298d0494e6cdde84bbc880c8ae19edd6fd236cffe98575"
+        },
+        {
+          "kind": "scrubbed-trajectory",
+          "path": "evidence/trajectory.scrubbed.txt",
+          "producer": "run-benchmark.sh",
+          "producer_revision": "runner-1",
+          "sha256": "f04280aa3abac17bb1c9ba64aa2870edbf7681bbe4b46184c90348ee18920e43"
+        }
+      ],
+      "failure_class": "none",
+      "functional_status": "pass",
+      "primary_value": 0.75,
+      "run_status": "completed",
+      "sample_id": "run-1",
+      "secondary_values": {
+        "citation_error_rate": 0.09
+      }
+    },
+    {
+      "evidence": [],
+      "failure_class": "benchmark-verifier",
+      "functional_status": "unknown",
+      "primary_value": null,
+      "run_status": "blocked",
+      "sample_id": "run-2",
+      "secondary_values": {}
+    },
+    {
+      "evidence": [
+        {
+          "kind": "artifact",
+          "path": "evidence/artifact.txt",
+          "producer": "run-benchmark.sh",
+          "producer_revision": "runner-1",
+          "sha256": "6b387a894d881c6006c39757fa5f542e029fa398314ce4cf394ca5abd11297d0"
+        },
+        {
+          "kind": "verifier-report",
+          "path": "evidence/verifier-report.json",
+          "producer": "approved-verifier",
+          "producer_revision": "paper-verifier-1",
+          "sha256": "a873638d41caa97394298d0494e6cdde84bbc880c8ae19edd6fd236cffe98575"
+        },
+        {
+          "kind": "scrubbed-trajectory",
+          "path": "evidence/trajectory.scrubbed.txt",
+          "producer": "run-benchmark.sh",
+          "producer_revision": "runner-1",
+          "sha256": "f04280aa3abac17bb1c9ba64aa2870edbf7681bbe4b46184c90348ee18920e43"
+        }
+      ],
+      "failure_class": "none",
+      "functional_status": "pass",
+      "primary_value": 0.76,
+      "run_status": "completed",
+      "sample_id": "run-3",
+      "secondary_values": {
+        "citation_error_rate": 0.09
+      }
+    }
+  ],
+  "schema_version": 1,
+  "subject": {
+    "definition_revision": "candidate-commit-6"
+  }
+}

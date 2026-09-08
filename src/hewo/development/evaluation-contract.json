@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "agent": "hewo",
+  "mode": "infrastructure-smoke-only",
+  "contract_revision": "hewo-smoke-contract-1",
+  "metric_policy_revision": "hewo-no-metric-policy-1",
+  "product": {
+    "goal": "Serve as a complete, intentionally scoped Hello World Agent that proves the installation, runtime-injection, skill-loading, workspace and artifact path work end to end.",
+    "input": "A greeting request with a name, or an infrastructure smoke task naming a required artifact.",
+    "output": "A short greeting including the supplied name, or the requested smoke artifact plus a verified hewo-tool --check result."
+  },
+  "functional_contract": {
+    "checks": [
+      {
+        "id": "greeting-includes-supplied-name",
+        "description": "A greeting reply contains the name supplied in the request.",
+        "source": "src/hewo/runtime/identity.md"
+      },
+      {
+        "id": "smoke-artifact-written",
+        "description": "The infrastructure smoke task writes the requested workspace artifact.",
+        "source": "src/hewo/runtime/skills/runtime-smoke/SKILL.md"
+      },
+      {
+        "id": "tool-check-result-inspected",
+        "description": "The hewo-tool --check result is inspected before success is claimed.",
+        "source": "src/hewo/runtime/tools/hewo_tool.py"
+      }
+    ],
+    "required_artifacts": ["smoke artifact named by the task"]
+  }
+}

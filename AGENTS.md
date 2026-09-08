@@ -101,6 +101,42 @@ Both audits are deterministic preflight, not provider-backed behavior evidence.
 A clean audit still requires the real Docker E2E described in the
 operating-identity self-check above.
 
+## Functional baseline before performance
+
+Never report that the product Agent "got better" without the four things below.
+Load `.agents/skills/agent-evaluation-loop-design/SKILL.md` before designing or
+judging any improvement loop.
+
+1. **A contract.** `src/<agent>/development/evaluation-contract.json` declaring
+   the product goal, the functional checks, the required artifacts and — for a
+   performance claim — the benchmark, verifier, environment, primary metric,
+   repetitions, thresholds and stop conditions.
+2. **A functionally complete baseline.** A working first version. Mediocre
+   quality is fine; an unstable contract or verifier is not. If pass/fail
+   cannot yet be decided, the state is `FUNCTIONAL_BASELINE_MISSING`, which is
+   a product-completeness problem, not a low score.
+3. **One fixed condition identity.** A canonical condition manifest pinning
+   every run-affecting input. `subject.definition_revision` differs between
+   current best and candidate by design — that is the premise of the
+   comparison. Only a changed condition manifest invalidates a baseline.
+4. **Classified evidence.** `ENVIRONMENT_BLOCKED` (credential/provider/
+   infrastructure) and `EVALUATION_BLOCKED` (benchmark/verifier/evidence)
+   update nothing and are neither regressions nor improvements. A product
+   functional failure is a rejection. Only fixed-benchmark evidence can produce
+   `CANDIDATE_MEETS_BENCHMARK_ACCEPTANCE`, which is a recommendation — never a
+   promotion, and never a product-general claim without an independent holdout
+   and human domain review.
+
+Forbidden in the same change as the candidate it would make pass: relaxing a
+verifier, editing the benchmark, or changing a metric policy or threshold.
+Those are independent design changes; they need human review and they
+invalidate the old baseline. One lucky provider response is not an improvement.
+
+`hewo`'s contract is `infrastructure-smoke-only`, so its honest state is
+`SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE`. Do not invent a quality metric for it.
+`scripts/run-agent-loop.sh` is a stage runner and `compare-evaluations.py` is a
+thin comparison protocol; neither is a finished automatic optimizer.
+
 ## Development loop
 
 Use `.agents/workflows/agent-development.md` as the project-internal,

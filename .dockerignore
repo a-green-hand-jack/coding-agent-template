@@ -1,6 +1,6 @@
 .git
 .agents
-.codex
+.pi
 .env
 .env.*
 benchmarks

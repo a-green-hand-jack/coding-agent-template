@@ -1,0 +1,60 @@
+{
+  "name": "hewo-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "HeWo product Agent runtime resources, loaded by the pi coding agent.",
+  "license": "UNLICENSED",
+  "keywords": [
+    "pi-package"
+  ],
+  "pi": {
+    "skills": [
+      "./skills"
+    ],
+    "prompts": [
+      "./prompts"
+    ],
+    "themes": [
+      "./themes"
+    ],
+    "extensions": [
+      "./extensions/hewo/index.ts"
+    ]
+  },
+  "hewo": {
+    "manifest_version": 1,
+    "backend": "pi",
+    "system_prompt": [
+      "./identity.md",
+      "./memory-policy.md"
+    ],
+    "context": [
+      "./knowledge",
+      "./workflows"
+    ],
+    "agent_definitions": [
+      "./agents"
+    ],
+    "leaf_tools": [
+      "./tools/hewo_tool.py"
+    ],
+    "default_tools": [
+      "read",
+      "write",
+      "edit",
+      "bash",
+      "hewo_time",
+      "hewo_weather",
+      "hewo_report",
+      "hewo_subagent"
+    ],
+    "subagent_tools": [
+      "read"
+    ],
+    "capabilities": [],
+    "network": "deny",
+    "weather_mode": "fixture"
+  },
+  "dependencies": {}
+}

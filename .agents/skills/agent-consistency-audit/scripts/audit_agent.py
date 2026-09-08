@@ -167,7 +167,7 @@ class Audit:
         required_files = {
             "identity.md": runtime / "identity.md",
             "memory-policy.md": runtime / "memory-policy.md",
-            "opencode.json": runtime / "opencode.json",
+            "package.json": runtime / "package.json",
         }
         for label, path in required_files.items():
             if not path.is_file():
@@ -180,7 +180,7 @@ class Audit:
             if not path.is_dir():
                 self.add("ERROR", "missing-runtime-dir", path, f"missing {label}")
 
-        config_path = runtime / "opencode.json"
+        config_path = runtime / "package.json"
         if config_path.is_file():
             self.check_opencode_config(name, runtime, config_path)
         skills_dir = runtime / "skills"

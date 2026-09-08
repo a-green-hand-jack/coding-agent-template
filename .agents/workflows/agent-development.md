@@ -6,6 +6,23 @@ project but outside the product runtime. Do not copy it into
 
 Repeat this loop for each product-agent iteration:
 
+0. **Design the evaluation before changing behavior.** Load
+   `.agents/skills/agent-evaluation-loop-design/SKILL.md`. Write or update
+   `src/<agent_name>/development/evaluation-contract.json` first, and regenerate
+   the two diagrams so the product structure and the optimization state machine
+   stay truthful:
+
+   ```bash
+   python3 .agents/skills/agent-evaluation-loop-design/scripts/generate-agent-diagrams.py \
+     --agent <agent_name> --repo-root . --output-dir . --readme README.md
+   python3 .agents/skills/agent-evaluation-loop-design/scripts/validate-agent-evaluation.py \
+     --agent <agent_name> --repo-root . --output-dir . --readme README.md --strict
+   ```
+
+   Stop at step 1 while the state is `DESIGN_INCOMPLETE` or
+   `FUNCTIONAL_BASELINE_MISSING`: those mean the product or the contract is
+   unfinished, not that the Agent is slow or low-quality.
+
 1. **Define or change behavior** in identity, skills, knowledge, workflows,
    memory policy, tools, and permissions. In this repository, product behavior
    belongs under `src/hewo/`; downstream repositories replace that with their
@@ -36,6 +53,21 @@ Repeat this loop for each product-agent iteration:
    product definition, template infrastructure, provider wiring,
    benchmark/verifier, or external provider availability. Fix the appropriate
    layer, then rerun the relevant loop stages.
+9. **Compare, do not assert.** When a change claims an improvement, produce a
+   candidate result under the same canonical condition manifest as the current
+   best and run the thin comparator:
+
+   ```bash
+   python3 .agents/skills/agent-evaluation-loop-design/scripts/compare-evaluations.py \
+     --contract src/<agent_name>/development/evaluation-contract.json \
+     --current-best <path>/current-best-result.json \
+     --candidate <path>/candidate-result.json
+   ```
+
+   It never runs a provider and never updates the current best. Promotion to
+   `ACCEPTED_AS_CURRENT_BEST` is a separate human/approved-runner gate, and a
+   product-general claim additionally needs an independent holdout or canary
+   plus domain review.
 
 `scripts/run-agent-loop.sh` is the executable wrapper for this loop when it is
 available. It should orchestrate existing scripts rather than duplicate their

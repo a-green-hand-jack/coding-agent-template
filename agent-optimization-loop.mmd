@@ -1,0 +1,103 @@
+%% GENERATED FILE - do not edit by hand.
+%% Regenerate with the agent-evaluation-loop-design skill's generate-agent-diagrams.py.
+%% Agent: hewo
+%% Contract state: SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE
+stateDiagram-v2
+  direction TB
+  state "INTENT_DEFINED" as INTENT_DEFINED
+  state "CONTRACT_DESIGNED" as CONTRACT_DESIGNED
+  state "FUNCTIONAL_BASELINE_BUILT" as FUNCTIONAL_BASELINE_BUILT
+  state "BASELINE_MEASURED" as BASELINE_MEASURED
+  state "HYPOTHESIS_READY" as HYPOTHESIS_READY
+  state "CANDIDATE_IMPLEMENTED" as CANDIDATE_IMPLEMENTED
+  state "CANDIDATE_EVALUATING" as CANDIDATE_EVALUATING
+  state "EVIDENCE_VALIDATED" as EVIDENCE_VALIDATED
+  state "COMPARE_WITH_CURRENT_BEST" as COMPARE_WITH_CURRENT_BEST
+  state "DESIGN_INCOMPLETE" as DESIGN_INCOMPLETE
+  state "FUNCTIONAL_BASELINE_MISSING" as FUNCTIONAL_BASELINE_MISSING
+  state "SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE" as SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE
+  state "ENVIRONMENT_BLOCKED" as ENVIRONMENT_BLOCKED
+  state "EVALUATION_BLOCKED" as EVALUATION_BLOCKED
+  state "BASELINE_INVALIDATED" as BASELINE_INVALIDATED
+  state "CANDIDATE_REJECTED" as CANDIDATE_REJECTED
+  state "CANDIDATE_MEETS_BENCHMARK_ACCEPTANCE" as CANDIDATE_MEETS_BENCHMARK_ACCEPTANCE
+  state "GENERALIZATION_REQUIRED" as GENERALIZATION_REQUIRED
+  state "ACCEPTED_AS_CURRENT_BEST" as ACCEPTED_AS_CURRENT_BEST
+  state "STOPPED" as STOPPED
+  INTENT_DEFINED --> CONTRACT_DESIGNED : human intent recorded
+  CONTRACT_DESIGNED --> FUNCTIONAL_BASELINE_BUILT : contract valid and performance mode
+  CONTRACT_DESIGNED --> DESIGN_INCOMPLETE : contract missing or schema invalid
+  CONTRACT_DESIGNED --> SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE : contract mode is infrastructure smoke only
+  FUNCTIONAL_BASELINE_BUILT --> BASELINE_MEASURED : functional checks decide pass or fail stably
+  FUNCTIONAL_BASELINE_BUILT --> FUNCTIONAL_BASELINE_MISSING : contract or verifier cannot decide yet
+  BASELINE_MEASURED --> HYPOTHESIS_READY : current best measured and promoted
+  HYPOTHESIS_READY --> CANDIDATE_IMPLEMENTED : one improvement hypothesis at a time
+  CANDIDATE_IMPLEMENTED --> CANDIDATE_EVALUATING : approved runner under the fixed condition manifest
+  CANDIDATE_EVALUATING --> EVIDENCE_VALIDATED : samples and evidence collected
+  EVIDENCE_VALIDATED --> COMPARE_WITH_CURRENT_BEST : schema, hashes and provenance check out
+  COMPARE_WITH_CURRENT_BEST --> BASELINE_INVALIDATED : condition manifests differ
+  COMPARE_WITH_CURRENT_BEST --> ENVIRONMENT_BLOCKED : credential, provider or infrastructure failure
+  COMPARE_WITH_CURRENT_BEST --> EVALUATION_BLOCKED : benchmark, verifier or evidence failure
+  COMPARE_WITH_CURRENT_BEST --> DESIGN_INCOMPLETE : required design fields missing or invalid
+  COMPARE_WITH_CURRENT_BEST --> FUNCTIONAL_BASELINE_MISSING : current best invalid or not promoted
+  COMPARE_WITH_CURRENT_BEST --> CANDIDATE_REJECTED : functional failure, threshold not met or regression
+  COMPARE_WITH_CURRENT_BEST --> CANDIDATE_MEETS_BENCHMARK_ACCEPTANCE : fixed benchmark threshold met
+  CANDIDATE_MEETS_BENCHMARK_ACCEPTANCE --> ACCEPTED_AS_CURRENT_BEST : benchmark-local scope plus promotion gate
+  CANDIDATE_MEETS_BENCHMARK_ACCEPTANCE --> GENERALIZATION_REQUIRED : product-general claim requested
+  ACCEPTED_AS_CURRENT_BEST --> HYPOTHESIS_READY : keep iterating
+  ACCEPTED_AS_CURRENT_BEST --> STOPPED : stop condition reached
+  CANDIDATE_REJECTED --> HYPOTHESIS_READY : new hypothesis or rollback to previous best
+  ENVIRONMENT_BLOCKED --> CANDIDATE_EVALUATING : fix the environment and rerun the same candidate
+  EVALUATION_BLOCKED --> CANDIDATE_EVALUATING : fix benchmark, verifier or evidence and rerun
+  BASELINE_INVALIDATED --> BASELINE_MEASURED : re-measure current best under the new condition identity
+  GENERALIZATION_REQUIRED --> HYPOTHESIS_READY : independent holdout and human review still pending
+  state SELF_BOOTSTRAP_ADVANCED {
+    SB_BASE_COMMITTED --> SB_DISTINCT_CLEAN_CANDIDATE : distinct clean descendant revision
+    SB_DISTINCT_CLEAN_CANDIDATE --> SB_RUN_BASE_EVALUATOR : evaluator comes from the immutable base archive
+    SB_RUN_BASE_EVALUATOR --> SB_CHECK_OBSERVABLE_DELTA : structure and determinism preserved
+    SB_CHECK_OBSERVABLE_DELTA --> SB_HUMAN_REVIEW : pre-declared delta observed
+    SB_CHECK_OBSERVABLE_DELTA --> SB_BLOCKED : evaluator, fixture or protected path changed
+    SB_CHECK_OBSERVABLE_DELTA --> SB_REJECTED : invariant lost or no observable delta
+  }
+  note right of COMPARE_WITH_CURRENT_BEST
+    subject.definition_revision differs between current best and candidate by design.
+    That difference is the premise of the comparison, never a baseline invalidation.
+    Only the canonical condition manifest defines comparability; a run-affecting input
+    that cannot be recorded in the manifest blocks the comparison instead of passing.
+  end note
+  note right of CANDIDATE_MEETS_BENCHMARK_ACCEPTANCE
+    A benchmark-local acceptance recommendation only. The comparator never promotes
+    and never writes the current best; ACCEPTED_AS_CURRENT_BEST needs a separate
+    promotion gate binding the result hash, the manifest hash and a human decision.
+  end note
+  note right of GENERALIZATION_REQUIRED
+    A product-general claim needs an independent holdout or canary that was frozen
+    before candidate selection and never used for tuning, plus human domain review.
+  end note
+  note right of ENVIRONMENT_BLOCKED
+    Environment and evaluation blocks update nothing. A provider or infrastructure
+    failure is not a regression and not an improvement; fix that layer and rerun
+    the same candidate.
+  end note
+  note right of BASELINE_INVALIDATED
+    The evaluation conditions changed. Re-measure the current best under the new
+    condition identity before comparing anything else.
+  end note
+  note right of STOPPED
+    STOPPED needs a recorded reason: goal reached, N consecutive candidates without
+    material improvement, budget or wall-clock exhausted, or a human stop.
+  end note
+  note right of SELF_BOOTSTRAP_ADVANCED
+    Advanced path for optimizing the design skill itself. The self-bootstrap
+    candidate runs against the fixed fixture and the base evaluator and cannot
+    relax the evaluator, the fixtures or the expected results.
+  end note
+  note right of SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE
+    A smoke or infrastructure pass is never performance evidence. A smoke-only
+    contract can render these diagrams but can never accept an improvement.
+  end note
+  note right of CONTRACT_DESIGNED
+    Current contract state for hewo: mode infrastructure-smoke-only gives SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE.
+  end note
+  [*] --> INTENT_DEFINED
+  STOPPED --> [*]

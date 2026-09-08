@@ -1,0 +1,171 @@
+{
+  "aggregate": {
+    "primary_value": 0.75,
+    "secondary_values": {
+      "citation_error_rate": 0.09
+    }
+  },
+  "condition_identity": {
+    "aggregation": "mean",
+    "backend": "fixture-backend",
+    "benchmark_revision": "paper-tasks-1",
+    "condition_manifest_path": "condition-manifest-general.json",
+    "condition_manifest_sha256": "5ace510d3fc98f74afe4672dd666b51b316d08c3660eb94bd1b5dc428d925bf3",
+    "contract_revision": "paper-contract-general-1",
+    "contract_sha256": "df116500969e6b41b410a2f66a6127840fe96fd673cf552eaf1dc66abb91300d",
+    "metric_policy_revision": "paper-metric-policy-1",
+    "model": "fixture-model",
+    "provider": "fixture-provider",
+    "repetitions": 3,
+    "runtime": "fixture-runtime-1",
+    "verifier_revision": "paper-verifier-1"
+  },
+  "condition_manifest_path": "condition-manifest-general.json",
+  "condition_manifest_sha256": "5ace510d3fc98f74afe4672dd666b51b316d08c3660eb94bd1b5dc428d925bf3",
+  "generalization": {
+    "holdout": {
+      "evidence": [
+        {
+          "kind": "artifact",
+          "path": "evidence/holdout-artifact.txt",
+          "producer": "run-benchmark.sh",
+          "producer_revision": "runner-1",
+          "sha256": "7657aa1f617b800b7db8610b9648f7ef8b812d759fd4274a2cd9efb95f6bd9dd"
+        },
+        {
+          "kind": "verifier-report",
+          "path": "evidence/holdout-verifier-report.json",
+          "producer": "approved-verifier",
+          "producer_revision": "paper-verifier-1",
+          "sha256": "6bf5e543e5fe9746c2b7e101b845ab30ded789d53128e07fc1c268bbf56f7897"
+        },
+        {
+          "kind": "scrubbed-trajectory",
+          "path": "evidence/holdout-trajectory.scrubbed.txt",
+          "producer": "run-benchmark.sh",
+          "producer_revision": "runner-1",
+          "sha256": "59c9063858539528f8787721e5a3038fe00da707f2ca82c4352f19bf9efd61a1"
+        }
+      ],
+      "frozen_before_candidate_selection": true,
+      "functional_status": "pass",
+      "metric_policy_revision": "paper-metric-policy-1",
+      "not_used_for_tuning": true,
+      "primary_value": 0.74,
+      "task_input_sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+      "task_set_revision": "paper-holdout-1",
+      "verifier_revision": "paper-verifier-1"
+    },
+    "human_domain_review": {
+      "reference": "template issue: holdout domain review",
+      "status": "approved"
+    }
+  },
+  "role": "candidate",
+  "run_id": "candidate-run-9",
+  "samples": [
+    {
+      "evidence": [
+        {
+          "kind": "artifact",
+          "path": "evidence/artifact.txt",
+          "producer": "run-benchmark.sh",
+          "producer_revision": "runner-1",
+          "sha256": "6b387a894d881c6006c39757fa5f542e029fa398314ce4cf394ca5abd11297d0"
+        },
+        {
+          "kind": "verifier-report",
+          "path": "evidence/verifier-report.json",
+          "producer": "approved-verifier",
+          "producer_revision": "paper-verifier-1",
+          "sha256": "a873638d41caa97394298d0494e6cdde84bbc880c8ae19edd6fd236cffe98575"
+        },
+        {
+          "kind": "scrubbed-trajectory",
+          "path": "evidence/trajectory.scrubbed.txt",
+          "producer": "run-benchmark.sh",
+          "producer_revision": "runner-1",
+          "sha256": "f04280aa3abac17bb1c9ba64aa2870edbf7681bbe4b46184c90348ee18920e43"
+        }
+      ],
+      "failure_class": "none",
+      "functional_status": "pass",
+      "primary_value": 0.75,
+      "run_status": "completed",
+      "sample_id": "run-1",
+      "secondary_values": {
+        "citation_error_rate": 0.09
+      }
+    },
+    {
+      "evidence": [
+        {
+          "kind": "artifact",
+          "path": "evidence/artifact.txt",
+          "producer": "run-benchmark.sh",
+          "producer_revision": "runner-1",
+          "sha256": "6b387a894d881c6006c39757fa5f542e029fa398314ce4cf394ca5abd11297d0"
+        },
+        {
+          "kind": "verifier-report",
+          "path": "evidence/verifier-report.json",
+          "producer": "approved-verifier",
+          "producer_revision": "paper-verifier-1",
+          "sha256": "a873638d41caa97394298d0494e6cdde84bbc880c8ae19edd6fd236cffe98575"
+        },
+        {
+          "kind": "scrubbed-trajectory",
+          "path": "evidence/trajectory.scrubbed.txt",
+          "producer": "run-benchmark.sh",
+          "producer_revision": "runner-1",
+          "sha256": "f04280aa3abac17bb1c9ba64aa2870edbf7681bbe4b46184c90348ee18920e43"
+        }
+      ],
+      "failure_class": "none",
+      "functional_status": "pass",
+      "primary_value": 0.76,
+      "run_status": "completed",
+      "sample_id": "run-2",
+      "secondary_values": {
+        "citation_error_rate": 0.09
+      }
+    },
+    {
+      "evidence": [
+        {
+          "kind": "artifact",
+          "path": "evidence/artifact.txt",
+          "producer": "run-benchmark.sh",
+          "producer_revision": "runner-1",
+          "sha256": "6b387a894d881c6006c39757fa5f542e029fa398314ce4cf394ca5abd11297d0"
+        },
+        {
+          "kind": "verifier-report",
+          "path": "evidence/verifier-report.json",
+          "producer": "approved-verifier",
+          "producer_revision": "paper-verifier-1",
+          "sha256": "a873638d41caa97394298d0494e6cdde84bbc880c8ae19edd6fd236cffe98575"
+        },
+        {
+          "kind": "scrubbed-trajectory",
+          "path": "evidence/trajectory.scrubbed.txt",
+          "producer": "run-benchmark.sh",
+          "producer_revision": "runner-1",
+          "sha256": "f04280aa3abac17bb1c9ba64aa2870edbf7681bbe4b46184c90348ee18920e43"
+        }
+      ],
+      "failure_class": "none",
+      "functional_status": "pass",
+      "primary_value": 0.74,
+      "run_status": "completed",
+      "sample_id": "run-3",
+      "secondary_values": {
+        "citation_error_rate": 0.09
+      }
+    }
+  ],
+  "schema_version": 1,
+  "subject": {
+    "definition_revision": "candidate-commit-9"
+  }
+}

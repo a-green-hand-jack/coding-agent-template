@@ -1,0 +1,4 @@
+# Fixed holdout artifact
+
+Independent holdout draft. Frozen before candidate selection and never
+used for tuning.

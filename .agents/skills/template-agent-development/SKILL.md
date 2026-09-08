@@ -93,6 +93,24 @@ infrastructure and development skills the target project needs.
   Docker E2E, and release inspection). Do not revive the obsolete install-test
   workflow or add an Agent unit-test suite.
 
+## Component choice before code
+
+The product Agent is a composed runtime, not a bag of scripts. Before
+implementing any requirement, record a component choice and its rationale using
+the decision tree in `.agents/knowledge/pi-runtime-component-contract.md`:
+declarative resource, then pi-native configuration, then a thin TypeScript
+extension, then a leaf script, then an external CLI. Descend a level only after
+writing down why the level above cannot express the requirement.
+
+Going straight to a script requires a recorded backend-capability gap naming the
+pi primitive that should have covered it. A leaf script may never own the agent
+loop, sessions, model calls, approval loops, sub-agent orchestration, product
+identity, long-lived state, or cross-component orchestration.
+
+The backend is pi and only pi. `src/<agent_name>/runtime/package.json` is the
+single source of truth for what the runtime loads; `agent.yaml` stays scaffold
+metadata and must never grow a second resource list.
+
 ## Completion gates
 
 The Phase 0 initialization gate is satisfied only when the downstream repository

@@ -1,0 +1,5 @@
+name: paper-agent
+runtime_dir: runtime
+development_dir: development
+knowledge_dir: runtime/knowledge
+workflows_dir: runtime/workflows

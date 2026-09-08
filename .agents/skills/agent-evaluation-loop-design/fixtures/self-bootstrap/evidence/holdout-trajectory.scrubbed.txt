@@ -1,0 +1,5 @@
+# Scrubbed holdout trajectory
+
+step 1 load holdout brief
+step 2 apply paper-writing skill
+step 3 emit holdout paper.md
