@@ -11,7 +11,7 @@ metadata:
 > - **Audience:** the development coding agent auditing this repository after a substantial Agent change, before a template sync, or before release.
 > - **Authority:** normative. When to run the audit, and how to classify what it reports, are binding.
 > - **Tone:** imperative and procedural; commands with their modes, and a fixed reading for each finding severity.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** when to run the audit, its invocation and modes, phase-aware interpretation, how to read ERROR/WARN/INFO, and the downstream boundary for running it elsewhere.
 > - **Excludes:** provider-backed behavior evidence (see `.agents/skills/agent-definition-validation/SKILL.md`), and the checks themselves (see `.agents/skills/agent-consistency-audit/scripts/audit_agent.py`).
 

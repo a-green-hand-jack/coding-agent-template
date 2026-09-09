@@ -3,11 +3,8 @@ description: Run the infrastructure smoke task and verify the named artifact.
 argument-hint: [artifact-name]
 ---
 
-Run the infrastructure smoke task for the artifact `$ARGUMENTS`.
+为产物 `$ARGUMENTS` 运行基础设施冒烟任务。
 
-Follow the `runtime-smoke` skill. If no artifact name was supplied, use
-`hewo-smoke.md`.
+遵循 `runtime-smoke` 技能。未提供产物名称时使用 `hewo-smoke.md`。
 
-Verify the artifact and the `hewo-tool --check` result before claiming
-success. Report the checked artifact path and the outcome. Do not include
-raw provider output or secret values.
+宣称成功前核验产物和 `hewo-tool --check` 结果。报告已核验的产物路径和结果，不包含原始提供商输出或秘密值。

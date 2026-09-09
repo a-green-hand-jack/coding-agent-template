@@ -4,7 +4,7 @@
 > - **Audience:** the development coding agent running `development-machine-profile`, and the human developer who confirms these facts.
 > - **Authority:** record. Operator-confirmed observations fixed at the date they were taken; re-verify rather than rewrite.
 > - **Tone:** factual and dated; metadata entries and their provenance, with no procedure and no argument.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the non-probeable machine facts as one JSON fence: provider endpoints, environment-variable names, auth-file paths, model observations, and smoke-evidence status.
 > - **Excludes:** key values, tokens and auth payloads; the field-by-field contract for these entries (see `.agents/skills/development-machine-profile/references/profile-schema.md`) and the probed, rendered profile (see `DevelopmentMachine.md`).
 

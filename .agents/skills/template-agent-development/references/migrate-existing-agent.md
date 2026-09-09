@@ -4,7 +4,7 @@
 > - **Audience:** the development coding agent moving an existing coding-agent repository onto this template's scaffold.
 > - **Authority:** normative. The inventory-first order, the target mapping and the migration validation steps bind.
 > - **Tone:** imperative and procedural; numbered steps built around the mapping table they produce.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** how to inventory without changing behavior, the existing-concern to template-destination mapping, removal of overlapping runtime infrastructure, and migration validation.
 > - **Excludes:** starting a new Agent (see `.agents/skills/template-agent-development/references/use-template.md`) and pulling later template changes (see `.agents/skills/template-agent-development/references/sync-template.md`); the shared contract all three obey (see `.agents/skills/template-agent-development/SKILL.md`).
 

@@ -4,7 +4,7 @@
 > - **Audience:** the development coding agent injecting a provider credential into a Docker E2E run; the document scopes itself to that agent alone.
 > - **Authority:** normative. The fail-closed rule, the injection flags and the do-not list bind every provider-backed run.
 > - **Tone:** terse and operational; flags, host paths and named gotchas, never credential contents.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the injection-flag to host-credential mapping, secret-free provider discovery, the secret-bearing paths that must never be printed, and the pi "No models available" gotcha.
 > - **Excludes:** key values and auth payloads; this machine's confirmed provider facts (see `.agents/knowledge/development-machine-facts.md`), and the validation procedure that consumes these flags (see `.agents/skills/agent-definition-validation/SKILL.md`).
 

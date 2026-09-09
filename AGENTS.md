@@ -4,7 +4,7 @@
 > - **Audience:** the development coding agent maintaining this repository. `CLAUDE.md` is a symlink to this file; never edit it separately.
 > - **Authority:** normative. These instructions bind that agent; where content elsewhere disagrees, this file and the gate scripts win.
 > - **Tone:** imperative and second person; state the rule and the check that enforces it, not the motivation behind it.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** operating identity, the product/development boundary, evidence rules, audit gates, and the development loop.
 > - **Excludes:** product behavior (see `src/hewo/runtime/`), end-user instructions (see `USER.md`), developer procedure and commands (see `DEV.md`), and machine-specific facts (see `DevelopmentMachine.md`).
 

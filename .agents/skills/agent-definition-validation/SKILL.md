@@ -11,7 +11,7 @@ metadata:
 > - **Audience:** the development coding agent validating a changed `src/<agent_name>/` definition or preparing that Agent's release.
 > - **Authority:** normative. The validation levels, the evidence boundary and the exit condition are binding.
 > - **Tone:** imperative and procedural; commands, and the exact label a run's evidence is allowed to carry.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the four validation levels with their commands, the credential-source flag every E2E must name, the evidence boundary, and the exit condition.
 > - **Excludes:** the cross-file freshness sweep (see `.agents/skills/agent-consistency-audit/SKILL.md`), infrastructure preflight (see `.agents/skills/agent-infrastructure-health/SKILL.md`), and host credential facts (see `.agents/knowledge/provider-e2e.md`).
 

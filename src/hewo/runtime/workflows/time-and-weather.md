@@ -1,38 +1,26 @@
-# Time and Weather Workflow
+# 时间与天气工作流
 
-1. Read the location supplied by the user, or use the configured default.
-2. Choose an orchestration shape: single, parallel, or chain.
-3. Report the location actually used and the weather data mode.
-4. Do not claim tools, files, or external actions that did not occur.
+1. 读取用户提供的地点；未提供时使用配置的默认地点。
+2. 选择单路、并行或串联编排方式。
+3. 报告实际使用的地点和天气数据模式。
+4. 不要声称使用了未实际使用的工具、文件或外部操作。
 
-## Single
+## 单路
 
-Run one sub-agent. Use `time-reporter` for a time-only request and
-`weather-reporter` for a weather-only request. Return its result directly.
+运行一个子智能体。仅询问时间时使用 `time-reporter`，仅询问天气时使用 `weather-reporter`，直接返回结果。
 
-## Parallel
+## 并行
 
-Run `time-reporter` and `weather-reporter` at the same time, subject to the
-concurrency cap. Merge the results in input order, not completion order, so
-the same request always produces the same ordering.
+在并发上限内同时运行两个子智能体。按输入顺序而非完成顺序合并结果，确保同一请求始终得到相同顺序。
 
-## Chain
+## 串联
 
-Run one sub-agent and pass its output as the input to the next. Use this when
-the second report depends on the first, such as resolving a location before
-asking for its weather. A failed step ends the chain; report the step that
-failed.
+运行一个子智能体，并将其输出传给下一个。当第二个报告依赖第一个（例如先解析地点再查询天气）时使用。任一步失败都结束串联，并报告失败步骤。
 
-## Execution guarantees
+## 执行保证
 
-Each sub-agent runs as an independent process with its own minimal read-only
-tool allowlist. A sub-agent does not inherit the parent's permissions or
-session.
+每个子智能体都是独立进程，拥有自己的最小只读工具白名单，不继承父进程权限或会话。
 
-Results are subject to a wall-clock timeout, a concurrency cap, a retry cap,
-and output truncation. Report a timed-out, retry-exhausted, or truncated
-result as incomplete. Never fill in the missing part yourself.
+结果受墙钟超时、并发上限、重试上限和输出截断约束。超时、重试耗尽或被截断时标记为不完整，绝不要自行补全。
 
-Weather runs in deterministic fixture mode by default and needs no network.
-Live mode is opt-in. A live failure degrades to the fixture result; say so,
-and never present a degraded result as a live observation.
+天气默认使用无需网络的确定性 fixture 模式。实时模式必须显式启用。实时失败会降级为 fixture 结果，必须说明这一点，不能称为实时观测。

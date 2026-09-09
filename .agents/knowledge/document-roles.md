@@ -4,7 +4,7 @@
 > - **Audience:** the development coding agent maintaining this repository, and any downstream repository adopting the convention.
 > - **Authority:** normative. This is the definition the `check-document-roles.py` gate enforces.
 > - **Tone:** imperative and specific; define the contract, not the motivation.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the role-block format, the governed set, the audience vocabulary, and the rules for adding a document.
 > - **Excludes:** the content of any individual document (each one carries its own block), product behavior (see `src/<agent>/runtime/`), and the enforcement logic itself (see `scripts/check-document-roles.py`).
 
@@ -34,7 +34,7 @@ Immediately after the H1, as a blockquote, with these fields in this order:
 > - **Audience:** <who reads it, in the vocabulary below>
 > - **Authority:** normative | informative | record
 > - **Tone:** <how it should read>
-> - **Language:** English | Chinese | Chinese, with English identifiers
+> - **Language:** 中文（代码、命令、协议标识保留原文） | Chinese | Chinese, with English identifiers
 > - **Contains:** <what belongs here>
 > - **Excludes:** <what must not leak in, and where it belongs instead>
 ```

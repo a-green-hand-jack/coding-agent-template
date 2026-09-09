@@ -11,7 +11,7 @@ metadata:
 > - **Audience:** the development coding agent recording or refreshing a repository's development-machine record.
 > - **Authority:** normative. The capture pipeline, the iteration loop and the secret-safety rules are binding and never relaxed.
 > - **Tone:** imperative and procedural; a probe-and-render pipeline followed by rules stated as prohibitions.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the progressive-loading order, the one-shot probe-and-render command, how to extend the probe when it misses a capability, the secret-safety rules, and downstream use.
 > - **Excludes:** the field-by-field contract (see `references/profile-schema.md`), this machine's non-probeable facts (see `.agents/knowledge/development-machine-facts.md`), and the rendered record (see `DevelopmentMachine.md`).
 

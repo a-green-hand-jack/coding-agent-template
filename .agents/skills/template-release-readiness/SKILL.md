@@ -11,7 +11,7 @@ metadata:
 > - **Audience:** the development coding agent auditing this template repository before publishing a version or tag.
 > - **Authority:** normative. The release gates and the handling of errors versus warnings are binding.
 > - **Tone:** imperative and procedural; the audit command, then the ordered gates that must also pass.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the deterministic release-audit invocation, what that audit checks, the remaining release gates, and the downstream-reusability condition for publishing.
 > - **Excludes:** product-behavior evidence (see `.agents/skills/agent-definition-validation/SKILL.md`), and the classification data the audit reads (see `.agents/template-content-registry.json`).
 

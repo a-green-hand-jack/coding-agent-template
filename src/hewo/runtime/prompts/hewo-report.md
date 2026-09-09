@@ -3,13 +3,10 @@ description: Report the current time and the weather, with the data mode stated.
 argument-hint: [location]
 ---
 
-Produce the time-and-weather report for `$ARGUMENTS`.
+为 `$ARGUMENTS` 生成时间与天气报告。
 
-If no location was supplied, use the runtime's configured default location.
+未提供地点时使用运行时配置的默认地点。
 
-Follow the `time-and-weather` skill. Check the tool result before reporting.
-Name the location actually used, give the time with its timezone, and state
-the weather data mode: `fixture` or `live`.
+遵循 `time-and-weather` 技能，报告前检查工具结果。说明实际使用的地点，给出带时区的时间，并注明天气数据模式：`fixture` 或 `live`。
 
-If a live lookup failed and the result degraded to fixture data, say so and
-report the answer as fixture data.
+实时查询失败并降级为 fixture 数据时，必须说明这一点，并将答案报告为 fixture 数据。

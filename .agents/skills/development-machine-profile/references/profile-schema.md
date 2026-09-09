@@ -4,7 +4,7 @@
 > - **Audience:** the development coding agent extending the host probe or checking a rendered profile for completeness.
 > - **Authority:** normative. It is the source of truth for what each capability family must contain and what is forbidden.
 > - **Tone:** specification-style; field tables naming the source command and whether the field is required.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the eight capability families and their fields, the forbidden-content rules, the operator facts file schema, and the output section order.
 > - **Excludes:** when and how to run the capture (see `.agents/skills/development-machine-profile/SKILL.md`), and any actual machine values (see `.agents/knowledge/development-machine-facts.md` and `DevelopmentMachine.md`).
 

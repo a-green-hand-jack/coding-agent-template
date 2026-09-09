@@ -11,7 +11,7 @@ metadata:
 > - **Audience:** the development coding agent setting up a product Agent's optimization loop, or about to claim that Agent got better.
 > - **Authority:** normative. The normal path, the design rules and the comparator's exit codes bind an improvement claim.
 > - **Tone:** imperative and specific; states and guards with the commands that produce them, and the failure it prevents stated once.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the normal product path, the two-phase lifecycle, the progressive-loading order, diagram generation, comparator invocation and exit codes, and the design rules.
 > - **Excludes:** the contract's normative schema (see `references/evaluation-contract.md`), the diagram schema (see `references/agent-architecture-schema.md`), and optimizing this skill itself (see `references/self-bootstrap.md`).
 

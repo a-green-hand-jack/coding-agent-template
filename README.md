@@ -4,9 +4,25 @@
 > - **Audience:** a human developer evaluating or adopting this template, plus the development coding agent orienting itself in a fresh checkout.
 > - **Authority:** informative. It explains what exists and points at the normative documents; it decides nothing.
 > - **Tone:** explanatory and concrete; every command shown must be one that actually runs.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** what the template is, the scaffold/backend/provider layering, the repository layout, and the entry points into each deeper document.
 > - **Excludes:** binding development rules (see `AGENTS.md`), day-to-day development procedure (see `DEV.md`), end-user installation and usage (see `USER.md`), and product behavior (see `src/hewo/runtime/`).
+
+## 中文文档导航与边界
+
+本仓库的文档按四个边界维护，所有说明正文统一使用中文；代码、命令、文件名、协议标识和产品内固定哨兵值保留原文。
+
+| 文档 | 唯一职责 | 权威性 |
+| --- | --- | --- |
+| `AGENTS.md` | 开发 coding agent 的强制规则、证据要求和边界 | 规范性 |
+| `DEV.md` | 日常开发、验证和发布操作步骤 | 操作性 |
+| `USER.md` | 终端用户安装、运行和故障处理 | 用户说明 |
+| `src/hewo/runtime/` | hewo 产品运行时身份、技能、提示词、工作流和知识 | 产品规范 |
+| `benchmarks/README.md` | 基准运行条件、结果分类和可声明范围 | 规范性 |
+| `DevelopmentMachine.md` | 当前开发机器的已核验事实（不含秘密） | 记录 |
+| `PLAN.md` | 一次性设计计划和历史决策 | 记录 |
+
+文档之间的引用只沿上述边界传递：开发规则不得进入产品运行时，用户说明不得定义开发流程，基准结果不得直接改写产品行为。发现冲突时，以 `AGENTS.md` 的开发规范、`src/hewo/runtime/` 的产品定义和各文档声明的职责为准；历史计划只用于追溯，不能覆盖现行规则。
 
 这是一个用于构建可安装 Agent 的开发仓。当前仓库只有一个被开发和交付的产品
 agent：**hewo**；它的全部产品源码位于 `src/hewo/`，行为定义位于

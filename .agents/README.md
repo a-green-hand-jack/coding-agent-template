@@ -4,7 +4,7 @@
 > - **Audience:** the development coding agent orienting itself in `.agents/` before adding or copying a development resource.
 > - **Authority:** informative. It maps the directory; the registry and the scoped `AGENTS.md` files are what bind.
 > - **Tone:** orienting and brief; a directory map plus the one boundary that is easy to get wrong.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** what each subdirectory of `.agents/` holds, and which classes of content may travel to a downstream repository.
 > - **Excludes:** product material (see `src/hewo/`), and the authoritative per-path copy list (see `.agents/template-content-registry.json`).
 

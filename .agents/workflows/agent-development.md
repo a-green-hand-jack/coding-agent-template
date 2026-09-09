@@ -4,7 +4,7 @@
 > - **Audience:** the development coding agent running one iteration of the product-Agent development loop.
 > - **Authority:** normative. The ordered stages, their commands and their stop conditions bind each iteration.
 > - **Tone:** imperative and procedural; numbered stages, each with the exact command that satisfies it.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the ordered loop stages from evaluation design through comparison, background execution of long runs, the evidence each stage must collect, and failure classification.
 > - **Excludes:** product behavior of any kind (see `src/hewo/runtime/`), the evaluation contract's schema (see `.agents/skills/agent-evaluation-loop-design/references/evaluation-contract.md`), and downstream evidence and history (see `.agents/downstream-skeleton/workflows/`).
 

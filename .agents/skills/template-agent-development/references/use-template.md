@@ -4,7 +4,7 @@
 > - **Audience:** the development coding agent bootstrapping a new Agent scaffold in a downstream repository during Phase 0.
 > - **Authority:** normative. The Phase 0 scope, the neutral-placeholder rule and the stop-for-authorization condition bind.
 > - **Tone:** imperative and procedural; numbered steps ending in an explicit report-and-stop condition.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** how to establish the boundary, create the Phase 0 scaffold, compose backend and provider at run time, validate the infrastructure boundary, and write the completion report.
 > - **Excludes:** real product identity and domain resources, which Phase 1 authorizes (see `src/<agent>/runtime/`); later template updates and migrations (see `.agents/skills/template-agent-development/references/sync-template.md` and `.agents/skills/template-agent-development/references/migrate-existing-agent.md`).
 

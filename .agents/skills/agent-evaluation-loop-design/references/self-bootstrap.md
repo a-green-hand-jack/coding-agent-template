@@ -4,7 +4,7 @@
 > - **Audience:** the development coding agent optimizing this skill itself, never one optimizing a product Agent.
 > - **Authority:** normative. The base-evaluator isolation, the pre-committed manifest and the accept/reject gate bind any self-bootstrap run.
 > - **Tone:** precise and cautionary; the limits of the guarantee stated before the mechanism that provides it.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the scope of the isolation guarantee, the pre-committed candidate manifest, the check CLI, and the accept/reject state machine ending in human review.
 > - **Excludes:** the normal product optimization path (see `.agents/skills/agent-evaluation-loop-design/SKILL.md`), and any claim about product performance (see `benchmarks/README.md`).
 

@@ -11,7 +11,7 @@ metadata:
 > - **Audience:** the development coding agent creating, synchronizing, or migrating a coding-agent repository built from this template.
 > - **Authority:** normative. The phase model, the evidence labels, the shared contract and the completion gates bind.
 > - **Tone:** imperative and specific; phases with their allowed evidence and their stop conditions.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the three-phase model and its evidence labels, which sub-skill to load for which intent, the shared layering and boundary contract, the component-choice rule, and the Phase 0/1/2 gates.
 > - **Excludes:** the step-by-step procedures (see `references/use-template.md`, `references/sync-template.md`, `references/migrate-existing-agent.md`), and the authoritative per-path copy list (see `.agents/template-content-registry.json`).
 

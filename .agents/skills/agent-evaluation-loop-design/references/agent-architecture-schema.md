@@ -4,7 +4,7 @@
 > - **Audience:** the development coding agent changing the diagram generator or validator, or reviewing a generated diagram.
 > - **Authority:** normative. It is the specification `generate-agent-diagrams.py` and `validate-agent-evaluation.py` implement.
 > - **Tone:** specification-style; tables of inputs, scan rules, identifiers and validator rules, each with its stated failure case.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the diagram inputs, the runtime component scan, node identifiers, the README managed-block markers and their validator rules, and the determinism and write guarantees.
 > - **Excludes:** when to run the generator inside the loop (see `.agents/skills/agent-evaluation-loop-design/SKILL.md`), and the evaluation contract's schema (see `.agents/skills/agent-evaluation-loop-design/references/evaluation-contract.md`).
 

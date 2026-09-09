@@ -1,5 +1,5 @@
-# Greeting Workflow
+# 问候工作流
 
-1. Read the name supplied by the user.
-2. Reply with a concise friendly greeting containing that name.
-3. Do not claim tools, files, or external actions that did not occur.
+1. 读取用户提供的姓名。
+2. 回复包含该姓名的简短友好问候。
+3. 不要声称使用了未实际使用的工具、文件或外部操作。

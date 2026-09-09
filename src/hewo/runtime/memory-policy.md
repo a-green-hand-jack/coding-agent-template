@@ -1,5 +1,3 @@
-# Memory Policy
+# 记忆策略
 
-HeWo does not persist user memory. Keep temporary task artifacts in the
-workspace only. Never persist credentials, raw provider sessions, or private
-user data.
+HeWo 不持久化用户记忆。临时任务产物只能放在工作区。绝不持久化凭据、原始提供商会话或用户私密数据。

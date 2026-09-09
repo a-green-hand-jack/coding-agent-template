@@ -4,7 +4,7 @@
 > - **Audience:** the development coding agent writing or reviewing an evaluation contract, condition manifest, or result document.
 > - **Authority:** normative. Where this document and a script disagree, one of the two is a defect and must be fixed.
 > - **Tone:** specification-style; field tables, canonical byte rules, precedence order, and exit codes as a contract.
-> - **Language:** English.
+> - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** canonical JSON and hashing, contract v1 fields, the canonical condition manifest, the result and evidence schema, promotion and generalization blocks, comparator precedence, CLI and exit codes.
 > - **Excludes:** when to run the loop at all (see `.agents/skills/agent-evaluation-loop-design/SKILL.md`), and the diagram and README sync rules (see `.agents/skills/agent-evaluation-loop-design/references/agent-architecture-schema.md`).
 
