@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Anchored like every sibling script: the build and freeze paths below are
+# repository-relative and must not depend on the caller's directory.
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 name="${AGENT_NAME:-hewo}"
 backend="${AGENT_BACKEND:-${HEWO_BACKEND:-pi}}"
 provider="${LLM_PROVIDER:-}"
@@ -12,6 +15,7 @@ workspace="${E2E_WORKSPACE:-}"
 pi_auth_file="${PI_AUTH_FILE:-}"
 pi_models_file="${PI_MODELS_FILE:-}"
 no_build=false
+image=""
 allow_unauthenticated=false
 credential_sources=()
 
@@ -28,6 +32,7 @@ usage() {
     "  --pi-auth-file PATH   Mount one pi auth store read-only" \
     "  --pi-models-file PATH Mount one pi model catalog read-only" \
     "  --workspace PATH      Mount PATH as the clean container workspace" \
+    "  --image REF           Run this image tag or ID; never build" \
     "  --no-build            Reuse the existing image for this Agent" \
     "  --allow-unauthenticated Run without a provider credential (infrastructure-only)" \
     "  --agent NAME          Build and run a different src/<agent>" \
@@ -46,6 +51,7 @@ while (($#)); do
     --pi-auth-file) pi_auth_file="${2:?missing value for --pi-auth-file}"; shift 2 ;;
     --pi-models-file) pi_models_file="${2:?missing value for --pi-models-file}"; shift 2 ;;
     --workspace) workspace="${2:?missing value for --workspace}"; shift 2 ;;
+    --image) image="${2:?missing value for --image}"; shift 2 ;;
     --no-build) no_build=true; shift ;;
     --allow-unauthenticated) allow_unauthenticated=true; shift ;;
     --agent) name="${2:?missing value for --agent}"; shift 2 ;;
@@ -73,9 +79,6 @@ task=()
 while (($#)); do task+=("$1"); shift; done
 if ((${#task[@]} == 0)); then usage >&2; exit 2; fi
 
-if [[ "$no_build" != true ]]; then
-  docker build --build-arg AGENT_NAME="$name" -t "$name:e2e" -f docker/Dockerfile . >&2
-fi
 env_args=()
 env_args+=(--env "AGENT_BACKEND=$backend" --env "LLM_PROVIDER=$provider" --env "LLM_MODEL=$model")
 if [[ -n "${LLM_VARIANT:-}" ]]; then
@@ -126,6 +129,35 @@ if [[ "$allow_unauthenticated" != true ]]; then
     exit 2
   fi
 fi
+
+# One resolution, used for both the build decision and the container run, and
+# deliberately placed AFTER the credential guard: an invocation that cannot
+# produce evidence must fail before it spends minutes on a build.
+#
+# Containers run by image ID, never by tag. A tag is a mutable pointer, so a
+# concurrent build could move it between resolution and run, and the evidence
+# would then describe an image that never served the request.
+snapshot_root=""
+# The guard must not be the last command: a false [[ ]] makes the EXIT trap
+# return 1, and bash then reports that as the script's exit status even
+# though the run succeeded.
+cleanup_snapshot() { [[ -n "$snapshot_root" ]] && rm -rf "$snapshot_root"; return 0; }
+trap cleanup_snapshot EXIT
+
+if [[ -n "$image" ]]; then
+  image_ref="$image"
+elif [[ "$no_build" == true ]]; then
+  image_ref="$name:e2e"
+else
+  # Standalone use: freeze the worktree now, so later edits cannot change what
+  # a long run is testing, then build from that frozen copy.
+  snapshot_root="$(mktemp -d "${TMPDIR:-/tmp}/agent-e2e.XXXXXX")"
+  "$root/scripts/freeze-agent-run.sh" --agent "$name" --into "$snapshot_root/snapshot" >/dev/null
+  while IFS='=' read -r key value; do
+    [[ "$key" == AGENT_IMAGE_ID ]] && image_ref="$value"
+  done < <("$root/scripts/build-agent-image.sh" --context "$snapshot_root/snapshot")
+fi
+[[ -n "${image_ref:-}" ]] || { printf 'could not resolve an image to run\n' >&2; exit 2; }
 
 # pi provider endpoint overrides (not credentials): pass through when set.
 passthrough_envs=(OPENAI_BASE_URL ANTHROPIC_BASE_URL)
@@ -188,15 +220,15 @@ fi
 # Intent is printed before the run; the MODE is decided by the outcome, never
 # by the presence of a credential flag. A named credential source that still
 # fails to answer is blocked, not agent-behavior.
-printf 'run: backend=%s provider=%s model=%s credential_source=%s\n' \
-  "$backend" "$provider" "$model" "$credential_source" >&2
+printf 'run: backend=%s provider=%s model=%s credential_source=%s image=%s\n' \
+  "$backend" "$provider" "$model" "$credential_source" "$image_ref" >&2
 
 tty_args=()
 if [[ -t 0 && -t 1 ]]; then
   tty_args=(-it)
 fi
 set +e
-docker run --rm "${tty_args[@]}" "${env_file_args[@]}" "${env_args[@]}" "${bundle_args[@]}" "${workspace_args[@]}" "${pi_auth_args[@]}" "$name:e2e" "${task[@]}"
+docker run --rm "${tty_args[@]}" "${env_file_args[@]}" "${env_args[@]}" "${bundle_args[@]}" "${workspace_args[@]}" "${pi_auth_args[@]}" "$image_ref" "${task[@]}"
 run_status=$?
 set -e
 
@@ -207,6 +239,6 @@ elif ((run_status == 0)); then
 else
   run_mode="blocked"
 fi
-printf 'evidence: backend=%s provider=%s model=%s credential_source=%s exit=%s mode=%s\n' \
-  "$backend" "$provider" "$model" "$credential_source" "$run_status" "$run_mode" >&2
+printf 'evidence: backend=%s provider=%s model=%s credential_source=%s image=%s exit=%s mode=%s\n' \
+  "$backend" "$provider" "$model" "$credential_source" "$image_ref" "$run_status" "$run_mode" >&2
 exit "$run_status"

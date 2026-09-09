@@ -24,6 +24,7 @@ credential_value=""
 positionals=()
 background=false
 query_action=""
+gc_older_than="7"
 query_id=""
 
 # Registered background runs live outside the repository so evidence is never
@@ -36,7 +37,12 @@ usage() {
 Usage: ./scripts/run-agent-loop.sh [options] [task prompt]
 
 Run the project-internal evaluation loop in this order:
-  definition validation -> consistency audit -> infrastructure health -> benchmark
+  definition validation -> consistency audit -> image build ->
+  infrastructure health -> benchmark
+
+Every stage runs against a snapshot of the worktree frozen when the run was
+submitted, so editing the product Agent while a run is in flight cannot change
+what that run tests or what its evidence claims.
 
 Options:
   --agent NAME                    Agent name (default: hewo)
@@ -60,6 +66,8 @@ Registered background runs (for long provider-backed validation):
   --list-runs                     List registered runs as JSON
   --run-status ID                 Print one run's record, including its summary
   --clean-run ID|all              Remove a finished run once consumed
+  --gc [--older-than DAYS]        Remove content-addressed <agent>:def-* images
+                                  no registered run refers to (default 7 days)
 
 A background run is registered under
 $AGENT_LOOP_STATE_DIR (default ${XDG_STATE_HOME:-$HOME/.local/state}/agent-loop).
@@ -179,6 +187,10 @@ while (($#)); do
     --allow-unauthenticated) allow_unauthenticated=true; shift ;;
     --background) background=true; shift ;;
     --list-runs) query_action='list'; shift ;;
+    --gc) query_action='gc'; shift ;;
+    --older-than)
+      need_value "$1" "${2:-}"; gc_older_than="$2"; shift 2 ;;
+    --older-than=*) gc_older_than="${1#*=}"; [[ -n "$gc_older_than" ]] || reject 'empty value for --older-than'; shift ;;
     --run-status)
       need_value "$1" "${2:-}"; query_action='status'; query_id="$2"; shift 2 ;;
     --run-status=*) query_action='status'; query_id="${1#*=}"; [[ -n "$query_id" ]] || reject 'empty value for --run-status'; shift ;;
@@ -303,6 +315,37 @@ if [[ -n "$query_action" ]]; then
         printf '%s\n' "${records[@]}" | python3 -c 'import json,sys; print(json.dumps([json.loads(line) for line in sys.stdin if line.strip()],ensure_ascii=False,separators=(",",":")))'
       fi
       exit 0 ;;
+    gc)
+      # Only ever removes images this loop created: the name pattern is
+      # <agent>:def-<12 hex>. Sibling Agent repositories on the same machine
+      # publish <agent>:e2e and <agent>:infra images that a broader sweep would
+      # destroy, so the pattern is matched exactly and nothing else is touched.
+      [[ "$gc_older_than" =~ ^[0-9]+$ ]] || query_error "--older-than expects a whole number of days"
+      referenced=()
+      if [[ -d "$runs_root" ]]; then
+        for run in "$runs_root"/*; do
+          [[ -f "$run/meta.json" ]] || continue
+          referenced+=("$(python3 -c 'import json,sys
+try: print(json.load(open(sys.argv[1])).get("image") or "")
+except Exception: print("")' "$run/meta.json")")
+        done
+      fi
+      mapfile -t candidates < <(docker images --format '{{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' 2>/dev/null \
+        | grep -P "^\Q$agent\E:def-[0-9a-f]{12}\t" || true)
+      removed=()
+      cutoff="$(date -d "-$gc_older_than days" +%s 2>/dev/null || echo 0)"
+      for candidate in "${candidates[@]}"; do
+        image="${candidate%%$'\t'*}"
+        created="${candidate#*$'\t'}"
+        for reference in "${referenced[@]}"; do
+          [[ "$image" == "$reference" ]] && continue 2
+        done
+        created_epoch="$(date -d "$created" +%s 2>/dev/null || echo 0)"
+        (( created_epoch > cutoff )) && continue
+        docker rmi "$image" >/dev/null 2>&1 && removed+=("$image")
+      done
+      printf '%s' "${removed[*]:-}" | python3 -c 'import json,sys; items=sys.stdin.read().split(); print(json.dumps({"summary_version":1,"result":"collected","mode":"registry","removed":items,"count":len(items)},ensure_ascii=False,separators=(",",":")))'
+      exit 0 ;;
     status)
       [[ "$query_id" =~ $run_id_re ]] || query_error "invalid run id: $query_id"
       [[ -d "$runs_root/$query_id" ]] || query_error "no such registered run: $query_id"
@@ -411,6 +454,30 @@ if [[ -n "$run_dir" ]]; then
   run_dir="$(cd "$run_dir" && pwd)"
 fi
 
+# Freeze the worktree now. This is the instant the run's subject is decided:
+# everything after this point -- the preflight stages, the image build, the
+# benchmark, and the verifier that decides pass/fail -- reads the frozen copy,
+# so the developer's worktree is free the moment this returns (~0.1s for this
+# repository). It happens before the run id is minted so a freeze failure is a
+# clean preflight rejection instead of an orphaned registry entry.
+freeze_parent=""
+cleanup_freeze() { [[ -n "$freeze_parent" ]] && rm -rf "$freeze_parent"; return 0; }
+trap cleanup_freeze EXIT
+
+if [[ -f "$root/.frozen.json" ]]; then
+  # This process IS the frozen copy, re-executed by a background parent.
+  snapshot="$root"
+else
+  freeze_parent="$(mktemp -d "${TMPDIR:-/tmp}/agent-loop-freeze.XXXXXX")" \
+    || reject 'could not create a directory for the run snapshot'
+  "$root/scripts/freeze-agent-run.sh" --agent "$agent" --into "$freeze_parent/snapshot" >/dev/null \
+    || reject 'could not freeze the worktree for this run'
+  snapshot="$freeze_parent/snapshot"
+fi
+definition_revision="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["definition_revision"])' "$snapshot/.frozen.json")"
+context_digest="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["context_digest"])' "$snapshot/.frozen.json")"
+frozen_image="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["image"])' "$snapshot/.frozen.json")"
+
 # The full preflight has now passed, so the invocation is known to be valid.
 # Only at this point is it safe to detach: an invalid invocation must fail in
 # the developer's terminal, never inside a background run they have to query.
@@ -423,6 +490,13 @@ if [[ "$background" == true ]]; then
   # The task travels with the run: the parent's temporary directory is removed
   # when the parent exits, which would delete a prompt written from argv.
   cp "$task_file" "$run/task.md" || reject "could not stage the task file for the background run"
+
+  # The snapshot travels with the run and is removed with it by --clean-run.
+  # It is per-run rather than shared, so there is no reference counting to get
+  # wrong and no lock to hold.
+  mv "$snapshot" "$run/snapshot" || reject "could not attach the run snapshot"
+  freeze_parent=""
+  snapshot="$run/snapshot"
 
   child_args=(
     --agent "$agent"
@@ -440,7 +514,8 @@ if [[ "$background" == true ]]; then
   # NAME of the environment variable, never a credential value.
   python3 - "$run/meta.json" "$run_id" "$agent" "$backend" "$provider" "$model" \
     "$credential_flag" "$credential_value" "$run/task.md" "$workspace" "$run_dir" \
-    "$allow_unauthenticated" <<'PY'
+    "$allow_unauthenticated" "$definition_revision" "$context_digest" "$frozen_image" \
+    "$snapshot" <<'PY'
 import json
 import sys
 from datetime import datetime, timezone
@@ -458,6 +533,10 @@ from datetime import datetime, timezone
     workspace,
     run_dir,
     allow_unauthenticated,
+    definition_revision,
+    context_digest,
+    image,
+    snapshot,
 ) = sys.argv[1:]
 
 if credential_flag == "--api-key-env":
@@ -485,12 +564,23 @@ with open(destination, "w", encoding="utf-8") as handle:
             "workspace": workspace or None,
             "run_dir": run_dir or None,
             "mode": "infrastructure-only" if allow_unauthenticated == "true" else "provider-backed",
+            # The subject under test, recorded at submit time. Without these a
+            # listing could say a run is in flight but not which version of the
+            # product Agent it is testing.
+            "definition_revision": definition_revision,
+            "context_digest": context_digest,
+            "image": image,
+            "snapshot": snapshot,
         },
         handle,
         ensure_ascii=False,
     )
 PY
 
+  # The child runs the frozen copy of this script. bash reads a script lazily by
+  # byte offset, so a parent that re-executed the live path could splice edits
+  # made mid-run into the middle of its own execution.
+  #
   # setsid where available so the run survives the developer's shell; the loop
   # records its own exit code so a query can tell "finished" from "killed".
   launcher=(setsid)
@@ -501,7 +591,7 @@ PY
     "$script" "$@" >"$run/summary.json" 2>"$run/output.log"
     code=$?
     printf "%s\n" "$code" >"$run/exit_code"
-  ' _ "$run" "$root/scripts/run-agent-loop.sh" "${child_args[@]}" >/dev/null 2>&1 &
+  ' _ "$run" "$run/snapshot/scripts/run-agent-loop.sh" "${child_args[@]}" >/dev/null 2>&1 &
   child_pid=$!
   printf '%s\n' "$child_pid" >"$run/pid"
   disown "$child_pid" 2>/dev/null || true
@@ -515,7 +605,9 @@ fi
 if [[ -z "$tmp_dir" ]]; then
   tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/agent-loop.XXXXXX")" || exit 2
 fi
-trap 'rm -rf "$tmp_dir"' EXIT
+trap 'rm -rf "$tmp_dir" "${freeze_parent:-/nonexistent}"' EXIT
+cd "$snapshot" || reject "could not enter the run snapshot: $snapshot"
+
 stage_file="$tmp_dir/stages.tsv"
 : >"$stage_file"
 
@@ -557,8 +649,29 @@ if [[ "$loop_status" -eq 0 ]]; then
 else
   record_skipped consistency_audit
 fi
+# Built from the frozen snapshot, before anything that needs an image. A build
+# failure is reported as its own stage rather than surfacing as a confusing
+# infrastructure-health failure.
+agent_image_id=""
 if [[ "$loop_status" -eq 0 ]]; then
-  if run_stage infrastructure_health python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.py --agent "$agent"; then
+  if run_stage image_build ./scripts/build-agent-image.sh --context "$snapshot"; then
+    agent_image_id="$(sed -n 's/^AGENT_IMAGE_ID=//p' "$tmp_dir/image_build.log" | tail -n 1)"
+    if [[ -z "$agent_image_id" ]]; then
+      printf 'error: the image build reported no image id\n' >&2
+      loop_status=1
+    fi
+  else
+    loop_status=1
+  fi
+else
+  record_skipped image_build
+fi
+
+if [[ "$loop_status" -eq 0 ]]; then
+  # --skip-build plus an explicit image: the image is already pinned to the
+  # frozen snapshot, so rebuilding here would be both wasted work and a second
+  # chance to diverge.
+  if run_stage infrastructure_health python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.py --agent "$agent" --image "$agent_image_id" --skip-build; then
     :
   else
     loop_status=1
@@ -587,6 +700,10 @@ else
   esac
   [[ -n "$workspace" ]] && export BENCHMARK_WORKSPACE="$workspace"
   [[ -n "$run_dir" ]] && export BENCHMARK_RUN_DIR="$run_dir"
+  # The benchmark must not re-derive either of these: re-deriving the revision
+  # after the run is exactly the bug this design removes.
+  export AGENT_IMAGE_ID="$agent_image_id"
+  export AGENT_DEFINITION_REVISION="$definition_revision"
 
   benchmark_ran=true
   if run_stage benchmark ./scripts/run-benchmark.sh "$agent" "$task_file"; then
