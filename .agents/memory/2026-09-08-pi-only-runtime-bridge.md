@@ -1,4 +1,6 @@
-# Pi-only Runtime Bridge and Evaluation Loop
+# [SUPERSEDED] Pi-only Runtime Bridge and Evaluation Loop
+
+> 本记录已被确认的 pi-native runtime/package 分发边界取代；仅保留历史证据，不作为当前规则。
 
 Date: 2026-09-08 (pi 0.85.1 `@earendil-works/pi-coding-agent`). Secret-free: no credential was read and no provider request was
 made while producing any of this.

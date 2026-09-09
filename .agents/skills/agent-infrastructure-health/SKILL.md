@@ -21,6 +21,8 @@ template to a downstream Agent developer. It checks infrastructure separately
 from Agent behavior so a product author does not spend time debugging the
 execution foundation.
 
+架构边界：pi 是唯一 backend；安装验证应确认 pi-native runtime/package 已交付。provider、model、credentials 与 host infrastructure 由用户负责，HeWo wrapper 不是产品入口。
+
 ## Deterministic preflight
 
 From the repository root, run:

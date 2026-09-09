@@ -19,6 +19,8 @@ Use this skill before publishing a new template version or tag. It evaluates
 the template as a reusable development base, not only the sample `hewo`
 product. It does not replace provider-backed behavior evidence.
 
+架构边界：发布对象是 pi-native runtime/package，pi 是唯一 backend；`install.sh` 只安装该 package。provider、model、credentials 与 host infrastructure 不属于模板发布配置，HeWo wrapper 不是产品入口。
+
 ## Release gates
 
 Run the deterministic audit from the repository root:

@@ -73,8 +73,10 @@ infrastructure and development skills the target project needs.
 
 ## Shared contract
 
-- Keep the layers independent:
-  `Agent scaffold -> coding-agent backend -> LLM provider/model`.
+- Keep the layers independent: `runtime/package -> pi backend -> user-selected provider/model`.
+  HeWo is a pi-native runtime/package; pi is the only backend. `install.sh` installs
+  the runtime package only. Provider, model, credentials, and host infrastructure
+  are user-owned concerns. Do not make the HeWo wrapper a product entry point.
 - Put user-facing product behavior under `src/hewo/runtime/` in this repository
   (or under `src/<agent>/runtime/` after adapting this skill downstream). Keep
   reusable development memory, knowledge, skills, and workflows in `.agents/`;
@@ -117,7 +119,9 @@ identity, long-lived state, or cross-component orchestration.
 
 The backend is pi and only pi. `src/<agent_name>/runtime/package.json` is the
 single source of truth for what the runtime loads; `agent.yaml` stays scaffold
-metadata and must never grow a second resource list.
+metadata and must never grow a second resource list. Installation must deliver
+that package, not select or configure a provider. The wrapper may remain only as
+compatibility/infrastructure plumbing and is never the product contract.
 
 ## Completion gates
 

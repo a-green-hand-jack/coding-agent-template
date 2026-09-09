@@ -1,4 +1,6 @@
-# Issue #1 HeWo Infrastructure Evidence
+# [SUPERSEDED] Issue #1 HeWo Infrastructure Evidence
+
+> 历史证据记录；不作为当前 pi-native runtime/package 分发规则。
 
 Date: 2026-09-06
 

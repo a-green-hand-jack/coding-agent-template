@@ -15,7 +15,10 @@ metadata:
 > - **Contains:** the four validation levels with their commands, the credential-source flag every E2E must name, the evidence boundary, and the exit condition.
 > - **Excludes:** the cross-file freshness sweep (see `.agents/skills/agent-consistency-audit/SKILL.md`), infrastructure preflight (see `.agents/skills/agent-infrastructure-health/SKILL.md`), and host credential facts (see `.agents/knowledge/provider-e2e.md`).
 
-Use after changing `src/<agent_name>/` or before releasing that Agent. Resolve
+Use after changing `src/<agent_name>/` or before releasing that Agent. Validate the
+pi-native runtime/package and its manifest, not the HeWo wrapper as a product
+entry point. Installation is responsible for delivering the package; provider,
+model, credentials, and host infrastructure remain user-owned. Resolve
 the actual Agent name and current repository commands first; do not hardcode
 the template's `hewo` example in a downstream repository.
 
