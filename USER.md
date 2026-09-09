@@ -38,7 +38,7 @@ curl -fsSL https://github.com/a-green-hand-jack/coding-agent-template/releases/l
 需要固定版本时，把 `latest` 换成具体 tag：
 
 ```bash
-curl -fsSL https://github.com/a-green-hand-jack/coding-agent-template/releases/download/v0.2.0/install.sh | bash
+curl -fsSL https://github.com/a-green-hand-jack/coding-agent-template/releases/download/v0.2.1/install.sh | bash
 ```
 
 已发布的版本在仓库的 GitHub Releases 页面列出；请以那里最新的版本为准，

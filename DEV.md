@@ -564,7 +564,7 @@ GitHub release），不要把未发布的改动一直堆积。`scripts/publish-r
 创建 GitHub release（archive 和烘焙好的 installer 一并作为 asset 附带）：
 
 ```bash
-./scripts/publish-release.sh hewo 0.2.0
+./scripts/publish-release.sh hewo 0.2.1
 ```
 
 脚本内部先跑 `validate-definition.sh`，再用
