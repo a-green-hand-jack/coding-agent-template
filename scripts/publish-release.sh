@@ -23,6 +23,7 @@ fi
 }
 tag="v${version#v}"
 archive="release/$name-$version.tar.gz"
+installer_asset="release/$name-$version/install.sh"
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
@@ -45,7 +46,7 @@ if [[ "$dry_run" == true ]]; then
   echo "dry-run: RELEASE_URL=$release_url"
   echo "dry-run: ./scripts/build-release.sh $name $version"
   echo "dry-run: git tag $tag && git push origin $tag"
-  echo "dry-run: gh release create $tag $archive --title \"$name $version\" --generate-notes"
+  echo "dry-run: gh release create $tag $archive $installer_asset --title \"$name $version\" --generate-notes"
   exit 0
 fi
 
@@ -55,6 +56,10 @@ RELEASE_URL="$release_url" ./scripts/build-release.sh "$name" "$version"
 
 git tag "$tag"
 git push origin "$tag"
-gh release create "$tag" "$archive" \
+# The baked installer is published alongside the archive so users can install
+# with a single line via releases/latest/download/install.sh. It already has
+# AGENT_NAME and RELEASE_URL substituted, so no environment is required.
+[[ -f "$installer_asset" ]] || { echo "error: expected installer $installer_asset was not produced" >&2; exit 2; }
+gh release create "$tag" "$archive" "$installer_asset" \
   --title "$name $version" \
   --generate-notes

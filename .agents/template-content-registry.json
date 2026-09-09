@@ -87,11 +87,6 @@
         "note": "Temporary implementation plans are PR-visible development records, not downstream product content."
       },
       {
-        "path": "PLAN.md",
-        "class": "template-only",
-        "note": "Temporary implementation plan; removed after merge."
-      },
-      {
         "path": "README.md",
         "class": "template-only-or-adapt",
         "note": "Rewrite identity, commands, provider matrix, and release URLs."
@@ -332,11 +327,6 @@
       "path": "DevelopmentMachine.md",
       "class": "template-only",
       "note": "Generated per-machine profile; downstream repositories generate their own via the skill."
-    },
-    {
-      "path": "PLAN.md",
-      "class": "template-only",
-      "note": "Temporary implementation plan; removed after merge."
     },
     {
       "path": ".agents/skills/agent-evaluation-loop-design/",

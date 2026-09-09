@@ -561,7 +561,7 @@ docker run --rm --entrypoint /bin/bash hewo:dev -lc 'pi --version'
 产品 agent 会快速迭代，每次被接受的产品行为改动后都要发布新版本（git tag +
 GitHub release），不要把未发布的改动一直堆积。`scripts/publish-release.sh`
 一步完成：定义校验 → 用正确的 `RELEASE_URL` 构建 archive → 打 tag → 推 tag →
-创建 GitHub release（archive 作为 asset 附带）：
+创建 GitHub release（archive 和烘焙好的 installer 一并作为 asset 附带）：
 
 ```bash
 ./scripts/publish-release.sh hewo 0.2.0
@@ -571,14 +571,16 @@ GitHub release），不要把未发布的改动一直堆积。`scripts/publish-r
 `https://github.com/<owner>/<repo>/releases/download/v<version>/<name>-<version>.tar.gz`
 作为 `RELEASE_URL` 构建 `release/hewo-<version>.tar.gz`，然后执行
 `git tag v<version>`、`git push origin v<version>`、`gh release create`。
+烘焙好的 `release/<name>-<version>/install.sh` 也会一并上传为独立 asset
+（`install.sh`），用户可经 `releases/latest/download/install.sh` 一行安装。
 版本号取 `git tag -l` 里最新值并按改动语义递增（patch/minor）。发布前仍需
 完成真实 provider-backed Docker E2E 与一致性审计；`publish-release.sh` 只是
 最后一步的机械执行，不替代行为验证。可用 `--dry-run` 预览将执行的命令。
 
 检查 release payload 不含 `AGENTS.md`、auth store、package metadata 或开发
 目录。发布归档只包含 runtime definition、launcher 和 installer。发布后，
-用户可以只下载 release installer，通过 `RELEASE_URL` 获取 archive，不需要
-clone template。
+用户可以只下载 release installer（一行 `curl .../releases/latest/download/install.sh | bash`）
+获取并安装，不需要 clone template、不需要设置版本号或环境变量。
 
 ## 5. 真实 Docker E2E 验证
 

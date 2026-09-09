@@ -25,23 +25,24 @@ hewo runtime        pi                        user-selected provider/model
 ### 方案 A：从已发布 release 安装（推荐，不需要 clone GitHub）
 
 release archive 自带 hewo 的 runtime definition、launcher 和 installer。
-用户只需要下载 release 中的 `install.sh`，再让它下载对应 archive；不需要
-clone template 仓库。
+发布时 installer 也会作为独立 asset（`install.sh`）一并上传，因此用户只需
+一条命令即可完成安装：它会自动下载对应 archive，不需要 clone template 仓库，
+也不需要设置版本号或环境变量。
 
-已发布的版本在仓库的 GitHub Releases 页面列出；请以那里的最新版本为准，
-不要假定下面示例中的版本号就是最新的。地址格式固定如下：
+默认安装最新 release：
 
 ```bash
-VERSION=0.2.0
-INSTALLER_URL="https://raw.githubusercontent.com/a-green-hand-jack/coding-agent-template/v${VERSION}/distribution/install.sh"
-RELEASE_URL="https://github.com/a-green-hand-jack/coding-agent-template/releases/download/v${VERSION}/hewo-${VERSION}.tar.gz"
-
-curl --fail --silent --show-error --location "$INSTALLER_URL" -o /tmp/hewo-install.sh
-RELEASE_URL="$RELEASE_URL" \
-AGENT_NAME=hewo \
-bash /tmp/hewo-install.sh
-rm -f /tmp/hewo-install.sh
+curl -fsSL https://github.com/a-green-hand-jack/coding-agent-template/releases/latest/download/install.sh | bash
 ```
+
+需要固定版本时，把 `latest` 换成具体 tag：
+
+```bash
+curl -fsSL https://github.com/a-green-hand-jack/coding-agent-template/releases/download/v0.2.0/install.sh | bash
+```
+
+已发布的版本在仓库的 GitHub Releases 页面列出；请以那里最新的版本为准，
+不要假定上面示例中的版本号就是最新的。
 
 安装完成后：
 
@@ -52,7 +53,12 @@ hewo --help
 ```
 
 安装器只会在本机没有 pi 时才安装它。已经装好 pi 的机器可以设置
-`SKIP_RUNTIME_INSTALL=1` 跳过这一步。
+`SKIP_RUNTIME_INSTALL=1` 跳过这一步：
+
+```bash
+curl -fsSL https://github.com/a-green-hand-jack/coding-agent-template/releases/latest/download/install.sh \
+  | SKIP_RUNTIME_INSTALL=1 bash
+```
 
 不要把 API key、auth store 或 `.env` 放入命令、release archive 或 Git。
 

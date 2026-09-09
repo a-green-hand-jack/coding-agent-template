@@ -166,7 +166,7 @@ this repository, keep hewo's product behavior under `src/hewo/`; keep the
 **development coding agent** instructions in `AGENTS.md` and `.agents/`, and do
 not put template workflow instructions inside `src/hewo/runtime`.
 
-Use `scripts/build-release.sh hewo 0.1.0` to produce a bundle containing only runtime behavior. The release contains its own installer and launcher; a downloaded bootstrap installer can fetch that archive with `RELEASE_URL=... bash install.sh`, without a developer checkout. Record release and E2E evidence in the relevant GitHub issue and run `scripts/collect-trace.sh` before storing trajectory evidence.
+Use `scripts/build-release.sh hewo 0.1.0` to produce a bundle containing only runtime behavior. The release contains its own installer and launcher; the baked installer is also published as a standalone release asset so users can install with one command and no environment setup. Record release and E2E evidence in the relevant GitHub issue and run `scripts/collect-trace.sh` before storing trajectory evidence.
 
 This project follows a reuse-first development philosophy: an independent
 developer should build Agent behavior with prompts, skills, memory, knowledge,
@@ -180,21 +180,16 @@ A release installation installs pi when the user does not already have it; set
 `pi` and is rejected otherwise. Runtime npm dependencies, if a downstream Agent
 declares any, are installed frozen with `npm ci --ignore-scripts`, and a
 dependency without a lockfile is refused rather than resolved at install time.
-A release archive is installed without cloning this repository: download its
-installer and set `RELEASE_URL` to the matching archive URL. Published versions
-are listed under the repository's GitHub Releases; check there for the current
-version rather than assuming the one written below.
+A release archive is installed without cloning this repository: one command
+fetches the baked installer, which downloads the matching archive itself (no
+`RELEASE_URL` or version setup). Published versions are listed under the
+repository's GitHub Releases; check there for the current version rather than
+assuming the one written below.
 
 The no-clone installation flow is:
 
 ```bash
-VERSION=0.2.0
-INSTALLER_URL="https://raw.githubusercontent.com/a-green-hand-jack/coding-agent-template/v${VERSION}/distribution/install.sh"
-RELEASE_URL="https://github.com/a-green-hand-jack/coding-agent-template/releases/download/v${VERSION}/hewo-${VERSION}.tar.gz"
-curl --fail --silent --show-error --location "$INSTALLER_URL" -o /tmp/hewo-install.sh
-RELEASE_URL="$RELEASE_URL" AGENT_NAME=hewo \
-  bash /tmp/hewo-install.sh
-rm -f /tmp/hewo-install.sh
+curl -fsSL https://github.com/a-green-hand-jack/coding-agent-template/releases/latest/download/install.sh | bash
 export PATH="$HOME/.local/bin:$PATH"
 hewo --version
 ```
