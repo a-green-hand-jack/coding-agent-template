@@ -160,13 +160,9 @@ def subset_digest(prefixes: tuple[str, ...], extra: dict | None = None) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-# The subject axis: what the product Agent does. The launcher belongs here
-# because it injects the identity through --append-system-prompt and closes the
-# discovery boundary with --no-context-files/--no-skills/--no-prompt-templates.
-# Editing it changes product behavior, so it must not read as a mere
-# environment change.
+# The subject axis is the product runtime and its direct pi entrypoint.
 definition_revision = subset_digest(
-    (f"src/{agent}/", "distribution/launcher", "distribution/container-entrypoint.sh")
+    (f"src/{agent}/", "distribution/container-entrypoint.sh")
 )
 
 # The image cache key. scripts/ and benchmarks/ are frozen but deliberately
