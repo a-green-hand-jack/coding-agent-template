@@ -99,7 +99,19 @@ class Health:
 
     def docker(self) -> None:
         if self.skip_build:
-            self.add("INFO", "docker-build", f"reusing {self.image}")
+            # Reuse must be proved, not assumed. The caller pins an image built
+            # from a frozen snapshot; if that image is gone, every check below
+            # would either fail obscurely or silently test a different image.
+            resolved = subprocess.run(
+                ["docker", "image", "inspect", "--format", "{{.Id}}", self.image],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if resolved.returncode:
+                self.add("ERROR", "docker-build", f"image to reuse does not exist: {self.image}")
+                return
+            self.add("INFO", "docker-build", f"reusing {self.image} ({resolved.stdout.strip()})")
         else:
             self.run_command(
                 "docker-build",
@@ -235,6 +247,11 @@ def main() -> int:
     parser.add_argument("--json", action="store_true", dest="as_json")
     args = parser.parse_args()
     root = args.root.resolve()
+    if args.image is not None and not args.image.strip():
+        # An empty --image used to fall back to <agent>:infra, so a caller whose
+        # image reference came out blank would silently check a different image
+        # and report a pass. Refuse instead.
+        parser.error("--image must not be empty")
     image = args.image or f"{args.agent}:infra"
     health = Health(root, args.agent, image, args.release, args.skip_build)
     code = health.run()
