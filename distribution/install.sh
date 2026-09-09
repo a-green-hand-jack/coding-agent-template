@@ -63,6 +63,10 @@ fi
 # not install a hewo wrapper command: pi, provider, model, and credentials are
 # user-owned and selected through pi's native interface/configuration.
 mkdir -p "$PREFIX/lib/$AGENT_NAME"
+invocation_source=""
+if [[ -n "$release_root" && -f "$release_root/pi-invocation.sh" ]]; then invocation_source="$release_root/pi-invocation.sh"; else invocation_source="$script_dir/pi-invocation.sh"; fi
+[[ -f "$invocation_source" ]] || { echo "product invocation is missing" >&2; exit 2; }
+install -m 0755 "$invocation_source" "$PREFIX/lib/$AGENT_NAME/pi-invocation.sh"
 definition_dir="$PREFIX/lib/$AGENT_NAME/runtime-package"
 mkdir -p "$definition_dir"
 

@@ -17,6 +17,8 @@ pi_models_file="${PI_MODELS_FILE:-}"
 no_build=false
 image=""
 allow_unauthenticated=false
+release_mode=false
+user_path_mode=false
 credential_sources=()
 
 usage() {
@@ -35,6 +37,8 @@ usage() {
     "  --image REF           Run this image tag or ID; never build" \
     "  --no-build            Reuse the existing image for this Agent" \
     "  --allow-unauthenticated Run without a provider credential (infrastructure-only)" \
+    "  --release             Validate the packaged release user path (no provider)" \
+    "  --user-path           Alias for --release" \
     "  --agent NAME          Build and run a different src/<agent>" \
     "  -h, --help            Show this help"
 }
@@ -54,6 +58,8 @@ while (($#)); do
     --image) image="${2:?missing value for --image}"; shift 2 ;;
     --no-build) no_build=true; shift ;;
     --allow-unauthenticated) allow_unauthenticated=true; shift ;;
+    --release) release_mode=true; shift ;;
+    --user-path) user_path_mode=true; shift ;;
     --agent) name="${2:?missing value for --agent}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     --) shift; break ;;
@@ -78,6 +84,12 @@ if [[ "$allow_unauthenticated" != true ]]; then
   [[ -n "$model" ]] || { printf '%s\n' '--model is required for an authenticated run' >&2; exit 2; }
 fi
 provider_key_prefix="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')"
+
+if [[ "$release_mode" == true || "$user_path_mode" == true ]]; then
+  [[ "$release_mode" == true && "$user_path_mode" != true ]] || :
+  "$root/scripts/check-release-user-path.sh" "$name" "${2:-0.1.0}"
+  exit $?
+fi
 
 task=()
 while (($#)); do task+=("$1"); shift; done

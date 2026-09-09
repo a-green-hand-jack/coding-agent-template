@@ -22,7 +22,8 @@ RUN npm install --global ${PI_PACKAGE}@${PI_VERSION} --ignore-scripts --no-audit
 RUN pi update --models || echo 'warning: model catalog refresh failed'
 COPY --from=builder /opt/install /opt/install
 COPY --from=builder /opt/agent/distribution/container-entrypoint.sh /usr/local/bin/agent-entrypoint
-RUN chmod +x /usr/local/bin/agent-entrypoint && mkdir -p /root/.pi/agent /run/secrets
+COPY --from=builder /opt/agent/distribution/pi-invocation.sh /usr/local/lib/hewo/pi-invocation.sh
+RUN chmod +x /usr/local/bin/agent-entrypoint /usr/local/lib/hewo/pi-invocation.sh && mkdir -p /root/.pi/agent /run/secrets
 RUN mkdir -p /workspace
 WORKDIR /workspace
 ENV AGENT_NAME=$AGENT_NAME
