@@ -257,9 +257,12 @@ python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.
   --agent <agent_name>
 ```
 
-它会从当前 worktree 构建并检查 clean image；若只想复用已经由同一 worktree
-构建的镜像，可使用 `--skip-build --image <agent_name>:infra`。通过后仍需用
-实际 provider credentials 运行真实 Docker E2E，才能声称 Agent 行为验证完成。
+它会从当前 worktree 构建并检查 clean image。若镜像已由
+`./scripts/build-agent-image.sh` 从冻结快照构建，用
+`--skip-build --image <image-id>` 复用；因为 tag 是内容寻址的，"这个镜像是否
+对应这份源码"不再需要人去记住。`--skip-build` 现在会断言镜像确实存在，缺失即
+报错而不是静默继续。通过后仍需用实际 provider credentials 运行真实 Docker
+E2E，才能声称 Agent 行为验证完成。
 
 不要把 template 的 `.agents/` 整目录复制到下游项目。Issue #1/HeWo 的历史
 证据、template release 工作流和 benchmark 记录只属于本仓库；下游项目应建立
@@ -279,7 +282,8 @@ Loop 的阶段是：
 1. 确认身份和边界：开发 coding agent 读取 `AGENTS.md` / `.agents/`，产品
    Agent 只读取 runtime。
 2. 运行结构验证和 repository-scope audit。
-3. 运行 clean-container infrastructure check。
+3. 从冻结快照构建镜像（内容寻址 tag `<agent>:def-<digest>`），再运行
+   clean-container infrastructure check。
 4. 通过明确 credential-source 注入真实 backend/provider/model，执行
    provider-backed E2E 或 benchmark stage。
 5. 保存 artifact、trajectory 和 scrubbed trajectory，只记录 secret-free summary。
@@ -295,7 +299,14 @@ Loop 的阶段是：
 ./scripts/run-agent-loop.sh --list-runs
 ./scripts/run-agent-loop.sh --run-status <run_id>
 ./scripts/run-agent-loop.sh --clean-run <run_id>      # 结果消费后清除
+./scripts/run-agent-loop.sh --gc --older-than 7      # 回收无人引用的 def- 镜像
 ```
+
+提交的那一刻，整个工作树会被冻结成该 run 私有的快照，此后 preflight、镜像
+构建、benchmark 和判定 pass/fail 的 verifier 全部对着快照执行。所以提交返回
+之后就可以继续修改 `src/<agent>/`：改动不会影响在飞的 run，也不会污染它的
+证据。`--run-status` 会显示每个 run 的 `definition_revision` 与 `image`，
+即在测哪一个版本。
 
 完整 preflight（backend、credential matrix、task、workspace）在前台执行，
 无效调用当场拒绝，不会变成一个需要事后查询的后台任务。登记内容只包含 run id、
@@ -525,15 +536,24 @@ AGENT_NAME=hewo PREFIX=/tmp/hewo-install \
 
 ### Docker 构建
 
+镜像由冻结快照构建，tag 是内容寻址的，所以同一份源码永远对应同一个 tag：
+
+```bash
+./scripts/freeze-agent-run.sh --into /tmp/hewo-snapshot
+./scripts/build-agent-image.sh --context /tmp/hewo-snapshot   # 已存在则不重建
+```
+
+需要手工构建当前工作树时（不产出证据）仍可以直接用 Docker：
+
 ```bash
 docker build --build-arg AGENT_NAME=hewo \
-  -t hewo:e2e -f docker/Dockerfile .
+  -t hewo:dev -f docker/Dockerfile .
 ```
 
 Docker 使用 Node 22，只安装 pi。验证版本时绕过产品 entrypoint：
 
 ```bash
-docker run --rm --entrypoint /bin/bash hewo:e2e -lc 'pi --version'
+docker run --rm --entrypoint /bin/bash hewo:dev -lc 'pi --version'
 ```
 
 ### Release
@@ -640,7 +660,8 @@ user namespace 限制；简单请求通过不代表该宿主机的工具 sandbox
 ./scripts/validate-definition.sh hewo
 bash -n distribution/launcher distribution/install.sh \
   distribution/container-entrypoint.sh docker/run-hewo-e2e.sh \
-  scripts/build-release.sh scripts/run-benchmark.sh scripts/run-agent-loop.sh
+  scripts/build-release.sh scripts/run-benchmark.sh scripts/run-agent-loop.sh \
+  scripts/freeze-agent-run.sh scripts/build-agent-image.sh
 git diff --check
 ```
 
@@ -656,7 +677,7 @@ git diff --check
 如果 runtime 声明了 tools，还应检查：
 
 ```bash
-docker run --rm --entrypoint bash hewo:e2e -c \
+docker run --rm --entrypoint bash hewo:dev -c \
   'command -v hewo-tool && hewo-tool --check'
 ```
 

@@ -199,10 +199,15 @@ full product-agent iteration, run the project-internal evaluation loop from
 `.agents/workflows/agent-development.md`. Long E2E or benchmark validation is
 submitted through the loop helper's registered background mode
 (`./scripts/run-agent-loop.sh --background ...`, then `--list-runs`,
-`--run-status <id>` and `--clean-run <id>`), so it can be queried and cleaned
-up without blocking the developer session. The preflight still runs in the
-foreground, so an invalid invocation fails there rather than inside a detached
-run.
+`--run-status <id>`, `--clean-run <id>` and `--gc`), so it can be queried and
+cleaned up without blocking the developer session. The preflight still runs in
+the foreground, so an invalid invocation fails there rather than inside a
+detached run.
+
+Submitting a run freezes the worktree into a snapshot that run owns, and builds
+a content-addressed image (`<agent>:def-<digest>`) from it. Every stage reads
+the snapshot, so editing the product Agent while a run is in flight changes
+neither what that run tests nor what its evidence records.
 
 ## Development environments
 

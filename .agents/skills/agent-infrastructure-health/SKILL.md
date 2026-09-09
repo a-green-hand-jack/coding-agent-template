@@ -34,15 +34,17 @@ The check validates required infrastructure files, shell/Python syntax, the
 Agent definition, host prerequisites for declared runtime tools, the tool
 self-checks the runtime manifest declares in `agent.tool_checks`, a clean Docker
 build, the final image's pi binary, the isolated `uv` tool environment,
-launcher help/version behavior, and release payload exclusions. Use
-`--skip-build` only when a known-good image was built from the exact current
-worktree; the script then reports which image it reused.
+launcher help/version behavior, and release payload exclusions. Pass
+`--skip-build --image <image-id>` to reuse an image already built from a frozen
+snapshot by `./scripts/build-agent-image.sh`; the tag is content addressed, so
+matching an image to its source is no longer something the operator has to
+remember. `--skip-build` asserts the image exists and fails if it does not.
 
 Useful options:
 
 ```bash
 python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.py \
-  --agent <agent_name> --image <agent_name>:infra --release release/<agent_name>-<version>.tar.gz
+  --agent <agent_name> --image <agent_name>:def-<digest> --release release/<agent_name>-<version>.tar.gz
 
 python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.py \
   --agent <agent_name> --skip-build --json

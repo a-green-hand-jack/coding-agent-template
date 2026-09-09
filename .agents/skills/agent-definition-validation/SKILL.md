@@ -40,9 +40,13 @@ credentials.
    packaging changed:
 
    ```bash
-   docker build --build-arg AGENT_NAME=<agent_name> \
-     -t <agent_name>:e2e -f docker/Dockerfile .
+   ./scripts/freeze-agent-run.sh --agent <agent_name> --into /tmp/<agent_name>-snapshot
+   ./scripts/build-agent-image.sh --context /tmp/<agent_name>-snapshot
    ```
+
+   The image is built from the frozen snapshot and tagged by content
+   (`<agent_name>:def-<digest>`), so a rebuild of unchanged source is a no-op
+   and an in-flight run cannot be affected by later edits.
 
 3. Before claiming Agent behavior, run a real request through
    `docker/run-hewo-e2e.sh` or the downstream repository's renamed equivalent.

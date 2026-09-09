@@ -184,8 +184,12 @@ promotion gate; the comparator never writes it and never updates the best.
 - A run with no named credential source is `infrastructure-only` or `blocked` —
   never product-behavior evidence. Real provider-backed E2E goes through
   `docker/run-hewo-e2e.sh` (or the downstream equivalent) and reports backend,
-  provider, model and credential-source flag. This skill's static checks need
-  no provider at all.
+  provider, model, credential-source flag, and the image ID that served the
+  request. This skill's static checks need no provider at all.
+- `subject.definition_revision` is pinned when the run is submitted, never
+  recomputed when the record is written. A revision derived after the run
+  describes the worktree at reporting time, which for any run long enough to
+  edit under is not the subject that was tested.
 
 ## What this skill is not
 

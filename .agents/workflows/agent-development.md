@@ -70,12 +70,21 @@ Repeat this loop for each product-agent iteration:
      --pi-auth-file "$HOME/.pi/agent/auth.json" "<task>"
    ./scripts/run-agent-loop.sh --run-status <run_id>
    ./scripts/run-agent-loop.sh --clean-run <run_id>
+   ./scripts/run-agent-loop.sh --gc --older-than 7
    ```
 
    The whole preflight runs in the foreground, so an invalid invocation is
    rejected there instead of becoming a background run to chase. The registry
    records secret-free metadata only and must be cleaned up once the result is
    consumed.
+
+   Submitting freezes the worktree into a snapshot owned by that run. Every
+   stage — validation, audit, image build, benchmark, and the verifier that
+   decides pass/fail — reads the snapshot, so the product Agent may be edited
+   the moment the submit returns without changing what an in-flight run tests
+   or what its evidence claims. `--run-status` reports each run's
+   `definition_revision` and `image`, which is how you tell which version a
+   run is testing.
 7. **Collect evidence**: artifact path, trajectory path, scrubbed trajectory
    path, backend/provider/model, definition revision, and credential-source
    flag. Save only scrubbed artifacts or durable lessons; never save raw

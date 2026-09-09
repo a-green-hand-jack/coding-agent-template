@@ -33,6 +33,26 @@ accepts. Anything else exits 2 as an unknown option; run
 | `--pi-models-file PATH` | `~/.pi/agent/models.json`, for a custom provider catalog |
 | `--bundle PATH` | a short-lived bundle from `scripts/create-provider-bundle.sh` |
 
+## The host catalogue is not the container catalogue
+
+Confirmed 2026-09-09 on the Ubuntu box: `pi --list-models` on the host resolved
+`apex`, `apex-deepseek` and `gravarc-router`, but the same command inside the
+clean container — with `~/.pi/agent/auth.json` and `models.json` mounted
+read-only and `PI_CODING_AGENT_DIR=/root/.pi/agent` — resolved only
+`openai-codex`. A run against `--provider apex` therefore failed with
+`No API key found for apex` and was correctly classified `mode=blocked`, while
+`--provider openai-codex --model gpt-5.6-sol` succeeded as `mode=agent-behavior`.
+
+Enumerate inside the image you are about to run, not on the host:
+
+```bash
+docker run --rm --entrypoint bash \
+  -e PI_CODING_AGENT_DIR=/root/.pi/agent \
+  --mount "type=bind,src=$HOME/.pi/agent/auth.json,dst=/root/.pi/agent/auth.json,readonly" \
+  --mount "type=bind,src=$HOME/.pi/agent/models.json,dst=/root/.pi/agent/models.json,readonly" \
+  <image> -c 'pi --list-models'
+```
+
 ## Discover providers without exposing credentials
 
 When you need to know which providers/models actually exist on this machine,
