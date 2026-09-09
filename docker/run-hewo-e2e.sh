@@ -87,8 +87,15 @@ provider_key_prefix="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')
 
 if [[ "$release_mode" == true || "$user_path_mode" == true ]]; then
   [[ "$release_mode" == true && "$user_path_mode" != true ]] || :
-  "$root/scripts/check-release-user-path.sh" "$name" "${2:-0.1.0}"
-  exit $?
+  release_args=("$name" "${RELEASE_VERSION:-0.1.0}" --backend "$backend" --provider "$provider" --model "$model")
+  [[ -n "$api_key_env" ]] && release_args+=(--api-key-env "$api_key_env")
+  [[ "$api_key_stdin" == true ]] && release_args+=(--api-key-stdin)
+  [[ -n "$bundle" ]] && release_args+=(--bundle "$bundle")
+  [[ -n "$pi_auth_file" ]] && release_args+=(--pi-auth-file "$pi_auth_file")
+  [[ -n "$pi_models_file" ]] && release_args+=(--pi-models-file "$pi_models_file")
+  [[ "$allow_unauthenticated" == true ]] && release_args+=(--allow-unauthenticated)
+  release_args+=("$@")
+  exec "$root/scripts/run-release-e2e.sh" "${release_args[@]}"
 fi
 
 task=()
