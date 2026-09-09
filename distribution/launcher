@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Product launcher for __AGENT_NAME__. Backend: pi, and only pi.
+# DEPRECATED compatibility/development helper for __AGENT_NAME__.
+# Not the product entry point. Users should invoke pi and load the installed
+# runtime package/resources through pi's native mechanisms.
 #
 # Resources are loaded through pi's own loaders (--skill, --prompt-template,
 # --theme, --extension) from the paths declared in the runtime's package.json,
@@ -10,7 +12,7 @@ set -euo pipefail
 
 bin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 agent_home="$bin_dir/../lib/__AGENT_NAME__"
-definition_dir="$agent_home/agent-definition"
+definition_dir="$agent_home/runtime-package"
 [[ -d "$definition_dir" ]] && definition_dir="$(cd "$definition_dir" && pwd -P)"
 manifest="$definition_dir/package.json"
 
@@ -32,7 +34,7 @@ passthrough=()
 
 usage() {
   cat <<'EOF'
-Usage: __AGENT_NAME__ [OPTIONS] [TASK]
+Usage (deprecated/reference-only): __AGENT_NAME__ [OPTIONS] [TASK]
        __AGENT_NAME__ --tui [OPTIONS]
 
 Backend: pi. This Agent supports no other backend.

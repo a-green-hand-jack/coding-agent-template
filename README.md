@@ -186,12 +186,14 @@ fetches the baked installer, which downloads the matching archive itself (no
 repository's GitHub Releases; check there for the current version rather than
 assuming the one written below.
 
-The no-clone installation flow is:
+The no-clone installation flow installs only the pi-native runtime package; it does not install a `hewo` product command. The historical launcher remains only as a deprecated development/compatibility helper and is not installed by `install.sh`.
+
+The package is installed under `~/.local/lib/hewo/runtime-package/`; `package.json` is its authoritative manifest. This repository does not guess a pi package-install command because it varies by pi version. Consult `pi --help`/the installed pi documentation, or load the manifest's declared resources with pi's documented native options (`--skill`, `--prompt-template`, `--theme`, `--extension`).
 
 ```bash
 curl -fsSL https://github.com/a-green-hand-jack/coding-agent-template/releases/latest/download/install.sh | bash
-export PATH="$HOME/.local/bin:$PATH"
-hewo --version
+pi --version
+pi --help
 ```
 
 `benchmarks/` contains a benchmark contract, the `hewo-infrastructure-smoke`

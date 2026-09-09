@@ -16,23 +16,18 @@ test -f "$root/src/$name/runtime/package.json" || {
   exit 2
 }
 rm -rf "$out"
-mkdir -p "$out/agent-definition" "$out/bin"
+mkdir -p "$out/runtime-package"
 # package.json is the runtime resource manifest and must ship. Only
 # development instructions and installed dependencies are excluded.
-tar -C "$root/src/$name/runtime" --exclude=AGENTS.md --exclude=CLAUDE.md --exclude=node_modules --exclude=__pycache__ --exclude='*.egg-info' --exclude=build -cf - . | tar -C "$out/agent-definition" -xf -
-cp "$root/distribution/launcher" "$out/launcher"
+tar -C "$root/src/$name/runtime" --exclude=AGENTS.md --exclude=CLAUDE.md --exclude=node_modules --exclude=__pycache__ --exclude='*.egg-info' --exclude=build -cf - . | tar -C "$out/runtime-package" -xf -
 cp "$root/distribution/install.sh" "$out/install.sh"
-cp "$root/distribution/launcher" "$out/bin/$name"
-test -f "$out/agent-definition/package.json" || {
+test -f "$out/runtime-package/package.json" || {
   echo "release payload is missing the runtime resource manifest package.json" >&2
   exit 2
 }
 sed -i '' "s/AGENT_NAME=\"\${AGENT_NAME:-hewo}\"/AGENT_NAME=\"\${AGENT_NAME:-$name}\"/; s/__AGENT_NAME__/$name/g; s#__RELEASE_URL__#$release_url#g" "$out/install.sh" 2>/dev/null \
   || sed -i "s/AGENT_NAME=\"\${AGENT_NAME:-hewo}\"/AGENT_NAME=\"\${AGENT_NAME:-$name}\"/; s/__AGENT_NAME__/$name/g; s#__RELEASE_URL__#$release_url#g" "$out/install.sh"
-sed -i '' "s/__AGENT_NAME__/$name/g" "$out/launcher" "$out/bin/$name" 2>/dev/null \
-  || sed -i "s/__AGENT_NAME__/$name/g" "$out/launcher" "$out/bin/$name"
-chmod +x "$out/bin/$name"
-chmod +x "$out/install.sh" "$out/launcher"
+chmod +x "$out/install.sh"
 printf '{"agent":"%s","version":"%s","definition":"src/%s/runtime","provider":"runtime-injected","backend":"pi","pi":"%s","development_resources":"excluded"}\n' \
   "$name" "$version" "$name" "${PI_VERSION:-latest}" > "$out/release-manifest.json"
 tar -C "$root/release" -czf "$root/release/$name-$version.tar.gz" "$name-$version"

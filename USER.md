@@ -8,7 +8,7 @@
 > - **Contains:** installation, the command surface, provider/model selection at run time, credential handling, and troubleshooting.
 > - **Excludes:** how the Agent is developed or released (see `DEV.md`), development-agent rules (see `AGENTS.md`), and template internals (see `README.md`).
 
-`hewo` 是一个面向最终用户的 Agent CLI/TUI 入口。它把一个 Agent
+HeWo 是一个由 pi 执行的 pi-native runtime package，不提供独立的 `hewo` 产品 CLI/TUI 入口。它把一个 Agent
 scaffold 的行为定义交给成熟的 coding-agent backend 执行，再由 backend
 连接具体的 LLM provider 和 model。
 
@@ -17,7 +17,7 @@ Agent scaffold  ->  coding-agent backend  ->  LLM provider/model
 hewo runtime        pi                        user-selected provider/model
 ```
 
-用户通常只需要使用 `hewo`，不需要直接调用 pi。三层保持独立：runtime 定义产品
+用户直接使用自己安装和配置的 `pi`；install.sh 只安装 runtime package。三层保持独立：runtime 定义产品
 行为，pi 提供执行循环、工具和会话，provider/model 在运行时选择。
 
 ## 1. 安装
@@ -48,8 +48,8 @@ curl -fsSL https://github.com/a-green-hand-jack/coding-agent-template/releases/d
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
-hewo --version
-hewo --help
+pi --version
+pi --help
 ```
 
 安装器只会在本机没有 pi 时才安装它。已经装好 pi 的机器可以设置

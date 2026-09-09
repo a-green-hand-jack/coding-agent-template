@@ -14,7 +14,7 @@
   CLI、并维护本仓库代码的人机代理。它读取根目录和 `.agents/` 下的
   `AGENTS.md`、skills、memory、knowledge 与 workflows；这些内容是开发流程，
   不是产品行为，也绝不会随产品发布。
-- **被开发的产品 agent**：本仓库要构建、安装并交付给最终用户的 `hewo`。它的
+- **被开发的产品 agent**：本仓库要构建、安装并交付给最终用户的 pi-native `hewo` runtime package；不提供独立 `hewo` wrapper CLI。它的
   唯一产品源码和行为定义在 `src/hewo/`，其中真正进入产品载荷的是
   `src/hewo/runtime/`（不包括任何 `AGENTS.md`）。产品 agent 读取 runtime 中的
   identity、skills、knowledge、workflows 和 tools；它不是负责维护本仓库的
@@ -42,7 +42,7 @@ benchmark 或 runtime 文件中出现 “Agent” 就切换身份，也不要把
 
 它会按当前任务渐进式加载一个 sub-skill：新建 Agent、同步 template，或迁移
 现有仓库。修改本仓库的 `src/hewo/` 或准备 hewo release 时，再使用
-`.agents/skills/agent-definition-validation/SKILL.md` 完成当前验证流程。只有在
+`.agents/skills/runtime-package-validation/SKILL.md` 完成当前验证流程。只有在
 为下游仓库编写初始化说明时，才使用 `src/<agent>/` 这类占位路径。
 
 每次发布 template 前，还必须加载
@@ -494,7 +494,7 @@ pi            @earendil-works/pi-coding-agent
 取值一律报错退出，不存在回退默认值：
 
 ```bash
-hewo --backend pi --provider <provider> --model <model> ...
+pi --help  # 由用户按所安装 pi 版本加载 runtime package 资源
 ```
 
 `--provider` 选择 pi 的 provider。

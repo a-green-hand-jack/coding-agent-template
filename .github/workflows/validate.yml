@@ -27,8 +27,8 @@ jobs:
         run: |
           image="$(python3 -c 'import json;print(json.load(open("'"$RUNNER_TEMP"'/snapshot/.frozen.json"))["image"])')"
           docker run --rm --entrypoint bash "$image" -c \
-            'command -v pi && command -v hewo-tool &&
-             hewo-tool --check | grep -Fx HEWO_TOOL_OK'
+            'command -v pi && test -f /opt/install/lib/hewo/runtime-package/package.json &&
+             command -v hewo-tool && hewo-tool --check | grep -Fx HEWO_TOOL_OK'
       # The repository-root build stays covered: it is the documented manual
       # path (hewo:dev) and must not drift from the snapshot build.
       - run: docker build --build-arg AGENT_NAME=hewo -t agent-template:test -f docker/Dockerfile .

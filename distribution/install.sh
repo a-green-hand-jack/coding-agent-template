@@ -30,7 +30,7 @@ source_runtime=""
 release_root=""
 if [[ -n "$script_dir" && -d "$script_dir/../src/$AGENT_NAME/runtime" ]]; then
   source_runtime="$(cd "$script_dir/../src/$AGENT_NAME/runtime" && pwd)"
-elif [[ -n "$script_dir" && -d "$script_dir/agent-definition" ]]; then
+elif [[ -n "$script_dir" && -d "$script_dir/runtime-package" ]]; then
   release_root="$script_dir"
 fi
 
@@ -59,19 +59,20 @@ USAGE
   exit 0
 fi
 
-mkdir -p "$PREFIX/lib/$AGENT_NAME" "$PREFIX/bin"
-definition_dir="$PREFIX/lib/$AGENT_NAME/agent-definition"
+# Install the pi-native runtime package as data. This installer deliberately does
+# not install a hewo wrapper command: pi, provider, model, and credentials are
+# user-owned and selected through pi's native interface/configuration.
+mkdir -p "$PREFIX/lib/$AGENT_NAME"
+definition_dir="$PREFIX/lib/$AGENT_NAME/runtime-package"
 mkdir -p "$definition_dir"
 
 # package.json is the runtime resource manifest and must reach the payload.
 # Development instructions and installed dependencies must not.
 if [[ -n "$source_runtime" ]]; then
   tar -C "$source_runtime" --exclude=AGENTS.md --exclude=CLAUDE.md --exclude=node_modules --exclude=__pycache__ --exclude='*.egg-info' --exclude=build -cf - . | tar -C "$definition_dir" -xf -
-  launcher_source="$script_dir/launcher"
   version="dev"
 else
-  tar -C "$release_root/agent-definition" --exclude=AGENTS.md --exclude=CLAUDE.md --exclude=node_modules --exclude=__pycache__ --exclude='*.egg-info' --exclude=build -cf - . | tar -C "$definition_dir" -xf -
-  launcher_source="$release_root/launcher"
+  tar -C "$release_root/runtime-package" --exclude=AGENTS.md --exclude=CLAUDE.md --exclude=node_modules --exclude=__pycache__ --exclude='*.egg-info' --exclude=build -cf - . | tar -C "$definition_dir" -xf -
   version="$(sed -n 's/.*"version":"\([^"]*\)".*/\1/p' "$release_root/release-manifest.json" | head -n 1)"
   version="${version:-unknown}"
 fi
@@ -119,14 +120,11 @@ if [[ -f "$tools_dir/pyproject.toml" ]]; then
   rm -rf "$tools_build_dir"
 fi
 
-sed -e "s/__AGENT_NAME__/$AGENT_NAME/g" "$launcher_source" > "$PREFIX/bin/$AGENT_NAME"
-chmod +x "$PREFIX/bin/$AGENT_NAME"
 printf '{"agent":"%s","version":"%s","provider":"runtime-injected","backend":"pi"}\n' \
   "$AGENT_NAME" "$version" > "$PREFIX/lib/$AGENT_NAME/release-manifest.json"
 
-# Docker builds install pi in the final image. A release installation uses npm
-# only when the user has no existing pi binary, so the product command works
-# without a separate manual runtime installation step.
+# Install pi only as an optional execution dependency when absent; the runtime
+# package itself never supplies a product wrapper or provider configuration.
 if [[ -z "${SKIP_RUNTIME_INSTALL:-}" ]]; then
   if ! command -v pi >/dev/null 2>&1; then
     command -v npm >/dev/null 2>&1 || {
