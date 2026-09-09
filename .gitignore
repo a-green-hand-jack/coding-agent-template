@@ -1,4 +1,6 @@
 .env
+# Machine-specific generated profile; keep device facts out of the public repo.
+DevelopmentMachine.md
 .DS_Store
 traces/
 artifacts/

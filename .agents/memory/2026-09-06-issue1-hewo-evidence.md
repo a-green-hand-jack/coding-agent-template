@@ -1,6 +1,6 @@
 # Issue #1 HeWo Infrastructure Evidence
 
-Date: 2026-09-06 (Ubuntu 24.04.4, OpenCode 1.18.29)
+Date: 2026-09-06
 
 ## Implemented
 
@@ -27,8 +27,8 @@ Date: 2026-09-06 (Ubuntu 24.04.4, OpenCode 1.18.29)
   OpenCode and passed `hewo --help`.
 - Docker image build `AGENT_NAME=hewo` passed; final image contains no
   `AGENTS.md` or credential-like files.
-- Real Provider-backed benchmark passed with `openai/gpt-5.5` and an explicit
-  read-only auth-store mount. The runtime skill loaded, wrote and re-read
+- Real Provider-backed benchmark passed with a run-time-injected provider model
+  and an explicit read-only auth-store mount. The runtime skill loaded, wrote and re-read
   `/workspace/artifacts/hewo-smoke.md`, the deterministic verifier passed, and
   the scrubbed trajectory contained no unredacted credential marker.
 - Final sentinel run also recorded `HEWO_KNOWLEDGE_OK` and

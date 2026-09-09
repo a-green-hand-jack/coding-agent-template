@@ -294,7 +294,7 @@ Loop 的阶段是：
 后台登记模式：
 
 ```bash
-./scripts/run-agent-loop.sh --background --provider openai --model gpt-5.5 \
+./scripts/run-agent-loop.sh --background --provider <provider> --model <model> \
   --pi-auth-file "$HOME/.pi/agent/auth.json" "<task>"
 ./scripts/run-agent-loop.sh --list-runs
 ./scripts/run-agent-loop.sh --run-status <run_id>
@@ -494,7 +494,7 @@ pi            @earendil-works/pi-coding-agent
 取值一律报错退出，不存在回退默认值：
 
 ```bash
-hewo --backend pi --provider openai --model gpt-5.5 ...
+hewo --backend pi --provider <provider> --model <model> ...
 ```
 
 `--provider` 选择 pi 的 provider。
@@ -504,7 +504,7 @@ hewo --backend pi --provider openai --model gpt-5.5 ...
 scaffold 不应写死 provider。provider/model 在运行时传入：
 
 ```bash
-LLM_PROVIDER=openai LLM_MODEL=gpt-5.5 \
+LLM_PROVIDER=<provider> LLM_MODEL=<model> \
   ./docker/run-hewo-e2e.sh --agent hewo \
   --pi-auth-file "$HOME/.pi/agent/auth.json" \
   "Reply with exactly: hi"
@@ -597,8 +597,8 @@ runtime，并观察容器中的真实模型响应。
 ```bash
 ./docker/run-hewo-e2e.sh \
   --agent hewo \
-  --provider openai \
-  --model gpt-5.5 \
+  --provider <provider> \
+  --model <model> \
   --pi-auth-file "$HOME/.pi/agent/auth.json" \
   "Reply with exactly: hi"
 ```
@@ -611,8 +611,8 @@ helper 只接受 `--pi-auth-file`、`--api-key-env`、`--api-key-stdin` 和
 
 ```bash
 PI_AUTH_FILE="$HOME/.pi/agent/auth.json" \
-LLM_PROVIDER=openai \
-LLM_MODEL=gpt-5.5 \
+LLM_PROVIDER=<provider> \
+LLM_MODEL=<model> \
 BENCHMARK_RUN_DIR=/tmp/hewo-evidence \
 ./scripts/run-benchmark.sh hewo
 ```
@@ -634,14 +634,10 @@ trajectory 和 benchmark 输出只能放在 disposable 目录，提交前必须 
 
 ### provider/model 验证记录
 
-以下是历史观测，不是当前契约。收敛到 pi-only 之前的记录按当时的 backend
-保留（不改写既有证据），但只有 pi 行仍适用于今天的产品路径：
-
-- 当前后端（pi）：`openai-codex/gpt-5.5`（通过只读 pi auth store）
-- 收敛前的历史记录（backend 已下线，仅作存档）：`openai/gpt-5.5`、
-  `opencode-go/gpt-5.6-luna`、`opencode-go/glm-5.3`、`opencode-go/qwen3.7-plus`、
-  `opencode-go/kimi-k2.7-code`、`opencode-go/grok-4.6`、`gpt-5.5`、
-  `sonnet`（通过授权的 Apex-compatible Anthropic endpoint）
+真实 backend/provider/model 与 credential-source flag 的运行证据属于个人
+记录，只登记在本机私有位置（宿主机的私有 skill 记录或本机证据目录），
+**不进入本公开仓库**。本仓库只保留命令形状示例；每次运行后按下方规则在
+本机记录，并确认记录位置不入库。
 
 新增记录时必须写明 backend/provider/model 与 credential-source flag。
 

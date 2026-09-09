@@ -29,19 +29,20 @@ accepts. Anything else exits 2 as an unknown option; run
 | --- | --- |
 | `--api-key-env <PROVIDER>_API_KEY` (preferred) | the named host variable, never a file |
 | `--api-key-stdin` | stdin, so the key stays out of shell history |
-| `--pi-auth-file PATH` | `~/.pi/agent/auth.json`; was **not** sufficient on its own for a custom provider in 2026-09-08 testing |
+| `--pi-auth-file PATH` | `~/.pi/agent/auth.json`; was **not** sufficient on its own for a custom provider in prior testing |
 | `--pi-models-file PATH` | `~/.pi/agent/models.json`, for a custom provider catalog |
 | `--bundle PATH` | a short-lived bundle from `scripts/create-provider-bundle.sh` |
 
 ## The host catalogue is not the container catalogue
 
-Confirmed 2026-09-09 on the Ubuntu box: `pi --list-models` on the host resolved
-`apex`, `apex-deepseek` and `gravarc-router`, but the same command inside the
-clean container — with `~/.pi/agent/auth.json` and `models.json` mounted
-read-only and `PI_CODING_AGENT_DIR=/root/.pi/agent` — resolved only
-`openai-codex`. A run against `--provider apex` therefore failed with
-`No API key found for apex` and was correctly classified `mode=blocked`, while
-`--provider openai-codex --model gpt-5.6-sol` succeeded as `mode=agent-behavior`.
+Observed on a development box: `pi --list-models` on the host resolved several
+configured providers while the identical command inside the clean container —
+with `~/.pi/agent/auth.json` and `models.json` mounted read-only and
+`PI_CODING_AGENT_DIR=/root/.pi/agent` — resolved a different subset. A run
+against a host-only provider therefore failed with
+`No API key found for <provider>` and was correctly classified `mode=blocked`,
+while a provider resolvable inside the image succeeded
+as `mode=agent-behavior`.
 
 Enumerate inside the image you are about to run, not on the host:
 
@@ -79,9 +80,9 @@ the credential class, and recommend rotation.
 ## Host provider facts (pointers, not secrets)
 
 - pi providers are governed by the host-level private skill
-  `pi-providers-private`: `apex`, `apex-deepseek`, `opencode-go` (a pi provider
-  id, not a backend). Read that skill for current device facts before choosing
-  a provider/model.
+  `pi-providers-private`; read that skill for current device facts before
+  choosing a provider/model. Device facts stay in that private skill, not in
+  this public repository.
 - Do not hardcode a provider/model that is not currently available on the host.
   Check availability first, then record the exact `backend/provider/model`
   actually used in the E2E memory entry.

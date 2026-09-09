@@ -1,7 +1,6 @@
 # Pi-only Runtime Bridge and Evaluation Loop
 
-Date: 2026-09-08 (Ubuntu 24.04, pi 0.85.1 `@earendil-works/pi-coding-agent`,
-Node 26.5.0). Secret-free: no credential was read and no provider request was
+Date: 2026-09-08 (pi 0.85.1 `@earendil-works/pi-coding-agent`). Secret-free: no credential was read and no provider request was
 made while producing any of this.
 
 ## What changed
@@ -101,7 +100,7 @@ adversarial check, then run it.
 ## Provider-backed E2E: PASSED
 
 Five runs through `docker/run-hewo-e2e.sh`, all reporting
-`backend=pi provider=gravarc-router model=kimi-k2.7-code
+`backend=pi provider=<provider> model=<model>
 credential_source=--env-file <path> exit=0 mode=agent-behavior`:
 
 1. **Greeting** - "Say hi to Ada in one short sentence." -> `Hi, Ada!`
@@ -119,8 +118,8 @@ credential_source=--env-file <path> exit=0 mode=agent-behavior`:
 
 ### How the credential actually has to be injected
 
-The host tool `accountctl docker-run --providers <name> --env-file-only --out
-<path>` produces the env file and prints the variable name plus base URL. For a
+A host-side credential helper produces an env file that exports the API-key
+variable plus base URL for the selected provider. For a
 **custom** pi provider that is not enough on its own: pi needs the provider
 definition too, and it will not read the key from a mounted `auth.json` nor
 from a bare environment variable. The working recipe is a **containerized
@@ -133,10 +132,10 @@ key, so it is safe to generate into a temp path.
 now standalone, because a catalog is a provider definition and not a
 credential.
 
-Model availability is per-account: `kimi-k2.5` returned
-`404 ... or Permission denied` while `kimi-k2.7-code` worked. Probe before
-assuming a listed model is usable, and `deepseek` returned
-`402 Insufficient Balance`.
+Model availability is per-account: one listed model returned
+`404 ... or Permission denied` while another worked, and a third provider
+returned `402 Insufficient Balance`. Probe before assuming a listed model is
+usable.
 
 ## Four defects the E2E exposed that unit tests could not
 

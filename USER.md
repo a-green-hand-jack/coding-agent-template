@@ -121,7 +121,7 @@ hewo 只在 **pi** 上运行。没有第二个 backend，也没有回退：请�
 直接报错，而不是悄悄换一个默认值。
 
 ```bash
-hewo --provider openai --model gpt-5.5 "你好"
+hewo --provider <provider> --model <model> "你好"
 ```
 
 `--backend` 只接受 `pi`（以及别名 `pi-coding-agent`）。
@@ -146,8 +146,8 @@ fixture provider；实时查询需要显式开启、指定允许的主机并设�
 provider、model 和凭据都在运行时提供，永远不属于 Agent 定义。
 
 ```bash
-export LLM_PROVIDER=openai
-export LLM_MODEL=gpt-5.5
+export LLM_PROVIDER=<provider>
+export LLM_MODEL=<model>
 export OPENAI_API_KEY="..."
 hewo "你好"
 ```
@@ -174,7 +174,7 @@ pi 解析凭据的顺序是：`--api-key`、其 `auth.json`、环境变量、`mo
 
 ```bash
 hewo "总结当前目录的代码"
-hewo --provider openai --model gpt-5.5 "检查这个错误"
+hewo --provider <provider> --model <model> "检查这个错误"
 hewo /hewo-report            # slash 命令来自 runtime 的 prompt template
 ```
 

@@ -112,15 +112,15 @@ contains a fenced ```` ```json ```` block:
   "credential_surface": {
     "<family>": {
       "env_vars": ["OPENAI_API_KEY"],
-      "endpoint": "https://api.apexin.ai/v1",
+      "endpoint": "https://<endpoint>",
       "auth_files": ["~/.codex/auth.json"],
       "discovery_commands": ["opencode models <provider>", "pi --list-models"],
       "notes": "human note"
     }
   },
   "evidence_status": [
-    {"agent": "codex", "auth_mode": "OpenAI-compatible Apex",
-     "model": "openai/gpt-5.6-sol", "status": "smoke-verified", "note": "..."}
+    {"agent": "<agent>", "auth_mode": "<endpoint-family>-compatible",
+     "model": "<model>", "status": "smoke-verified", "note": "..."}
   ],
   "services": {
     "<service>": {

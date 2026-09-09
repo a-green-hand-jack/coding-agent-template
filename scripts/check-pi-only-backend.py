@@ -69,10 +69,8 @@ FORBIDDEN = (
 DEVELOPMENT_ALLOWLIST = {
     "AGENTS.md": "names the coding agents this repository may be developed WITH, not product backends",
     "DEV.md": "developer guide; records the development harness and the pi-only product contract",
-    "DevelopmentMachine.md": "generated profile of what is actually installed on this machine",
-    ".agents/knowledge/development-machine-facts.md": "operator-confirmed facts about installed CLIs",
-    ".agents/knowledge/provider-e2e.md": "secret-free credential cheat-sheet for this machine's CLIs",
-    ".agents/memory/2026-09-06-issue1-hewo-evidence.md": "historical evidence; must not be rewritten",
+    ".agents/knowledge/provider-e2e.md": "secret-free credential cheat-sheet; names the credential paths of other CLIs so they are never printed",
+    ".agents/memory/2026-09-06-issue1-hewo-evidence.md": "historical evidence record, redacted at the owner's request",
     ".agents/skills/development-machine-profile/SKILL.md": "machine-agnostic prober",
     ".agents/skills/development-machine-profile/references/profile-schema.md": "machine-agnostic prober schema",
     ".agents/skills/development-machine-profile/scripts/probe-host.sh": "probes whichever CLIs exist",

@@ -47,8 +47,8 @@ what that run tests or what its evidence claims.
 Options:
   --agent NAME                    Agent name (default: hewo)
   --backend NAME                  pi only (alias: pi-coding-agent)
-  --provider NAME                 pi provider name (default: openai)
-  --model NAME                    pi model pattern (default: gpt-5.5)
+  --provider NAME                 pi provider name (required)
+  --model NAME                    pi model pattern (required)
   --pi-auth-file PATH             pi auth store, mounted read-only
   --api-key-env NAME              Host variable holding the provider key
   --credential-source SPEC         Explicit source, e.g. --credential-source --pi-auth-file PATH
@@ -390,8 +390,7 @@ case "$backend" in
   *) reject "unsupported backend: $backend (this Agent supports pi only)" ;;
 esac
 
-[[ -n "$provider" ]] || provider='openai'
-[[ -n "$model" ]] || model='gpt-5.5'
+# No baked provider/model defaults: both must be pinned explicitly.
 
 [[ "$agent" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || reject "invalid agent name: $agent"
 [[ -n "$provider" ]] || reject 'provider must not be empty'

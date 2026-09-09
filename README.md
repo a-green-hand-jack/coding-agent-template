@@ -19,7 +19,7 @@
 | `USER.md` | 终端用户安装、运行和故障处理 | 用户说明 |
 | `src/hewo/runtime/` | hewo 产品运行时身份、技能、提示词、工作流和知识 | 产品规范 |
 | `benchmarks/README.md` | 基准运行条件、结果分类和可声明范围 | 规范性 |
-| `DevelopmentMachine.md` | 当前开发机器的已核验事实（不含秘密） | 记录 |
+| `DevelopmentMachine.md` | 当前开发机器的已核验事实（本机生成、不入库，由 development-machine-profile skill 重建） | 记录 |
 | `PLAN.md` | 一次性设计计划和历史决策 | 记录 |
 
 文档之间的引用只沿上述边界传递：开发规则不得进入产品运行时，用户说明不得定义开发流程，基准结果不得直接改写产品行为。发现冲突时，以 `AGENTS.md` 的开发规范、`src/hewo/runtime/` 的产品定义和各文档声明的职责为准；历史计划只用于追溯，不能覆盖现行规则。
@@ -50,7 +50,7 @@ The `run-hewo-e2e.sh` helper injects a provider and model at run time without
 requiring manual exports:
 
 ```bash
-./docker/run-hewo-e2e.sh --agent hewo --provider openai --model gpt-5.5 --api-key-env OPENAI_API_KEY "完成这个任务"
+./docker/run-hewo-e2e.sh --agent hewo --provider <provider> --model <model> --api-key-env OPENAI_API_KEY "完成这个任务"
 ```
 
 ## Backend: pi, and only pi
@@ -60,7 +60,7 @@ fallback: asking for another one is an error, not a silent default.
 
 ```bash
 # pi with an existing read-only auth store
-./docker/run-hewo-e2e.sh --agent hewo --provider openai-codex --model gpt-5.5 \
+./docker/run-hewo-e2e.sh --agent hewo --provider <provider> --model <model> \
   --pi-auth-file "$HOME/.pi/agent/auth.json" "hi"
 ```
 
@@ -109,8 +109,8 @@ For a short-lived read-only provider runtime bundle, create it and pass it to Do
 
 ```bash
 bundle=$(mktemp -d)
-./scripts/create-provider-bundle.sh openai gpt-5.5 OPENAI_API_KEY "$bundle"
-./docker/run-hewo-e2e.sh --agent hewo --provider openai --model gpt-5.5 --bundle "$bundle" "完成这个任务"
+./scripts/create-provider-bundle.sh <provider> <model> OPENAI_API_KEY "$bundle"
+./docker/run-hewo-e2e.sh --agent hewo --provider <provider> --model <model> --bundle "$bundle" "完成这个任务"
 rm -rf "$bundle"
 ```
 
@@ -158,7 +158,7 @@ Agent，也是当前仓库实际开发的产品。使用它验证完整 runtime 
 
 ```bash
 ./scripts/validate-definition.sh hewo
-./docker/run-hewo-e2e.sh --agent hewo --provider openai --model gpt-5.5 "Say hello to Ada"
+./docker/run-hewo-e2e.sh --agent hewo --provider <provider> --model <model> "Say hello to Ada"
 ```
 
 Replace `src/hewo` only when creating a separate downstream product Agent. In
@@ -199,7 +199,7 @@ task, and a deterministic verifier. Run the complete smoke with:
 
 ```bash
 PI_AUTH_FILE="$HOME/.pi/agent/auth.json" \
-LLM_PROVIDER=openai LLM_MODEL=gpt-5.5 \
+LLM_PROVIDER=<provider> LLM_MODEL=<model> \
 BENCHMARK_RUN_DIR=/tmp/hewo-evidence \
 ./scripts/run-benchmark.sh hewo
 ```

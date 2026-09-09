@@ -85,7 +85,7 @@ Do not bake a provider or model into the scaffold. The backend is pi and only
 pi; the provider and model are chosen per run:
 
 ```bash
-hewo --provider openai --model gpt-5.5 "<task>"
+hewo --provider <provider> --model <model> "<task>"
 ```
 
 For a downstream Agent, replace `hewo` with its installed command. `--backend`
@@ -108,8 +108,8 @@ value or commit it. For example:
 ```bash
 ./docker/run-hewo-e2e.sh \
   --agent <agent_name> \
-  --provider openai \
-  --model gpt-5.5 \
+  --provider <provider> \
+  --model <model> \
   --pi-auth-file "$HOME/.pi/agent/auth.json" \
   "Reply with exactly: hi"
 ```

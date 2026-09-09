@@ -23,8 +23,8 @@ usage() {
   printf '%s\n' "Usage: $0 [options] <task>" "" \
     "Options:" \
     "  --backend NAME        Backend: pi only (alias: pi-coding-agent)" \
-    "  --provider NAME       pi provider name (default: openai)" \
-    "  --model NAME          pi model pattern (default: gpt-5.5)" \
+    "  --provider NAME       pi provider name (required)" \
+    "  --model NAME          pi model pattern (required)" \
     "  --api-key-env NAME    Read the provider key from this host variable" \
     "  --api-key-stdin       Read the provider key from stdin (never shell history)" \
     "  --env-file PATH       Load additional variables from PATH" \
@@ -71,9 +71,13 @@ case "$backend" in
     exit 2
     ;;
 esac
-[[ -n "$provider" ]] || provider="openai"
+# No baked provider/model defaults: this public template never assumes an
+# operator's provider. Authenticated runs must pin both explicitly.
+if [[ "$allow_unauthenticated" != true ]]; then
+  [[ -n "$provider" ]] || { printf '%s\n' '--provider is required for an authenticated run' >&2; exit 2; }
+  [[ -n "$model" ]] || { printf '%s\n' '--model is required for an authenticated run' >&2; exit 2; }
+fi
 provider_key_prefix="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')"
-[[ -n "$model" ]] || model="gpt-5.5"
 
 task=()
 while (($#)); do task+=("$1"); shift; done

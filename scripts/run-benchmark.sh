@@ -25,8 +25,9 @@ case "$backend" in
   pi|pi-coding-agent) backend="pi" ;;
   *) echo "unsupported backend: $backend (this Agent supports pi only)" >&2; exit 2 ;;
 esac
-[[ -n "$provider" ]] || provider="openai"
-[[ -n "$model" ]] || model="gpt-5.5"
+# No baked provider/model defaults: both must be pinned by the caller.
+[[ -n "$provider" ]] || { echo 'no provider: set LLM_PROVIDER before running' >&2; exit 2; }
+[[ -n "$model" ]] || { echo 'no model: set LLM_MODEL before running' >&2; exit 2; }
 mkdir -p "$run_dir" "$workspace" "$workspace/artifacts"
 
 task_prompt="$(sed '/^#/d; /^$/d' "$task_file" | tr '\n' ' ')"
