@@ -18,8 +18,17 @@ jobs:
       - run: >-
           python3 .agents/skills/agent-consistency-audit/scripts/audit_agent.py
           --agent hewo --strict
+      # Built the same way a developer run builds it: frozen snapshot, then a
+      # content-addressed image. CI exercising a different build path than
+      # every local path is how the two silently diverge.
+      - run: ./scripts/freeze-agent-run.sh --agent hewo --into "$RUNNER_TEMP/snapshot"
+      - run: ./scripts/build-agent-image.sh --context "$RUNNER_TEMP/snapshot"
+      - name: Clean-container smoke on the frozen image
+        run: |
+          image="$(python3 -c 'import json;print(json.load(open("'"$RUNNER_TEMP"'/snapshot/.frozen.json"))["image"])')"
+          docker run --rm --entrypoint bash "$image" -c \
+            'command -v pi && command -v hewo-tool &&
+             hewo-tool --check | grep -Fx HEWO_TOOL_OK'
+      # The repository-root build stays covered: it is the documented manual
+      # path (hewo:dev) and must not drift from the snapshot build.
       - run: docker build --build-arg AGENT_NAME=hewo -t agent-template:test -f docker/Dockerfile .
-      - run: >-
-          docker run --rm --entrypoint bash agent-template:test -c
-          'command -v pi && command -v hewo-tool &&
-          hewo-tool --check | grep -Fx HEWO_TOOL_OK'
