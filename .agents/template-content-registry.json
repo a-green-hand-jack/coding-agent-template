@@ -229,6 +229,11 @@
       "note": "Secret-free E2E credential-injection cheat-sheet for this template's development machine; not downstream content."
     },
     {
+      "path": ".agents/knowledge/development-provider-preferences.md",
+      "class": "template-only-or-adapt",
+      "note": "Repository-specific development provider/model preference table. Downstream repositories must rewrite it for their own providers, models, and evidence commands; never copy private credentials."
+    },
+    {
       "path": ".agents/memory/",
       "class": "downstream-owned",
       "note": "Record downstream decisions and evidence only; do not copy template issue history."

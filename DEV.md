@@ -30,11 +30,11 @@ VIRTUAL_ENV_PATH=/path/to/existing/environment ./scripts/setup-dev.sh
 
 ## 2. 真实 Docker E2E
 
-先确认本机实际配置的 provider/model；`pi --list-models` 可做无密钥输出的枚举，不能代替真实请求。不要读取或打印 auth store、key 文件、`.env` 或 resolved configuration 来探测凭据。
+先确认本机实际配置的 provider/model；`pi --list-models` 可做无密钥输出的枚举，不能代替真实请求。不要读取或打印 auth store、key 文件、`.env` 或 resolved configuration 来探测凭据。开发测试的默认供应商/模型偏好记录在 [.agents/knowledge/development-provider-preferences.md](.agents/knowledge/development-provider-preferences.md)：常规产品行为验收优先 `apex/gpt-6-astra`，快速 smoke 可用 `apex/gpt-5.6-sol`，DeepSeek 视角复核优先 `apex-deepseek/deepseek-v4-pro`；实际运行前仍必须确认该 provider/model 当前可见并健康。
 
 ```bash
 ./docker/run-hewo-e2e.sh --agent hewo \
-  --provider <provider> --model <model> \
+  --provider apex --model gpt-6-astra \
   --pi-auth-file "$HOME/.pi/agent/auth.json" "向 Ada 问好"
 ```
 

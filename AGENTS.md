@@ -40,8 +40,11 @@ is missing, label the run `infrastructure-only` or `blocked`, never E2E-passed:
 
 Resolve which providers actually exist on this machine from the host-level
 private skill `pi-providers-private` and the secret-free cheat-sheet in
-`.agents/knowledge/provider-e2e.md`; never guess a provider/model. Other
-coding-agent CLIs on this machine are development tools: their provider
+`.agents/knowledge/provider-e2e.md`; never guess a provider/model. Before
+choosing among available suppliers, load
+`.agents/skills/development-provider-usage/SKILL.md` and apply the repository
+preference table in `.agents/knowledge/development-provider-preferences.md`.
+Other coding-agent CLIs on this machine are development tools: their provider
 catalogues say nothing about what the product can reach.
 
 ## Two distinct identities

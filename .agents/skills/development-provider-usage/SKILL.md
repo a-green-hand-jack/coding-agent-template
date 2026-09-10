@@ -24,10 +24,11 @@ Before the first provider-backed action in a task, proactively confirm the curre
 Confirm at least:
 
 1. **Host and tool surface** — active host, repository, and which backend/client will run the request (`pi`, `opencode`, `claude-code`, Docker E2E helper, etc.).
-2. **Visible providers** — the providers/models that are currently visible to that client.
-3. **Default resolution** — what provider/model would be used if you do not pass an explicit model.
-4. **Credential source class** — whether the intended run can be tied to a safe credential source label or helper flag, without printing the credential.
-5. **Known blockers** — missing provider, stale catalog, quota/rate limit, endpoint maintenance, or missing injection path.
+2. **Repository preference** — read `.agents/knowledge/development-provider-preferences.md` and identify the preferred provider/model for the task class.
+3. **Visible providers** — the providers/models that are currently visible to that client.
+4. **Default resolution** — what provider/model would be used if you do not pass an explicit model.
+5. **Credential source class** — whether the intended run can be tied to a safe credential source label or helper flag, without printing the credential.
+6. **Known blockers** — missing provider, stale catalog, quota/rate limit, endpoint maintenance, or missing injection path.
 
 If the task is quick and provider-backed evidence is not needed, do not run a live prompt; just confirm visibility when model choice matters.
 
