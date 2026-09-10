@@ -42,11 +42,17 @@
 
 ## 失败和 fallback 分类
 
-- `401/403`：credential/account 问题；不要改模型 catalog 来修。
-- `429`：quota/rate limit；换同等备选或延迟重试，报告限额。
-- `5xx` / provider maintenance：endpoint 健康问题；换备选供应商或报告 `blocked`。
-- listed model 但 live request 404/permission denied：账号未开通该模型；不要把 listing 当可用性证据。
-- clean container 中没有模型：优先检查注入方式和 credential source；不要先改产品 runtime。
+把“provider catalog 可见”与“最小 live 请求可用”分开记录。每次 provider drift 或新模型试跑，都要把不可用/受限模型按下面类别归因；这本身是开发能力的一部分，不能只写“模型失败”。
+
+| 类别 | 常见信号 | 解释 | 处理 |
+| --- | --- | --- | --- |
+| `auth_or_permission` | `401`、`403`、`not allowed`、`Permission denied`、`No active provider key`、data-policy opt-in | key 无效、账号未授权、模型需显式 opt-in 或当前 key 不允许该模型 | 不改产品 runtime；换已授权模型或修复账号/供应商接线 |
+| `quota_or_rate` | `429`、quota/rate/usage limit、余额不足 | 供应商限速、额度或余额问题 | 延迟重试、降低并发或换同等备选；报告限额 |
+| `endpoint_or_timeout` | `5xx`、provider maintenance、`No available channel`、timeout | 上游通道维护、无可用 channel、服务端故障或请求卡住 | 标记 `blocked`；可换备选供应商，不能把它当产品失败 |
+| `parameter_or_capability` | `400`、unsupported reasoning/thinking、token budget mismatch、modalities 不符 | catalog 元数据或运行参数与模型真实能力不匹配 | 调整测试参数或 catalog capability；重新做最小 live probe |
+| `catalog_only` | `pi --list-models` 可见但 live 404/permission denied | listing 不是 entitlement 证明 | 降级为 `provider-visible`，不作为可用模型 |
+
+容器内 E2E 还要单独区分 `injection_error`：host 上可用、容器内失败，常见原因是只挂了 `auth.json`，其中的 `!cat`/路径在容器不可达。此时优先用 `--api-key-env` / `--api-key-stdin` 或 provider bundle 重跑，不要误判模型不可用。
 
 ## 更新此文件
 

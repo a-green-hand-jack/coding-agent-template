@@ -62,7 +62,7 @@ After confirming availability, choose the provider/model deliberately:
 - If you use a default, state the resolved default in the report.
 - Do not assume `pi`, `opencode`, `claude-code`, and Docker bundles expose the same catalog.
 - Do not assume a MacBook provider fact applies on Ubuntu, or the reverse.
-- Do not change provider configuration just because a request fails. First classify whether the failure is configuration drift, credentials, quota, endpoint health, model availability, or product behavior.
+- Do not change provider configuration just because a request fails. First classify whether the failure is configuration drift, credentials, quota, endpoint health, model availability, parameter/capability mismatch, container injection, or product behavior. Use `.agents/knowledge/development-provider-preferences.md#失败和-fallback-分类` for the categories.
 
 ## Minimal evidence labels
 
