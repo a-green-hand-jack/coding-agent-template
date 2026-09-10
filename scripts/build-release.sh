@@ -27,8 +27,6 @@ test -f "$out/runtime-package/package.json" || {
 }
 sed -i.bak "s/AGENT_NAME=\"\${AGENT_NAME:-hewo}\"/AGENT_NAME=\"\${AGENT_NAME:-$name}\"/; s/__AGENT_NAME__/$name/g; s#__RELEASE_URL__#$release_url#g" "$out/install.sh"
 rm -f "$out/install.sh.bak"
-cp "$root/distribution/pi-invocation.sh" "$out/pi-invocation.sh"
-chmod +x "$out/pi-invocation.sh"
 chmod +x "$out/install.sh"
 printf '{"agent":"%s","version":"%s","definition":"src/%s/runtime","provider":"runtime-injected","backend":"pi","pi":"%s","development_resources":"excluded"}\n' \
   "$name" "$version" "$name" "${PI_VERSION:-latest}" > "$out/release-manifest.json"

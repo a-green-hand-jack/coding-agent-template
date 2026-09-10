@@ -22,10 +22,9 @@ skills as instructions for the development coding agent. State that the current
 task is **Phase 0: Initialize** and stop after the initialization report; do not
 infer authorization for Phase 1.
 
-The installed command is normally the scaffold name. Choose a stable name that
-matches `^[a-zA-Z0-9][a-zA-Z0-9._-]*$`; do not plan on a runtime
-`--scaffold` registry because the launcher currently selects one installed
-scaffold at a time.
+Choose a stable scaffold name matching `^[a-zA-Z0-9][a-zA-Z0-9._-]*$`.
+Users load its installed runtime-package using pi `-e`; do not create a product
+command or a runtime scaffold registry.
 
 ## 2. Create the Phase 0 scaffold
 
@@ -57,8 +56,8 @@ A non-pi backend configuration file must not exist in the runtime;
 Keep product resources self-contained under `src/<agent_name>/`. Development
 guidance belongs in scoped `AGENTS.md` files or `.agents/`, never in runtime
 prompts. A product tool may live under `runtime/tools/` with its own
-`pyproject.toml`; the installer creates its isolated `uv` environment and the
-launcher places that environment on `PATH`. Do not make it depend on the root
+`pyproject.toml`; the installer creates its isolated `uv` environment. Document
+the user's explicit tools `PATH`; set the matching container PATH. Do not make it depend on the root
 development `.venv`.
 
 Before treating the result as a downstream repository, remove or replace
@@ -85,13 +84,14 @@ Do not bake a provider or model into the scaffold. The backend is pi and only
 pi; the provider and model are chosen per run:
 
 ```bash
-hewo --provider <provider> --model <model> "<task>"
+pi --no-session --no-context-files --no-extensions --no-skills \
+  --no-prompt-templates --no-themes -e <installed-runtime-package> \
+  --provider <provider> --model <model> --print "<task>"
 ```
 
-For a downstream Agent, replace `hewo` with its installed command. `--backend`
-accepts only `pi` (alias `pi-coding-agent`) and errors on anything else, so a
-second backend is never a silent fallback. Never copy auth stores into the
-scaffold.
+This is the user command, not permission for the development agent to test
+product behavior on the host. Use the Docker E2E helper below. pi is the only
+backend; users install it themselves. Never copy auth stores into the scaffold.
 
 ## 4. Validate the Phase 0 infrastructure boundary
 
@@ -164,6 +164,8 @@ Build only the selected Agent's runtime payload:
 `AGENT_BACKENDS` is accepted only as `pi` and is rejected otherwise, so leave
 it unset.
 
-Inspect the archive and confirm it contains runtime definition, launcher, and
-installer only. It must not contain `AGENTS.md`, `.agents/`, development
-directories, package metadata, credentials, or raw provider sessions.
+Inspect the archive and confirm it contains runtime-package, release metadata
+and installer only. It must not contain `AGENTS.md`, `.agents/`, development
+directories, credentials, or raw provider sessions. Verify the archive-only user
+installation and the same pi command with `docker/run-hewo-e2e.sh --release`
+using the approved credential flags; do not introduce a release wrapper.

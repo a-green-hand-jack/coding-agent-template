@@ -25,10 +25,10 @@ Rules:
 
 - Every path is a normalized relative path under this directory. Absolute
   paths, `..` traversal, empty names and shell metacharacters are rejected by
-  the launcher, not merely discouraged.
-- `default_tools` is a strict allowlist that pi applies to built-in **and**
-  extension tools, so a new extension tool must be added there or it will be
-  silently unavailable.
+  definition validation 与 runtime extension，不能只依赖文档约定。
+- runtime extension 从 manifest 消费 identity/context 和 `default_tools`，并通过
+  pi API 对内建及 extension tools 应用严格白名单。新增工具必须同时声明；用户和
+  容器均用 pi 原生 `-e <installed-runtime-package>` 加载，不维护独立产品命令。
 - No npm lifecycle scripts. The runtime declares no dependencies; if a
   downstream Agent adds any, install them frozen and with scripts disabled.
 - `capabilities` is empty and `network` is `deny` by default. Widening either

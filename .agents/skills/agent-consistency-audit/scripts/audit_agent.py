@@ -460,9 +460,9 @@ class Audit:
         except (OSError, tarfile.TarError) as exc:
             self.add("ERROR", "invalid-release", archive, f"cannot read release archive: {exc}")
             return
-        if not any(path.rstrip("/").endswith("/agent-definition") for path in names):
-            self.add("ERROR", "release-definition", archive, "release has no agent-definition directory")
-        for required in ("launcher", "install.sh"):
+        if not any(path.endswith("/runtime-package/package.json") for path in names):
+            self.add("ERROR", "release-definition", archive, "release has no runtime-package manifest")
+        for required in ("install.sh", "release-manifest.json"):
             if not any(path.endswith(f"/{required}") or path == required for path in names):
                 self.add("ERROR", "release-file", archive, f"release is missing {required}")
         for name in names:

@@ -5,8 +5,8 @@
  * lifecycle hooks. Capability gating comes from policy.ts (default deny), the
  * clock is pinned by HEWO_CLOCK_FIXED so acceptance is deterministic, and the
  * only thing ever written to the console is a single secret-free posture line.
- * The factory never throws: on any setup failure it registers nothing and says
- * once that the extension is inert.
+ * Runtime manifest validation happens before registration; invalid resources
+ * fail extension loading instead of silently dropping the product definition.
  */
 
 import type {
@@ -18,6 +18,7 @@ import type {
   ToolCallEvent,
   ToolSpec,
 } from './pi-api.ts';
+import { loadRuntimeManifest } from './manifest.ts';
 import type { EnvLike, PolicyDecision } from './policy.ts';
 import { decide, describePosture } from './policy.ts';
 import { listAgentDefinitions, runChain, runParallel, runSingle } from './subagent.ts';
@@ -166,7 +167,7 @@ const EMPTY_SCHEMA = {
   additionalProperties: false,
 };
 
-const SUBAGENT_SCHEMA = {
+const SUBAGENT_SCHEMA: ToolSpec['parameters'] = {
   type: 'object' as const,
   properties: {
     shape: {
@@ -329,7 +330,7 @@ function toolNameOf(event: SessionStartEvent | ToolCallEvent): string | undefine
   return undefined;
 }
 
-function registerHooks(api: ExtensionAPI): void {
+function registerHooks(api: ExtensionAPI, runtime: ReturnType<typeof loadRuntimeManifest>): void {
   if (typeof api.on !== 'function') {
     emit(api, 'hewo: lifecycle hooks unavailable on this API surface; skipping hooks');
     return;
@@ -337,6 +338,8 @@ function registerHooks(api: ExtensionAPI): void {
 
   try {
     api.on('session_start', () => {
+      // Intersect, never re-enable tools the user disabled with native pi flags.
+      api.setActiveTools(api.getActiveTools().filter((name) => runtime.tools.has(name)));
       emit(api, postureLine());
     });
   } catch {
@@ -347,9 +350,10 @@ function registerHooks(api: ExtensionAPI): void {
     api.on('tool_call', (event) => {
       const name = toolNameOf(event);
       if (name === undefined) return;
+      if (!runtime.tools.has(name)) return { block: true, reason: 'Tool is not in agent.default_tools' };
       const decision = gateTool(name);
       if (decision.allowed) return;
-      return { allow: false, reason: decision.reason, code: decision.code };
+      return { block: true, reason: decision.reason, code: decision.code };
     });
   } catch {
     emit(api, 'hewo: tool_call hook could not be registered; skipping it');
@@ -357,6 +361,10 @@ function registerHooks(api: ExtensionAPI): void {
 }
 
 const factory: ExtensionFactory = async (api: ExtensionAPI): Promise<void> => {
+  const runtime = loadRuntimeManifest();
+  api.on('before_agent_start', (event) => ({
+    systemPrompt: `${event.systemPrompt}\n\n${runtime.prompt}`,
+  }));
   try {
     if (typeof api.registerTool === 'function') {
       for (const tool of buildTools(api)) {
@@ -391,7 +399,7 @@ const factory: ExtensionFactory = async (api: ExtensionAPI): Promise<void> => {
       emit(api, 'hewo: registerCommand unavailable on this API surface; no command registered');
     }
 
-    registerHooks(api);
+    registerHooks(api, runtime);
   } catch {
     // Never throw out of the factory: an inert extension is recoverable, a
     // failed load is not.

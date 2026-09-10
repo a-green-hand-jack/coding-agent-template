@@ -79,6 +79,10 @@ export interface CommandSpec {
 /** Lifecycle events this runtime subscribes to. Others may exist; ignore them. */
 export type ExtensionEventName = 'session_start' | 'tool_call';
 
+export interface BeforeAgentStartEvent {
+  systemPrompt: string;
+}
+
 export interface SessionStartEvent {
   sessionId?: string;
   cwd?: string;
@@ -92,11 +96,10 @@ export interface ToolCallEvent {
 
 /**
  * A hook may return nothing (observe only) or a decision object (intercept).
- * A returned `allow: false` is this runtime's refusal shape; if pi ignores the
- * return value the refusal is still surfaced by the tool handler itself.
+ * pi's official tool_call refusal shape is `block: true`.
  */
 export interface HookDecision {
-  allow: boolean;
+  block: boolean;
   reason?: string;
   code?: string;
 }
@@ -118,7 +121,12 @@ export interface SessionStateAccessor {
 export interface ExtensionAPI {
   registerTool?: (spec: ToolSpec) => unknown;
   registerCommand?: (name: string, spec: CommandSpec) => unknown;
-  on?: (event: ExtensionEventName, handler: EventHandler) => unknown;
+  on: {
+    (event: ExtensionEventName, handler: EventHandler): unknown;
+    (event: 'before_agent_start', handler: (event: BeforeAgentStartEvent) => { systemPrompt: string }): unknown;
+  };
+  getActiveTools(): string[];
+  setActiveTools(names: string[]): void;
   sessionState?: SessionStateAccessor;
   getSessionState?: () => SessionStateAccessor | Record<string, unknown> | undefined;
   log?: (message: string) => void;

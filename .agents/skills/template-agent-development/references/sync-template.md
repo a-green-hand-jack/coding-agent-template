@@ -134,7 +134,7 @@ After applying changes:
 - keep `runtime/package.json` valid; a non-pi backend configuration file must
   not exist, and `validate-definition.sh` rejects one;
 - preserve independent scaffold/backend/provider layering;
-- review launchers, Docker, installers, and tool environments for credential
+- review native pi package loading, Docker, installers, and tool environments for credential
   exposure and runtime `PATH` behavior;
 - treat `src/hewo/` as a renamed reference scaffold, not as a product to ship
   unchanged;

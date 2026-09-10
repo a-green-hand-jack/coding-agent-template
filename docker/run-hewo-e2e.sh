@@ -1,267 +1,210 @@
 #!/usr/bin/env bash
+# 开发与用户执行同一条 pi 原生命令；此文件只负责构建、注入与证据。
 set -euo pipefail
-# Anchored like every sibling script: the build and freeze paths below are
-# repository-relative and must not depend on the caller's directory.
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 name="${AGENT_NAME:-hewo}"
 backend="${AGENT_BACKEND:-${HEWO_BACKEND:-pi}}"
 provider="${LLM_PROVIDER:-}"
 model="${LLM_MODEL:-}"
-api_key_env=""
-api_key_stdin=false
-env_file="${ENV_FILE:-.env}"
-bundle=""
-workspace="${E2E_WORKSPACE:-}"
 pi_auth_file="${PI_AUTH_FILE:-}"
 pi_models_file="${PI_MODELS_FILE:-}"
-no_build=false
-image=""
+workspace="${E2E_WORKSPACE:-}"
+api_key_env=""; api_key_stdin=false; bundle=""
+image=""; no_build=false; release_mode=false; artifact=""
 allow_unauthenticated=false
-release_mode=false
-user_path_mode=false
-credential_sources=()
-
 usage() {
-  printf '%s\n' "Usage: $0 [options] <task>" "" \
-    "Options:" \
-    "  --backend NAME        Backend: pi only (alias: pi-coding-agent)" \
-    "  --provider NAME       pi provider name (required)" \
-    "  --model NAME          pi model pattern (required)" \
-    "  --api-key-env NAME    Read the provider key from this host variable" \
-    "  --api-key-stdin       Read the provider key from stdin (never shell history)" \
-    "  --env-file PATH       Load additional variables from PATH" \
-    "  --bundle PATH         Mount a read-only provider bundle" \
-    "  --pi-auth-file PATH   Mount one pi auth store read-only" \
-    "  --pi-models-file PATH Mount one pi model catalog read-only" \
-    "  --workspace PATH      Mount PATH as the clean container workspace" \
-    "  --image REF           Run this image tag or ID; never build" \
-    "  --no-build            Reuse the existing image for this Agent" \
-    "  --allow-unauthenticated Run without a provider credential (infrastructure-only)" \
-    "  --release             Validate the packaged release user path (no provider)" \
-    "  --user-path           Alias for --release" \
-    "  --agent NAME          Build and run a different src/<agent>" \
-    "  -h, --help            Show this help"
+  printf '%s\n' "Usage: $0 [options] <task or pi arguments>" \
+    '  --agent NAME           Agent name (default hewo)' \
+    '  --backend NAME         pi only (alias pi-coding-agent)' \
+    '  --provider NAME        Actual pi provider (required for model requests)' \
+    '  --model NAME           Actual pi model ID (required for model requests)' \
+    '  --pi-auth-file PATH    Mount one auth store read-only' \
+    '  --pi-models-file PATH  Mount a model catalog read-only' \
+    '  --api-key-env NAME     Read one host key variable' \
+    '  --api-key-stdin        Read a key from stdin' \
+    '  --bundle PATH          Mount a provider bundle read-only' \
+    '  --workspace PATH       Mount the task workspace' \
+    '  --release, --user-path Install only from a release artifact, then run pi' \
+    '  --artifact PATH        Existing release tar.gz (implies --release)' \
+    '  --image REF            Reuse an image; resolve and run its immutable ID' \
+    '  --no-build             Reuse <agent>:e2e' \
+    '  --allow-unauthenticated Infrastructure-only --help/--version checks' \
+    '  --                     End helper options, pass remaining arguments to pi'
 }
-
 while (($#)); do
   case "$1" in
-    --backend) backend="${2:?missing value for --backend}"; shift 2 ;;
-    --provider) provider="${2:?missing value for --provider}"; shift 2 ;;
-    --model) model="${2:?missing value for --model}"; shift 2 ;;
-    --api-key-env) api_key_env="${2:?missing value for --api-key-env}"; shift 2 ;;
+    --agent) name="${2:?missing agent}"; shift 2 ;;
+    --backend) backend="${2:?missing backend}"; shift 2 ;;
+    --provider) provider="${2:?missing provider}"; shift 2 ;;
+    --model) model="${2:?missing model}"; shift 2 ;;
+    --pi-auth-file) pi_auth_file="${2:?missing auth path}"; shift 2 ;;
+    --pi-models-file) pi_models_file="${2:?missing models path}"; shift 2 ;;
+    --api-key-env) api_key_env="${2:?missing variable}"; shift 2 ;;
     --api-key-stdin) api_key_stdin=true; shift ;;
-    --env-file) env_file="${2:?missing value for --env-file}"; shift 2 ;;
-    --bundle) bundle="${2:?missing value for --bundle}"; shift 2 ;;
-    --pi-auth-file) pi_auth_file="${2:?missing value for --pi-auth-file}"; shift 2 ;;
-    --pi-models-file) pi_models_file="${2:?missing value for --pi-models-file}"; shift 2 ;;
-    --workspace) workspace="${2:?missing value for --workspace}"; shift 2 ;;
-    --image) image="${2:?missing value for --image}"; shift 2 ;;
+    --bundle) bundle="${2:?missing bundle}"; shift 2 ;;
+    --workspace) workspace="${2:?missing workspace}"; shift 2 ;;
+    --release|--user-path) release_mode=true; shift ;;
+    --artifact) artifact="${2:?missing artifact}"; release_mode=true; shift 2 ;;
+    --image) image="${2:?missing image}"; shift 2 ;;
     --no-build) no_build=true; shift ;;
     --allow-unauthenticated) allow_unauthenticated=true; shift ;;
-    --release) release_mode=true; shift ;;
-    --user-path) user_path_mode=true; shift ;;
-    --agent) name="${2:?missing value for --agent}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     --) shift; break ;;
-    -*) printf 'unknown option: %s\n' "$1" >&2; usage >&2; exit 2 ;;
+    -*) printf 'unknown option: %s\n' "$1" >&2; exit 2 ;;
     *) break ;;
   esac
 done
-
-# pi is the only supported backend. An explicit request for anything else is a
-# hard error, never a silent coercion to pi.
-case "$backend" in
-  pi|pi-coding-agent) backend="pi" ;;
-  *)
-    printf 'unsupported backend: %s (this Agent supports pi only)\n' "$backend" >&2
-    exit 2
-    ;;
-esac
-# No baked provider/model defaults: this public template never assumes an
-# operator's provider. Authenticated runs must pin both explicitly.
-if [[ "$allow_unauthenticated" != true ]]; then
-  [[ -n "$provider" ]] || { printf '%s\n' '--provider is required for an authenticated run' >&2; exit 2; }
-  [[ -n "$model" ]] || { printf '%s\n' '--model is required for an authenticated run' >&2; exit 2; }
+fail() { printf '%s\n' "$*" >&2; exit 2; }
+[[ "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9._-]*$ ]] || fail 'invalid agent name'
+case "$backend" in pi|pi-coding-agent) backend=pi ;; *) fail "unsupported backend: $backend" ;; esac
+(($#)) || { usage >&2; exit 2; }
+# Do not let native arguments silently override the metadata or the package boundary.
+for arg in "$@"; do
+  case "$arg" in
+    --provider|--provider=*|--model|--model=*|--api-key|--api-key=*|-e|--extension|--extension=*)
+      fail "use helper options for provider/model/credentials; runtime loading is fixed: $arg" ;;
+  esac
+done
+if [[ "$allow_unauthenticated" == true ]]; then
+  [[ $# == 1 && ( "$1" == --help || "$1" == --version ) ]] || fail 'unauthenticated mode only supports -- --help or -- --version'
+else
+  [[ -n "$provider" && -n "$model" ]] || fail '--provider and --model are required'
 fi
-provider_key_prefix="$(printf '%s' "$provider" | tr '[:lower:]-.' '[:upper:]__')"
-
-if [[ "$release_mode" == true || "$user_path_mode" == true ]]; then
-  [[ "$release_mode" == true && "$user_path_mode" != true ]] || :
-  release_args=("$name" "${RELEASE_VERSION:-0.1.0}" --backend "$backend" --provider "$provider" --model "$model")
-  [[ -n "$api_key_env" ]] && release_args+=(--api-key-env "$api_key_env")
-  [[ "$api_key_stdin" == true ]] && release_args+=(--api-key-stdin)
-  [[ -n "$bundle" ]] && release_args+=(--bundle "$bundle")
-  [[ -n "$pi_auth_file" ]] && release_args+=(--pi-auth-file "$pi_auth_file")
-  [[ -n "$pi_models_file" ]] && release_args+=(--pi-models-file "$pi_models_file")
-  [[ "$allow_unauthenticated" == true ]] && release_args+=(--allow-unauthenticated)
-  release_args+=("$@")
-  exec "$root/scripts/run-release-e2e.sh" "${release_args[@]}"
-fi
-
-task=()
-while (($#)); do task+=("$1"); shift; done
-if ((${#task[@]} == 0)); then usage >&2; exit 2; fi
-
-env_args=()
-env_args+=(--env "AGENT_BACKEND=$backend" --env "LLM_PROVIDER=$provider" --env "LLM_MODEL=$model")
-if [[ -n "${LLM_VARIANT:-}" ]]; then
-  env_args+=(--env "LLM_VARIANT=$LLM_VARIANT")
-fi
-if [[ -n "${AGENT_OUTPUT_FORMAT:-}" ]]; then
-  env_args+=(--env "AGENT_OUTPUT_FORMAT=$AGENT_OUTPUT_FORMAT")
-fi
+[[ "$release_mode" != true || ( -z "$image" && "$no_build" != true ) ]] || fail '--release cannot reuse an image: it must install the artifact'
+credential_sources=(); env_args=(); mount_args=()
+key_sources=0
+[[ -z "$api_key_env" ]] || key_sources=$((key_sources + 1))
+[[ "$api_key_stdin" != true ]] || key_sources=$((key_sources + 1))
+[[ -z "$bundle" ]] || key_sources=$((key_sources + 1))
+((key_sources <= 1)) || fail 'select only one API key source'
 if [[ -n "$api_key_env" ]]; then
-  [[ -n "${!api_key_env:-}" ]] || { printf '%s is not set\n' "$api_key_env" >&2; exit 2; }
-  env_args+=(--env "${provider_key_prefix}_API_KEY=${!api_key_env}")
+  [[ "$api_key_env" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || fail 'invalid key variable name'
+  [[ -n "${!api_key_env:-}" ]] || fail "$api_key_env is not set"
+  export E2E_PROVIDER_KEY="${!api_key_env}"
+  env_args+=(--env E2E_PROVIDER_KEY)
   credential_sources+=("--api-key-env $api_key_env")
 elif [[ "$api_key_stdin" == true ]]; then
-  IFS= read -r api_key
-  [[ -n "$api_key" ]] || { printf 'provider key from stdin is empty\n' >&2; exit 2; }
-  env_args+=(--env "${provider_key_prefix}_API_KEY=$api_key")
-  credential_sources+=("--api-key-stdin")
-else
-  key_variable="${provider_key_prefix}_API_KEY"
-  if [[ -n "${!key_variable:-}" ]]; then
-    env_args+=(--env "$key_variable=${!key_variable}")
-    credential_sources+=("env:$key_variable")
-  fi
-fi
-
-# Fail closed: a task run needs an injected provider credential. Without one,
-# the run is infrastructure-only at best and must not be reported as E2E.
-if [[ "$allow_unauthenticated" != true ]]; then
-  guard_key_variable="${provider_key_prefix}_API_KEY"
-  has_credential=false
-  [[ "${#credential_sources[@]}" -gt 0 ]] && has_credential=true
-  [[ -n "$bundle" ]] && has_credential=true
-  [[ -n "$pi_auth_file" ]] && has_credential=true
-  [[ -n "${!guard_key_variable:-}" ]] && has_credential=true
-  if [[ -f "$env_file" ]] && grep -qE '^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*(_API_KEY|_AUTH_TOKEN)=' "$env_file"; then
-    has_credential=true
-    credential_sources+=("--env-file $env_file")
-  fi
-  if [[ "$has_credential" != true ]]; then
-    printf '%s\n' \
-      'error: no provider credential injected; a task run cannot be E2E evidence.' \
-      'Inject one of:' \
-      '  --api-key-env NAME | --api-key-stdin | --bundle PATH' \
-      '  --pi-auth-file PATH' \
-      "or export $guard_key_variable." \
-      'Pass --allow-unauthenticated only for infrastructure-only smokes' \
-      '(build/--help).' >&2
-    exit 2
-  fi
-fi
-
-# One resolution, used for both the build decision and the container run, and
-# deliberately placed AFTER the credential guard: an invocation that cannot
-# produce evidence must fail before it spends minutes on a build.
-#
-# Containers run by image ID, never by tag. A tag is a mutable pointer, so a
-# concurrent build could move it between resolution and run, and the evidence
-# would then describe an image that never served the request.
-snapshot_root=""
-# The guard must not be the last command: a false [[ ]] makes the EXIT trap
-# return 1, and bash then reports that as the script's exit status even
-# though the run succeeded.
-cleanup_snapshot() { [[ -n "$snapshot_root" ]] && rm -rf "$snapshot_root"; return 0; }
-trap cleanup_snapshot EXIT
-
-if [[ -n "$image" ]]; then
-  image_ref="$image"
-elif [[ "$no_build" == true ]]; then
-  image_ref="$name:e2e"
-else
-  # Standalone use: freeze the worktree now, so later edits cannot change what
-  # a long run is testing, then build from that frozen copy.
-  snapshot_root="$(mktemp -d "${TMPDIR:-/tmp}/agent-e2e.XXXXXX")"
-  "$root/scripts/freeze-agent-run.sh" --agent "$name" --into "$snapshot_root/snapshot" >/dev/null
-  while IFS='=' read -r key value; do
-    [[ "$key" == AGENT_IMAGE_ID ]] && image_ref="$value"
-  done < <("$root/scripts/build-agent-image.sh" --context "$snapshot_root/snapshot")
-fi
-[[ -n "${image_ref:-}" ]] || { printf 'could not resolve an image to run\n' >&2; exit 2; }
-
-# pi provider endpoint overrides (not credentials): pass through when set.
-passthrough_envs=(OPENAI_BASE_URL ANTHROPIC_BASE_URL)
-for passthrough_env in "${passthrough_envs[@]}"; do
-  if [[ -n "${!passthrough_env:-}" ]]; then
-    env_args+=(--env "$passthrough_env=${!passthrough_env}")
-  fi
-done
-
-bundle_args=()
-if [[ -n "$bundle" ]]; then
-  [[ -f "$bundle/manifest.json" && -f "$bundle/credential" ]] || { echo "invalid provider bundle" >&2; exit 2; }
-  bundle_key_env="$(sed -n 's/.*"credential_env":"\([A-Za-z_][A-Za-z0-9_]*\)".*/\1/p' "$bundle/manifest.json")"
-  [[ -n "$bundle_key_env" ]] || { echo "invalid provider bundle manifest" >&2; exit 2; }
-  env_args+=(--env "$bundle_key_env=$(<"$bundle/credential")")
-  bundle_args=(--mount "type=bind,src=$(realpath "$bundle"),dst=/run/provider-bundle,readonly")
+  IFS= read -r E2E_PROVIDER_KEY || [[ -n "${E2E_PROVIDER_KEY:-}" ]]
+  [[ -n "${E2E_PROVIDER_KEY:-}" ]] || fail 'provider key from stdin is empty'
+  export E2E_PROVIDER_KEY
+  env_args+=(--env E2E_PROVIDER_KEY)
+  credential_sources+=(--api-key-stdin)
+elif [[ -n "$bundle" ]]; then
+  [[ -f "$bundle/manifest.json" && -f "$bundle/credential" ]] || fail 'invalid provider bundle'
+  python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); assert m.get("provider")==sys.argv[2] and m.get("model")==sys.argv[3], "bundle provider/model mismatch"' "$bundle/manifest.json" "$provider" "$model"
+  mount_args+=(--mount "type=bind,src=$(realpath "$bundle"),dst=/run/provider-bundle,readonly")
   credential_sources+=("--bundle $bundle")
 fi
-
-workspace_args=()
-if [[ -n "$workspace" ]]; then
-  [[ -d "$workspace" ]] || { echo "workspace directory does not exist: $workspace" >&2; exit 2; }
-  workspace_args=(--mount "type=bind,src=$(realpath "$workspace"),dst=/workspace")
-fi
-
-pi_auth_args=()
 if [[ -n "$pi_auth_file" ]]; then
-  [[ -f "$pi_auth_file" ]] || { echo "pi auth file does not exist: $pi_auth_file" >&2; exit 2; }
-  pi_auth_args=(--env PI_AUTH_STORE=1 --mount "type=bind,src=$(realpath "$pi_auth_file"),dst=/root/.pi/agent/auth.json,readonly")
+  [[ -f "$pi_auth_file" ]] || fail 'pi auth file does not exist'
+  mount_args+=(--mount "type=bind,src=$(realpath "$pi_auth_file"),dst=/root/.pi/agent/auth.json,readonly")
   credential_sources+=("--pi-auth-file $pi_auth_file")
-  if [[ -z "$pi_models_file" ]]; then
-    candidate_models_file="$(dirname "$pi_auth_file")/models.json"
-    [[ -f "$candidate_models_file" ]] && pi_models_file="$candidate_models_file"
+  if [[ -z "$pi_models_file" && -f "$(dirname "$pi_auth_file")/models.json" ]]; then
+    pi_models_file="$(dirname "$pi_auth_file")/models.json"
   fi
 fi
-
-# The model catalog is a provider DEFINITION, not a credential, so it must be
-# mountable on its own. A custom provider whose key arrives through
-# --api-key-env or --env-file still needs its baseUrl from this catalog.
 if [[ -n "$pi_models_file" ]]; then
-  [[ -f "$pi_models_file" ]] || { echo "pi models file does not exist: $pi_models_file" >&2; exit 2; }
-  pi_auth_args+=(--mount "type=bind,src=$(realpath "$pi_models_file"),dst=/root/.pi/agent/models.json,readonly")
+  [[ -f "$pi_models_file" ]] || fail 'pi models file does not exist'
+  mount_args+=(--mount "type=bind,src=$(realpath "$pi_models_file"),dst=/root/.pi/agent/models.json,readonly")
 fi
-if [[ -n "$pi_auth_file" || -n "$pi_models_file" ]]; then
-  pi_auth_args+=(--env PI_CODING_AGENT_DIR=/root/.pi/agent)
+[[ "$allow_unauthenticated" == true || ${#credential_sources[@]} -gt 0 ]] || fail 'no provider credential injected: use --pi-auth-file, --api-key-env, --api-key-stdin or --bundle'
+if [[ -n "$workspace" ]]; then
+  [[ -d "$workspace" ]] || fail 'workspace directory does not exist'
+  mount_args+=(--mount "type=bind,src=$(realpath "$workspace"),dst=/workspace")
 fi
-
-env_file_args=()
-if [[ -f "$env_file" ]]; then
-  env_file_args=(--env-file "$env_file")
+for var in OPENAI_BASE_URL ANTHROPIC_BASE_URL; do
+  [[ -z "${!var:-}" ]] || env_args+=(--env "$var")
+done
+scratch=""
+cleanup() { if [[ -n "$scratch" ]]; then rm -rf -- "$scratch"; fi; }
+trap cleanup EXIT
+install_mode=current
+if [[ "$release_mode" == true ]]; then
+  install_mode=release
+  scratch="$(mktemp -d "${TMPDIR:-/tmp}/agent-e2e.XXXXXX")"
+  if [[ -z "$artifact" ]]; then
+    "$root/scripts/freeze-agent-run.sh" --agent "$name" --into "$scratch/snapshot" >/dev/null
+    version="${RELEASE_VERSION:-0.1.0}"
+    "$scratch/snapshot/scripts/build-release.sh" "$name" "$version" >&2
+    artifact="$scratch/snapshot/release/$name-$version.tar.gz"
+  fi
+  [[ -f "$artifact" ]] || fail 'release artifact does not exist'
+  mkdir "$scratch/context"
+  # Validate/extract once; parity compares precisely the payload installed below.
+  python3 - "$artifact" "$scratch/context" "${scratch}/snapshot/src/$name/runtime" <<'PY'
+import hashlib, pathlib, sys, tarfile
+archive, destination, source = map(pathlib.Path, sys.argv[1:])
+with tarfile.open(archive, 'r:gz') as tf:
+    for m in tf.getmembers():
+        p = pathlib.PurePosixPath(m.name)
+        if p.is_absolute() or '..' in p.parts or m.issym() or m.islnk() or not (m.isdir() or m.isfile()):
+            raise SystemExit('unsafe release member')
+        if set(p.parts) & {'AGENTS.md', 'CLAUDE.md', '.agents', 'development', '.env', 'auth.json'}:
+            raise SystemExit('development/credential file in release')
+    tf.extractall(destination)
+roots = list(destination.glob('*/runtime-package'))
+if len(roots) != 1 or not (roots[0].parent / 'install.sh').is_file():
+    raise SystemExit('release must contain one installer and runtime-package')
+roots[0].parent.rename(destination / 'payload')
+def files(root):
+    return {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in root.rglob('*') if p.is_file() and not set(p.relative_to(root).parts) &
+            {'AGENTS.md', 'CLAUDE.md', 'node_modules', '__pycache__', 'build'}
+            and not any(x.endswith('.egg-info') for x in p.parts)}
+if source.is_dir():
+    if files(source) != files(destination / 'payload/runtime-package'):
+        raise SystemExit('source/release artifact parity failed')
+    print('artifact parity: OK', file=sys.stderr)
+print('release archive structure: OK', file=sys.stderr)
+PY
+  # A clean dependency image receives only the extracted archive, never source.
+  cat > "$scratch/context/Dockerfile" <<'DOCKER'
+FROM node:22-bookworm-slim
+ARG PI_PACKAGE=@earendil-works/pi-coding-agent
+ARG PI_VERSION=latest
+ARG AGENT_NAME=hewo
+RUN apt-get update && apt-get install -y --no-install-recommends bash ca-certificates python3 python3-pip && rm -rf /var/lib/apt/lists/*
+RUN python3 -m pip install --break-system-packages --no-cache-dir uv && npm install --global "${PI_PACKAGE}@${PI_VERSION}" --ignore-scripts --no-audit --no-fund
+COPY payload /opt/release
+RUN PREFIX=/opt/install AGENT_NAME="$AGENT_NAME" /opt/release/install.sh && test -f "/opt/install/lib/$AGENT_NAME/runtime-package/package.json" && diff -r --exclude=node_modules /opt/release/runtime-package "/opt/install/lib/$AGENT_NAME/runtime-package" && rm -rf /opt/release && mkdir -p /workspace /root/.pi/agent
+WORKDIR /workspace
+DOCKER
+  docker build --build-arg "AGENT_NAME=$name" --build-arg "PI_PACKAGE=${PI_PACKAGE:-@earendil-works/pi-coding-agent}" --build-arg "PI_VERSION=${PI_VERSION:-latest}" --iidfile "$scratch/image-id" "$scratch/context" >&2
+  image="$(<"$scratch/image-id")"
+elif [[ -z "$image" && "$no_build" != true ]]; then
+  scratch="$(mktemp -d "${TMPDIR:-/tmp}/agent-e2e.XXXXXX")"
+  "$root/scripts/freeze-agent-run.sh" --agent "$name" --into "$scratch/snapshot" >/dev/null
+  build_result="$("$root/scripts/build-agent-image.sh" --context "$scratch/snapshot")"
+  while IFS='=' read -r key value; do [[ "$key" != AGENT_IMAGE_ID ]] || image="$value"; done <<< "$build_result"
+else
+  image="${image:-$name:e2e}"
 fi
-
-# Evidence line on stderr: stdout stays the agent transcript. Only credential
-# metadata (flag plus path or variable name) is printed, never a key value.
-credential_source="none"
-if ((${#credential_sources[@]} > 0)); then
-  credential_source="$(printf '%s,' "${credential_sources[@]}")"
-  credential_source="${credential_source%,}"
-fi
-# Intent is printed before the run; the MODE is decided by the outcome, never
-# by the presence of a credential flag. A named credential source that still
-# fails to answer is blocked, not agent-behavior.
-printf 'run: backend=%s provider=%s model=%s credential_source=%s image=%s\n' \
-  "$backend" "$provider" "$model" "$credential_source" "$image_ref" >&2
-
-tty_args=()
-if [[ -t 0 && -t 1 ]]; then
-  tty_args=(-it)
-fi
+image_id="$(docker image inspect --format '{{.Id}}' "$image")"
+[[ "$image_id" =~ ^sha256:[0-9a-f]{64}$ ]] || fail 'image did not resolve to an immutable ID'
+credential_source=none
+if ((${#credential_sources[@]})); then credential_source="$(IFS=,; printf '%s' "${credential_sources[*]}")"; fi
+pi_args=(--no-session --no-context-files --no-extensions --no-skills --no-prompt-templates --no-themes -e "/opt/install/lib/$name/runtime-package")
+[[ -z "$provider" ]] || pi_args+=(--provider "$provider")
+[[ -z "$model" ]] || pi_args+=(--model "$model")
+[[ -z "${LLM_VARIANT:-}" ]] || pi_args+=(--thinking "$LLM_VARIANT")
+[[ -z "${AGENT_OUTPUT_FORMAT:-}" ]] || pi_args+=(--mode "$AGENT_OUTPUT_FORMAT")
+pi_args+=(--print "$@")
+printf 'run: backend=%s provider=%s model=%s credential_source=%s image=%s install=%s\n' "$backend" "$provider" "$model" "$credential_source" "$image_id" "$install_mode" >&2
 set +e
-docker run --rm "${tty_args[@]}" "${env_file_args[@]}" "${env_args[@]}" "${bundle_args[@]}" "${workspace_args[@]}" "${pi_auth_args[@]}" "$image_ref" "${task[@]}"
+docker run --rm "${env_args[@]}" "${mount_args[@]}" \
+  --env PI_CODING_AGENT_DIR=/root/.pi/agent \
+  --env "PATH=/opt/install/lib/$name/environment/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+  --entrypoint bash "$image_id" -c '
+    key_args=()
+    if [[ -f /run/provider-bundle/credential ]]; then E2E_PROVIDER_KEY="$(</run/provider-bundle/credential)"; fi
+    if [[ -n "${E2E_PROVIDER_KEY:-}" ]]; then key_args=(--api-key "$E2E_PROVIDER_KEY"); fi
+    unset E2E_PROVIDER_KEY
+    exec pi "${key_args[@]}" "$@"
+  ' pi "${pi_args[@]}"
 run_status=$?
 set -e
-
-if [[ "$credential_source" == none ]]; then
-  run_mode="infrastructure-only"
-elif ((run_status == 0)); then
-  run_mode="agent-behavior"
-else
-  run_mode="blocked"
-fi
-printf 'evidence: backend=%s provider=%s model=%s credential_source=%s image=%s exit=%s mode=%s\n' \
-  "$backend" "$provider" "$model" "$credential_source" "$image_ref" "$run_status" "$run_mode" >&2
+run_mode=blocked
+if [[ "$allow_unauthenticated" == true || " $* " == *' --help '* || " $* " == *' --version '* ]]; then run_mode=infrastructure-only
+elif ((run_status == 0)); then run_mode=agent-behavior; fi
+printf 'evidence: backend=%s provider=%s model=%s credential_source=%s image=%s install=%s exit=%s mode=%s\n' "$backend" "$provider" "$model" "$credential_source" "$image_id" "$install_mode" "$run_status" "$run_mode" >&2
 exit "$run_status"

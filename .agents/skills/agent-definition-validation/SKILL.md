@@ -27,7 +27,7 @@ For broad cross-file freshness and contradiction candidates, run
 responsible for runtime/provider E2E evidence and release-boundary confirmation.
 
 Before provider-backed behavior testing, run `agent-infrastructure-health` when
-the installer, launcher, Docker image, backend packages, or runtime tools have
+the installer, package loading, Docker image, backend packages, or runtime tools have
 changed. It proves the execution foundation is usable without handling provider
 credentials.
 
@@ -39,7 +39,7 @@ credentials.
    ./scripts/validate-definition.sh <agent_name>
    ```
 
-2. Build the clean Docker image when runtime, tools, launcher, dependencies, or
+2. Build the clean Docker image when runtime, tools, package loading, dependencies, or
    packaging changed:
 
    ```bash
@@ -60,7 +60,12 @@ credentials.
    infrastructure-only smokes (build/`--help`). Observe the model response and
    inspect any requested workspace artifact.
 
-4. When release contents changed, build, inspect, and publish a fresh release.
+4. When release contents changed, build and inspect a fresh release. Run the same
+   provider-backed helper with `--release`/`--user-path` (or `--artifact PATH`):
+   it validates archive structure, source/archive parity for a fresh build, installs
+   only the archive, checks installed parity, then executes the same native pi
+   command. Preserve all independent audits and benchmark responsibilities.
+   Publish only with explicit user authorization.
    The product iterates quickly, so publish a git tag plus GitHub release after
    every accepted product-behavior change instead of accumulating unreleased
    changes:

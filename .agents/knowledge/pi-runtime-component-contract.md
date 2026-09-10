@@ -268,7 +268,7 @@ manifest-driven runtime. What the exercise confirmed or corrected:
 - `--append-system-prompt` being repeatable means context injection keeps
   per-file provenance. Never concatenate resources into a single blob again.
 - Globs are supported by pi in package manifests but are **deliberately
-  refused** by this template's launcher and validator: an explicit path list is
+  refused** by this template's runtime extension and validator: an explicit path list is
   auditable, a glob is not.
 - Sub-agent budgets that are actually enforceable here are wall-clock timeout,
   concurrency, retries and output truncation. A turn budget is not, because pi

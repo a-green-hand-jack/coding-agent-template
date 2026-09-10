@@ -59,10 +59,13 @@ After the deterministic audit passes:
 1. Run `agent-consistency-audit` with `--strict` for the selected Agent and
    inspect every finding.
 2. Run `agent-infrastructure-health` from this exact worktree. A clean image,
-   launcher check, or backend version check is infrastructure evidence only.
+   native pi package check, or backend version check is infrastructure evidence only.
 3. Build a fresh release with `scripts/build-release.sh`, inspect its file list,
    and rerun the audit with `--release`.
-4. Run real provider-backed Docker E2E for every provider/model combination
+4. Run `docker/run-hewo-e2e.sh --release` (or `--artifact PATH`) to install only
+   from the archive, verify parity, and run the shared pi native command with
+   actual `--provider`/`--model` arguments and an immutable image ID. Run real
+   provider-backed Docker E2E for every provider/model combination
    promised by the template; the backend is always pi. Inject credentials only at runtime and record
    scrubbed response evidence in the normal issue/evidence location.
 5. Confirm `DEV.md`, `USER.md`, the registry, and the sync sub-skill describe

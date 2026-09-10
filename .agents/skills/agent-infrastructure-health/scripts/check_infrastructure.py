@@ -19,7 +19,7 @@ from pathlib import Path
 NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 REQUIRED_FILES = (
     "distribution/install.sh",
-    "distribution/launcher",
+    "scripts/setup-dev.sh",
     "distribution/container-entrypoint.sh",
     "docker/Dockerfile",
     "scripts/validate-definition.sh",
@@ -117,12 +117,20 @@ class Health:
                 "docker-build",
                 ["docker", "build", "--build-arg", f"AGENT_NAME={self.agent}", "-t", self.image, "-f", "docker/Dockerfile", "."],
             )
+        resolved = subprocess.run(
+            ["docker", "image", "inspect", "--format", "{{.Id}}", self.image],
+            capture_output=True, text=True, check=False,
+        )
+        if resolved.returncode or not re.fullmatch(r"sha256:[0-9a-f]{64}", resolved.stdout.strip()):
+            self.add("ERROR", "docker-image", "cannot resolve immutable image ID")
+            return
+        self.image = resolved.stdout.strip()
         commands = [
             "set -eu",
             # The product supports pi and only pi; the image must contain it
             # and must not contain a retired backend.
             "command -v pi",
-            f"test -f /opt/install/lib/{self.agent}/agent-definition/package.json",
+            f"test -f /opt/install/lib/{self.agent}/runtime-package/package.json",
         ]
         tools = self.runtime_tool_commands()
         for tool in tools:
@@ -137,11 +145,11 @@ class Health:
             commands.append(assertion)
         commands.extend(
             [
-                f"{self.agent} --help >/dev/null",
-                f"{self.agent} --version >/dev/null",
-                f"test -x /opt/install/bin/{self.agent}",
+                f"pi --no-session --no-context-files --no-extensions --no-skills --no-prompt-templates --no-themes -e /opt/install/lib/{self.agent}/runtime-package --help >/dev/null",
+                "pi --version >/dev/null",
+                f"test ! -e /opt/install/bin/{self.agent}",
                 f"test -z \"$(find /opt/install \\( -name AGENTS.md -o -name CLAUDE.md \\) -print -quit)\"",
-                f"test ! -d /opt/install/lib/{self.agent}/agent-definition/.agents",
+                f"test ! -d /opt/install/lib/{self.agent}/runtime-package/.agents",
             ]
         )
         smoke = "; ".join(commands)

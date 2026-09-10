@@ -74,7 +74,7 @@ reject one.
 
 Replace custom model clients, parallel CLI entrypoints, session managers,
 approval loops, and terminal tool loops with the mature backend capabilities
-where they cover the requirement. Keep only the thin scaffold/launcher/provider
+where they cover the requirement. Keep only the thin scaffold/package/provider
 wiring needed to compose them. If an overlap is genuinely required, record the
 concrete backend gap and decision before adding it.
 
@@ -108,6 +108,6 @@ tar -tzf release/<agent>-<version>.tar.gz
 git diff --check
 ```
 
-The final archive must contain only product runtime behavior, launcher, and
+The final archive must contain only product runtime package, release metadata, and
 installer. Development instructions, `.agents/`, credentials, sessions, and
 private data stay outside the product boundary.

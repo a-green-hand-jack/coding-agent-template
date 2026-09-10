@@ -124,7 +124,9 @@ def check_required_paths(root: Path, audit: Audit) -> None:
         ".agents/skills/agent-definition-validation/SKILL.md",
         ".agents/skills/agent-infrastructure-health/SKILL.md",
         "distribution/install.sh",
-        "distribution/launcher",
+        "distribution/container-entrypoint.sh",
+        "docker/run-hewo-e2e.sh",
+        "scripts/setup-dev.sh",
         "docker/Dockerfile",
         "scripts/build-release.sh",
         "scripts/validate-definition.sh",
@@ -172,9 +174,12 @@ def check_release(path: Path, audit: Audit) -> None:
     except (OSError, tarfile.TarError) as exc:
         audit.error(f"release archive unreadable: {path}: {exc}")
         return
+    for required in ("runtime-package/package.json", "install.sh", "release-manifest.json"):
+        if not any(name.endswith("/" + required) for name in names):
+            audit.error(f"required release payload missing: {required}")
     for name in names:
-        normalized = name.lstrip("./")
-        if any(normalized == forbidden or normalized.startswith(forbidden) for forbidden in RELEASE_FORBIDDEN):
+        parts = Path(name).parts
+        if any(forbidden.rstrip("/") in parts for forbidden in RELEASE_FORBIDDEN):
             audit.error(f"template-only content in release archive: {name}")
 
 

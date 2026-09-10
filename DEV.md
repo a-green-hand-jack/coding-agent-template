@@ -42,7 +42,7 @@ benchmark 或 runtime 文件中出现 “Agent” 就切换身份，也不要把
 
 它会按当前任务渐进式加载一个 sub-skill：新建 Agent、同步 template，或迁移
 现有仓库。修改本仓库的 `src/hewo/` 或准备 hewo release 时，再使用
-`.agents/skills/runtime-package-validation/SKILL.md` 完成当前验证流程。只有在
+`.agents/skills/agent-definition-validation/SKILL.md` 完成当前验证流程。只有在
 为下游仓库编写初始化说明时，才使用 `src/<agent>/` 这类占位路径。
 
 每次发布 template 前，还必须加载
@@ -90,7 +90,7 @@ dev repo scaffold。
 初始化边界：
 - 只创建下游仓库基础目录、`src/<agent_name>/agent.yaml`、最小 runtime 配置、
   下游自己的 `.agents/` 目录和中性占位符，以及必要的 Docker、distribution、
-  launcher、脚本和工具环境配置。
+  pi package 加载、脚本和工具环境配置。
 - 可以从 `src/hewo/` 派生可执行 scaffold，但只保留最小 HeWo smoke 资源作为
   临时基础设施探针。HeWo 的名称、身份、领域语义、历史证据和产品假设不得继承，
   smoke 资源不得扩展为产品功能。
@@ -120,7 +120,7 @@ dev repo scaffold。
    产品设计。为下游目录重新编写 scoped AGENTS.md。
 5. 只按需选择性安装并适配开发 skill；保持 scaffold、backend、LLM provider/model
    独立，不重复实现已有 coding-agent CLI 的执行循环、model client、审批或
-   tool loop。根据 backend/provider 组合适配 Docker、distribution、launcher
+   tool loop。根据 backend/provider 组合适配 Docker、distribution、package 加载
    和工具环境，但不要加入业务逻辑。
 6. 运行结构检查和基础设施检查（例如
    `./scripts/validate-definition.sh <agent_name>`、
@@ -223,7 +223,7 @@ https://github.com/a-green-hand-jack/coding-agent-template.git 当作基础设�
    不要运行或声称通过只适用于 Agent scaffold 的 definition validation 或
    provider-backed Agent E2E；为当前项目定义自己的 smoke/acceptance contract。
 5. 如果复用 Docker/backend CLI/uv 工具环境，删除 HeWo 默认值和 Agent 专属
-   launcher 假设，明确哪些 CLI 只是开发工具、哪些是项目运行时依赖。工具环境
+   产品命令假设，明确哪些 CLI 只是开发工具、哪些是项目运行时依赖。工具环境
    必须独立、最小、无凭据；凭据只能在运行时注入。
 6. 遵守 reuse-first：不要重新实现已有 coding-agent CLI 的 model client、
    session/approval loop 或 tool loop。只增加当前项目确实需要的薄适配层，并在
@@ -249,7 +249,7 @@ python3 .agents/skills/agent-consistency-audit/scripts/audit_agent.py \
 它会自动扫描 memory、skills、tools、runtime、文档和 release payload；模型
 仍需对 WARN 和语义矛盾进行人工判断，不能把静态审计当成真实模型行为证据。
 
-在开始 Agent 编排前，或修改 installer、launcher、Docker、backend、tool
+在开始 Agent 编排前，或修改 installer、package 加载、Docker、backend、tool
 environment 后，运行基础设施健康检查：
 
 ```bash
@@ -453,13 +453,21 @@ src/hewo/
 下游仓库将上图的 `hewo` 替换为自己的 `<agent_name>`；本仓库不要新增第二个
 产品目录。
 
-`distribution/launcher` 读 `runtime/package.json`，把每类资源交给 pi 自己的
-loader（`--skill`、`--prompt-template`、`--theme`、`--extension`、`--tools`），
-只有 identity/memory-policy/knowledge/workflows 走 `--append-system-prompt`，
-因为 pi 没有对应原语。若存在 `runtime/tools/pyproject.toml`，安装器会用 uv
-创建独立的 `<prefix>/lib/<agent>/environment/` 并安装其中的 tools；launcher
-会把该环境的 `bin/` 放进 PATH。runtime 中不得存在非 pi 的 backend 配置文件，
-`validate-definition.sh` 会拒绝。
+用户与开发容器共享 pi 原生命令，不维护产品参数解析器：
+
+```bash
+export PATH="$HOME/.local/lib/hewo/environment/bin:$PATH"
+pi --no-session --no-context-files --no-extensions --no-skills \
+  --no-prompt-templates --no-themes -e "$HOME/.local/lib/hewo/runtime-package" \
+  --provider <provider> --model <model> --print "任务"
+```
+
+上面是用户路径；开发 coding agent 不在宿主机执行产品请求，而通过 E2E helper
+在容器执行同一命令。pi 加载 package 的原生资源，runtime extension 消费 manifest
+中的 identity、memory policy、knowledge、workflows 和工具白名单。若存在
+`runtime/tools/pyproject.toml`，安装器用 uv 安装独立工具环境；用户显式设置该
+环境的 PATH，容器设置对应 `/opt/install/lib/<agent>/environment/bin`。
+`validate-definition.sh` 继续检查 runtime 边界和 manifest。
 
 不要在 `src/hewo/runtime/` 中放置（下游适配后对应其 `src/<agent_name>/runtime/`）：
 
@@ -477,8 +485,8 @@ tar -C src/hewo --exclude=AGENTS.md -cf - . | tar -C src/my-agent -xf -
 ./scripts/validate-definition.sh my-agent
 ```
 
-安装时由 `AGENT_NAME=my-agent` 选择该 scaffold；产品命令通常也叫
-`my-agent`。当前 launcher 不提供运行时 `--scaffold` registry。
+安装时由 `AGENT_NAME=my-agent` 选择 scaffold；运行时使用 pi
+`-e <prefix>/lib/my-agent/runtime-package`，不新增产品命令或 scaffold registry。
 
 ## 3. Backend 和 provider 组合
 
@@ -510,28 +518,45 @@ LLM_PROVIDER=<provider> LLM_MODEL=<model> \
   "Reply with exactly: hi"
 ```
 
-API key 环境变量按 provider ID 转换为 `<PROVIDER>_API_KEY`；Docker helper
-只转发当前 backend 需要的 provider 环境变量，并拒绝不匹配的 credentials
-参数。
+Docker helper 把 provider/model 实际传给 pi 的 `--provider`/`--model`。
+显式 API key 在容器内经 pi 原生 `--api-key` 使用，凭据值不出现在 host 命令或
+证据行中；OAuth auth store 只读挂载。不会从 `.env` 或猜测的变量隐式取得凭据。
 
 工具项目应保持最小、无凭据、可重复。例如 hewo 的
 `runtime/tools/pyproject.toml` 只安装 `hewo-tool`，用于验证 Agent 是否真的
 能调用自己的产品环境；不要让它依赖 template 根目录的开发 `.venv`。
 
-`AGENT_BACKENDS` 只接受 `pi`，其他取值被 installer 和 build-release 拒绝
-（exit 2），所以正常情况下不要设置它。用户没有 pi 时 release 安装会自动装；
-`SKIP_RUNTIME_INSTALL=1` 可跳过。
+pi 是唯一 backend。用户自行安装 pi；installer 只安装 runtime package 和工具环境，
+不安装 backend，不配置 provider/model/credentials。
 
 ## 4. 构建、安装和发布
 
-### 源码安装检查
+### 两个开发主入口
 
 ```bash
-AGENT_NAME=hewo PREFIX=/tmp/hewo-install \
-  ./distribution/install.sh
+./scripts/setup-dev.sh
+./docker/run-hewo-e2e.sh --provider <provider> --model <model> \
+  --pi-auth-file "$HOME/.pi/agent/auth.json" "向 Ada 问好"
 ```
 
-开发构建会排除 `AGENTS.md`、node_modules、package metadata 和 credentials；
+`setup-dev.sh` 复用已选开发环境、安装依赖和当前 runtime，不执行产品请求。
+E2E 普通路径安装当前冻结构建；release 路径只从归档安装，再运行同一 pi 命令：
+
+```bash
+./docker/run-hewo-e2e.sh --release --provider <provider> --model <model> \
+  --pi-auth-file "$HOME/.pi/agent/auth.json" "向 Ada 问好"
+# --user-path 是 --release 的别名；--artifact 可验证指定已有归档
+./docker/run-hewo-e2e.sh --artifact release/hewo-<version>.tar.gz \
+  --provider <provider> --model <model> \
+  --pi-auth-file "$HOME/.pi/agent/auth.json" "向 Ada 问好"
+```
+
+归档结构、当前源码到归档的 parity、归档到安装包的 parity 和真实执行收敛在
+该 E2E 内，不另建 release wrapper。指定已有归档时不要求它与当前源码一致。
+所有运行先解析不可变镜像 ID；证据的 provider/model 与 CLI 实参一致。
+`--release` 不允许 `--image`/`--no-build` 绕过归档安装。独立评测和审计不合并删除。
+
+开发构建会排除 `AGENTS.md`、node_modules 和 credentials，保留 package manifest；
 若 scaffold 声明 tools，构建阶段会用 uv 生成其独立环境。
 
 ### Docker 构建
@@ -577,8 +602,8 @@ GitHub release），不要把未发布的改动一直堆积。`scripts/publish-r
 完成真实 provider-backed Docker E2E 与一致性审计；`publish-release.sh` 只是
 最后一步的机械执行，不替代行为验证。可用 `--dry-run` 预览将执行的命令。
 
-检查 release payload 不含 `AGENTS.md`、auth store、package metadata 或开发
-目录。发布归档只包含 runtime definition、launcher 和 installer。发布后，
+检查 release payload 不含 `AGENTS.md`、auth store 或开发
+目录。发布归档只包含 runtime package、release metadata 和 installer。发布后，
 用户可以只下载 release installer（一行 `curl .../releases/latest/download/install.sh | bash`）
 获取并安装，不需要 clone template、不需要设置版本号或环境变量。
 
@@ -656,7 +681,7 @@ user namespace 限制；简单请求通过不代表该宿主机的工具 sandbox
 
 ```bash
 ./scripts/validate-definition.sh hewo
-bash -n distribution/launcher distribution/install.sh \
+bash -n scripts/setup-dev.sh distribution/install.sh \
   distribution/container-entrypoint.sh docker/run-hewo-e2e.sh \
   scripts/build-release.sh scripts/run-benchmark.sh scripts/run-agent-loop.sh \
   scripts/freeze-agent-run.sh scripts/build-agent-image.sh
@@ -694,7 +719,7 @@ Agent name: <agent_name>
 Scaffold path: src/<agent_name>/runtime/
 Backend: pi (only)
 Validated provider/models: <实际 E2E 结果>
-CLI command: <agent_name>
+CLI command: pi -e <installed-runtime-package> (保留 USER.md 的隔离参数)
 ```
 
 同时保留本文的三层边界、reuse-first 原则、凭据安全规则和真实 Docker E2E

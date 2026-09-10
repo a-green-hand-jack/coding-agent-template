@@ -39,11 +39,9 @@ reused, not an additional product in this repository.
 
 
 ```bash
-cp .env.example .env
-# Edit .env and set OPENAI_API_KEY: the run below fails closed without it.
-./scripts/validate-definition.sh hewo
-docker build --build-arg AGENT_NAME=hewo -t hewo:dev -f docker/Dockerfile .
-docker run --rm -it --env-file .env hewo:dev "Say hello to Ada"
+./scripts/setup-dev.sh
+./docker/run-hewo-e2e.sh --provider <provider> --model <model> \
+  --pi-auth-file "$HOME/.pi/agent/auth.json" "Say hello to Ada"
 ```
 
 The `run-hewo-e2e.sh` helper injects a provider and model at run time without
@@ -64,31 +62,19 @@ fallback: asking for another one is an error, not a silent default.
   --pi-auth-file "$HOME/.pi/agent/auth.json" "hi"
 ```
 
-The launcher does not flatten the runtime into one prompt blob. It reads
-`src/hewo/runtime/package.json` — the single source of truth for what the
-runtime loads — and hands each resource to pi's own loader:
+用户和开发容器运行同一条 pi 原生命令，没有产品专属 CLI 或参数解析器：
 
-| Runtime resource | How pi loads it |
-| --- | --- |
-| skills | `--skill <dir>` |
-| prompt templates (slash commands) | `--prompt-template <dir>` |
-| theme | `--theme <dir>` |
-| TypeScript extension | `--extension <file>` |
-| tool allowlist | `--tools <list>` |
-| identity, memory policy | `--append-system-prompt`, one segment per file |
-| knowledge, workflows | `--append-system-prompt`, one segment per file with a provenance header |
+```bash
+export PATH="$HOME/.local/lib/hewo/environment/bin:$PATH"
+pi --no-session --no-context-files --no-extensions --no-skills \
+  --no-prompt-templates --no-themes \
+  -e "$HOME/.local/lib/hewo/runtime-package" \
+  --provider <provider> --model <model> --print "Say hello to Ada"
+```
 
-Only the last two are prompt injection, and only because pi has no primitive
-for them. Everything else is a real, separately loadable pi resource.
-
-The launcher also closes the discovery boundary. It passes
-`--no-context-files` so pi never pulls an `AGENTS.md` into the product agent,
-`--no-skills` and `--no-extensions` so ambient project and global resources are
-not silently mixed in (explicit `--skill` and `--extension` remain additive),
-and `--no-approve` so project-local files are not trusted implicitly. Every
-manifest path must be a normalized relative path inside the definition
-directory; absolute paths, `..` traversal, globs, shell metacharacters and
-symlinks are refused rather than sanitized.
+pi 从 package manifest 加载原生资源，runtime extension 消费 identity、memory
+policy、knowledge、workflows 和工具白名单。隔离参数关闭隐式资源发现；显式
+`-e` 只加载安装的产品包。安装器不安装 pi；完整依赖、安装和 TUI 路径见 USER.md。
 
 Outbound network access and elevated capabilities are **denied by default**.
 The weather capability ships with a deterministic fixture provider that needs
@@ -116,7 +102,7 @@ rm -rf "$bundle"
 
 The bundle is mode `0700`, its credential is mode `0600`, and Docker mounts it read-only at `/run/provider-bundle`. It contains only the selected provider metadata and one credential, never the host `HOME` or any CLI authentication database.
 
-Use `--api-key-stdin` when the key should not appear in shell history, `--pi-auth-file PATH` for one explicit read-only pi auth store, or `--env-file PATH` for a provider-specific environment file. Run `./docker/run-hewo-e2e.sh --help` for all options.
+凭据来源仅接受 `--api-key-env`、`--api-key-stdin`、`--pi-auth-file` 和 `--bundle`；不隐式读取 `.env`。运行 `./docker/run-hewo-e2e.sh --help` 查看选项。
 
 Never commit provider keys. Credentials are injected at run time through environment variables or Docker secrets, and are never baked into the image, Git, or the runtime.
 
@@ -127,7 +113,7 @@ Never commit provider keys. Credentials are injected at run time through environ
 `.agents/` for reusable development memory, knowledge, skills, and workflows;
 it must not treat those resources as hewo behavior. `scripts`, `docker`, and
 `benchmarks` are template infrastructure. `distribution` contains the public
-installer and launcher.
+installer and the thin container entrypoint.
 
 The key feature is definition-first development: create or modify an Agent by editing its runtime identity, skills, prompt templates, memory policy, and the `package.json` resource manifest rather than implementing another runtime. Use GitHub Issues for design decisions and acceptance evidence; do not add `docs/` or unit-test suites for Agent behavior.
 
@@ -135,11 +121,11 @@ The key feature is definition-first development: create or modify an Agent by ed
 
 The image contains no credentials and does not bake in a provider. The E2E
 helper passes the selected provider, model, and provider key at run time. It
-supports arbitrary provider names using `<PROVIDER>_API_KEY`, explicit key
-variables, env files, or one explicitly mounted pi auth store. The entrypoint
-fails closed when neither a provider key nor an explicit auth store is
-supplied. Every E2E report records `backend=pi` plus the actual CLI version,
-provider, model, credential-source flag, and Agent Definition revision.
+passes explicit `--provider` and `--model` arguments to pi, never metadata-only
+environment variables. Explicit keys use pi's native key option inside the
+container; auth stores are mounted read-only. The helper rejects missing
+credential sources. Evidence records backend, provider, model, credential-source
+flag, installation mode and the resolved immutable image ID.
 
 pi resolves credentials in this order: `--api-key`, then its `auth.json`, then
 the environment variable, then a custom provider key. `pi --list-models` is
@@ -158,7 +144,8 @@ Agent，也是当前仓库实际开发的产品。使用它验证完整 runtime 
 
 ```bash
 ./scripts/validate-definition.sh hewo
-./docker/run-hewo-e2e.sh --agent hewo --provider <provider> --model <model> "Say hello to Ada"
+./docker/run-hewo-e2e.sh --agent hewo --provider <provider> --model <model> \
+  --pi-auth-file "$HOME/.pi/agent/auth.json" "Say hello to Ada"
 ```
 
 Replace `src/hewo` only when creating a separate downstream product Agent. In
@@ -166,18 +153,16 @@ this repository, keep hewo's product behavior under `src/hewo/`; keep the
 **development coding agent** instructions in `AGENTS.md` and `.agents/`, and do
 not put template workflow instructions inside `src/hewo/runtime`.
 
-Use `scripts/build-release.sh hewo 0.1.0` to produce a bundle containing only runtime behavior. The release contains its own installer and launcher; the baked installer is also published as a standalone release asset so users can install with one command and no environment setup. Record release and E2E evidence in the relevant GitHub issue and run `scripts/collect-trace.sh` before storing trajectory evidence.
+Use `scripts/build-release.sh hewo 0.1.0` to package runtime behavior and its installer. The standalone release installer downloads its matching archive; users supply pi and its dependencies. Release installation, artifact parity and provider-backed execution share `docker/run-hewo-e2e.sh --release` (alias `--user-path`); `--artifact PATH` tests an existing archive. This path never installs repository source. Record scrubbed acceptance evidence in the issue.
 
 This project follows a reuse-first development philosophy: an independent
 developer should build Agent behavior with prompts, skills, memory, knowledge,
 workflows, and tools, while delegating execution, model adapters, approvals,
 and terminal UX to the established coding-agent CLIs. The template therefore
-adds only the thin scaffold/launcher/provider wiring needed to compose those
+adds only the thin scaffold/package/provider wiring needed to compose those
 systems; it does not reimplement a coding-agent runtime.
 
-A release installation installs pi when the user does not already have it; set
-`SKIP_RUNTIME_INSTALL=1` to skip that. `AGENT_BACKENDS` is accepted only as
-`pi` and is rejected otherwise. Runtime npm dependencies, if a downstream Agent
+A release installation never installs pi. The user owns the backend and provider setup. Runtime npm dependencies, if a downstream Agent
 declares any, are installed frozen with `npm ci --ignore-scripts`, and a
 dependency without a lockfile is refused rather than resolved at install time.
 A release archive is installed without cloning this repository: one command
@@ -186,9 +171,7 @@ fetches the baked installer, which downloads the matching archive itself (no
 repository's GitHub Releases; check there for the current version rather than
 assuming the one written below.
 
-The no-clone installation flow installs only the pi-native runtime package; it does not install a `hewo` product command. The historical launcher remains only as a deprecated development/compatibility helper and is not installed by `install.sh`.
-
-The package is installed under `~/.local/lib/hewo/runtime-package/`; `package.json` is its authoritative manifest. This repository does not guess a pi package-install command because it varies by pi version. Consult `pi --help`/the installed pi documentation, or load the manifest's declared resources with pi's documented native options (`--skill`, `--prompt-template`, `--theme`, `--extension`).
+The no-clone installation installs `~/.local/lib/hewo/runtime-package/` and its isolated tools. There is no `hewo` product command or compatibility wrapper. Load this directory explicitly with pi `-e`, as shown above.
 
 ```bash
 curl -fsSL https://github.com/a-green-hand-jack/coding-agent-template/releases/latest/download/install.sh | bash
@@ -224,9 +207,14 @@ neither what that run tests nor what its evidence records.
 
 ## Development environments
 
-The template supports both ecosystems. Python tooling is declared in `pyproject.toml` (with `requirements-dev.txt` for pip users); run `./scripts/setup-dev.sh` to create `.venv` and install development dependencies. TypeScript tooling is declared in `package.json` and `tsconfig.json`; use `npm ci` when a lockfile is present. These environments are for the **development coding agent** and validation scripts only. They are not copied into `src/hewo/runtime/` (or a downstream `src/<agent_name>/runtime/`) or shipped to end users.
+开发有两个主入口：`scripts/setup-dev.sh` 准备或复用开发环境并安装当前 runtime；
+`docker/run-hewo-e2e.sh` 构建/复用固定镜像、安装当前构建或 release artifact，并运行
+相同 pi 命令。Python/TypeScript 开发依赖不进入产品包。独立 benchmark、评测状态机、
+冻结快照、trace 和审计脚本保留各自职责，不是另一套产品入口。
 
-The Dockerfile is multi-stage. Its builder may read the repository, but the final runtime image copies only the installed product runtime and launcher plus the pi CLI package. Template development resources, tests, benchmarks, `AGENTS.md`, and `.agents/` cannot be reached from the user container.
+The Dockerfile is multi-stage. The final runtime contains only installed product
+resources, isolated tools and pi, never template development resources,
+benchmarks, `AGENTS.md` or `.agents/`.
 
 ## Agent diagrams
 

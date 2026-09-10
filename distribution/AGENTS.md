@@ -1,5 +1,8 @@
-# User Distribution
+# 产品分发
 
-> **Role:** development-agent instructions for the public installer, launcher, and container entrypoint. Not product behavior.
+> **Role:** 开发 coding agent 的 installer 和原生 pi container entrypoint 维护规则；不是产品行为。
 
-For the development coding agent only: maintain the public installer, launcher, and container entrypoint. Install only product runtime content; exclude all AGENTS.md files at every depth. Keep installation and release behavior consistent. Credentials belong to runtime injection, not release artifacts.
+安装器只安装 runtime package 和产品工具环境，不安装 pi，不配置 provider/model 或凭据。
+用户与容器运行同一条 pi 原生命令，通过 `-e <installed-runtime-package>` 加载产品。
+identity/context/tools 的 manifest 消费归 runtime extension，不重建产品参数解析器。
+安装和归档必须在每一层排除 AGENTS.md、CLAUDE.md 和开发内容；凭据只在运行时注入。

@@ -85,7 +85,7 @@ follow with the real provider-backed Docker E2E required by
 behavior evidence.
 
 When `--release` is supplied, the script also checks that the archive has the
-definition, launcher, and installer, and that development instructions,
+runtime-package manifest, release metadata, and installer, and that development instructions,
 `.agents/`, development directories, and credential-like paths are absent.
 
 ## Downstream boundary

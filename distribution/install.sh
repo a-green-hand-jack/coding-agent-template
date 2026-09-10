@@ -4,8 +4,6 @@ set -euo pipefail
 
 AGENT_NAME="${AGENT_NAME:-hewo}"
 PREFIX="${PREFIX:-$HOME/.local}"
-PI_VERSION="${PI_VERSION:-latest}"
-PI_PACKAGE="${PI_PACKAGE:-@earendil-works/pi-coding-agent}"
 RELEASE_URL="${RELEASE_URL:-${AGENT_RELEASE_URL:-__RELEASE_URL__}}"
 
 [[ "$AGENT_NAME" =~ ^[a-zA-Z0-9][a-zA-Z0-9._-]*$ ]] || {
@@ -54,7 +52,7 @@ USAGE
   tar --extract --gzip --no-same-owner -f "$download_dir/release.tar.gz" -C "$download_dir"
   release_install="$(find "$download_dir" -mindepth 2 -maxdepth 3 -type f -name install.sh -print -quit)"
   [[ -n "$release_install" ]] || { echo "release archive does not contain install.sh" >&2; exit 2; }
-  AGENT_NAME="$AGENT_NAME" PREFIX="$PREFIX" PI_VERSION="$PI_VERSION" PI_PACKAGE="$PI_PACKAGE" \
+  AGENT_NAME="$AGENT_NAME" PREFIX="$PREFIX" \
     "$release_install"
   exit 0
 fi
@@ -63,10 +61,6 @@ fi
 # not install a hewo wrapper command: pi, provider, model, and credentials are
 # user-owned and selected through pi's native interface/configuration.
 mkdir -p "$PREFIX/lib/$AGENT_NAME"
-invocation_source=""
-if [[ -n "$release_root" && -f "$release_root/pi-invocation.sh" ]]; then invocation_source="$release_root/pi-invocation.sh"; else invocation_source="$script_dir/pi-invocation.sh"; fi
-[[ -f "$invocation_source" ]] || { echo "product invocation is missing" >&2; exit 2; }
-install -m 0755 "$invocation_source" "$PREFIX/lib/$AGENT_NAME/pi-invocation.sh"
 definition_dir="$PREFIX/lib/$AGENT_NAME/runtime-package"
 mkdir -p "$definition_dir"
 
@@ -105,7 +99,7 @@ if [[ "$declares_dependencies" == yes ]]; then
     exit 2
   }
   command -v npm >/dev/null 2>&1 || { echo "npm is required to install runtime dependencies" >&2; exit 2; }
-  (cd "$definition_dir" && npm ci --ignore-scripts --no-audit --no-fund >/dev/null)
+  (cd "$definition_dir" && npm ci --omit=dev --omit=peer --ignore-scripts --no-audit --no-fund >/dev/null)
 fi
 
 tools_dir="$definition_dir/tools"
@@ -115,27 +109,21 @@ if [[ -f "$tools_dir/pyproject.toml" ]]; then
     exit 2
   }
   runtime_env_dir="$PREFIX/lib/$AGENT_NAME/environment"
-  uv venv "$runtime_env_dir" --python python3 >/dev/null
+  if [[ ! -x "$runtime_env_dir/bin/python" ]]; then
+    uv venv "$runtime_env_dir" --python python3 >/dev/null
+  fi
   # Build from a throwaway copy so build/, *.egg-info/ and __pycache__ never
   # land in the installed Agent definition.
   tools_build_dir="$(mktemp -d)"
   cp -R "$tools_dir/." "$tools_build_dir/"
   uv pip install --python "$runtime_env_dir/bin/python" "$tools_build_dir" >/dev/null
   rm -rf "$tools_build_dir"
+  printf 'Product tools require this PATH (also configured in Docker):\n  export PATH=%q:"$PATH"\n' "$runtime_env_dir/bin"
 fi
 
 printf '{"agent":"%s","version":"%s","provider":"runtime-injected","backend":"pi"}\n' \
   "$AGENT_NAME" "$version" > "$PREFIX/lib/$AGENT_NAME/release-manifest.json"
 
-# Install pi only as an optional execution dependency when absent; the runtime
-# package itself never supplies a product wrapper or provider configuration.
-if [[ -z "${SKIP_RUNTIME_INSTALL:-}" ]]; then
-  if ! command -v pi >/dev/null 2>&1; then
-    command -v npm >/dev/null 2>&1 || {
-      echo "Node.js/npm is required to install the pi runtime" >&2
-      exit 2
-    }
-    npm install --prefix "$PREFIX/lib/$AGENT_NAME/runtimes/pi" "$PI_PACKAGE@$PI_VERSION" \
-      --ignore-scripts --no-audit --no-fund >/dev/null
-  fi
-fi
+printf 'Installed runtime package: %s\n' "$definition_dir"
+printf 'Install pi separately and configure your provider/model/credentials with pi.\n'
+printf 'Start with: pi --no-session --no-context-files --no-extensions --no-skills --no-prompt-templates --no-themes -e %q\n' "$definition_dir"

@@ -1,6 +1,6 @@
 ---
 name: agent-infrastructure-health
-description: Verify that the template's installer, launcher, Docker image, isolated tools environment, backend binaries, and product boundary work before Agent development focuses on orchestration.
+description: Verify that the template's installer, native pi package loading, Docker image, isolated tools environment, backend binaries, and product boundary work before Agent development focuses on orchestration.
 metadata:
   short-description: Prove the coding-agent infrastructure is usable
 ---
@@ -36,7 +36,7 @@ The check validates required infrastructure files, shell/Python syntax, the
 Agent definition, host prerequisites for declared runtime tools, the tool
 self-checks the runtime manifest declares in `agent.tool_checks`, a clean Docker
 build, the final image's pi binary, the isolated `uv` tool environment,
-launcher help/version behavior, and release payload exclusions. Pass
+native pi help/version behavior, and release payload exclusions. Pass
 `--skip-build --image <image-id>` to reuse an image already built from a frozen
 snapshot by `./scripts/build-agent-image.sh`; the tag is content addressed, so
 matching an image to its source is no longer something the operator has to

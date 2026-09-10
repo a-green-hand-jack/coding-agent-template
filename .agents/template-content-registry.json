@@ -104,7 +104,7 @@
       {
         "path": "distribution/**",
         "class": "selective",
-        "note": "Select installer, launcher, and entrypoint behavior individually; exclude AGENTS.md."
+        "note": "Select installer and native pi container entrypoint behavior individually; exclude AGENTS.md."
       },
       {
         "path": "docker/**",
