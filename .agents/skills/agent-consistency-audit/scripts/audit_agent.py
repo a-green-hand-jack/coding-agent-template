@@ -71,7 +71,7 @@ STALE_MARKERS = {
 # name inside them is evidence, not drift, so rewriting it to satisfy a later
 # gate would falsify the record. Treated like `.agents/memory/`.
 RECORDED_EVIDENCE_FILES = {
-    "DevelopmentMachine.md": "generated profile of what this machine actually had",
+    ".agents/local/DevelopmentMachine.md": "generated profile of what this machine actually had",
     ".agents/knowledge/development-machine-facts.md": "operator-confirmed smoke evidence",
 }
 PLACEHOLDER_RE = re.compile(r"(?:<[^>]+>|\$\{[^}]+\}|\$[A-Z_][A-Z0-9_]*)")
@@ -161,7 +161,7 @@ class Audit:
         if not runtime.is_dir():
             self.add("ERROR", "missing-runtime", runtime, "runtime_dir does not exist")
             return
-        development_rel = values.get("development_dir", "development")
+        development_rel = values.get("development_dir", f"../../.agents/development/{name}")
         development = agent_dir / development_rel
         if not development.exists():
             self.add(

@@ -37,7 +37,7 @@ Use this target mapping:
 | Memory retention policy | `src/<agent>/runtime/memory-policy.md` |
 | Product workflows | `src/<agent>/runtime/workflows/` |
 | Product-specific tools | `src/<agent>/runtime/tools/` plus a minimal `pyproject.toml` when needed |
-| Agent-specific design material | `src/<agent>/development/` |
+| Agent-specific design material | `.agents/development/<agent>/` |
 | Reusable development resources | `.agents/knowledge/`, `.agents/memory/`, `.agents/skills/`, `.agents/workflows/` |
 | Development-agent rules | scoped `AGENTS.md` files |
 
@@ -52,7 +52,8 @@ Generic skills may be copied only after removing hardcoded template names,
 paths, helper commands, provider assumptions, and evidence destinations.
 
 Create `src/<agent>/agent.yaml` with the runtime and development directory
-declarations. `agent.yaml` stays scaffold metadata and must never grow a second
+declarations (`development_dir: ../../.agents/development/<agent>` resolves
+relative to the Agent root). `agent.yaml` stays scaffold metadata and must never grow a second
 resource list. Keep the scaffold self-contained and give it a valid
 `runtime/package.json`, which is the single source of truth for what the
 runtime loads:

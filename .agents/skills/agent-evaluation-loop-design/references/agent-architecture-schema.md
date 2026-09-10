@@ -27,7 +27,7 @@ blocks only. Neither diagram is product runtime content.
 | --- | --- | --- |
 | agent name | `--agent` | required |
 | runtime dir | `agent.yaml` → `runtime_dir` | `MISSING_RUNTIME_DIR` node |
-| development dir | `agent.yaml` → `development_dir` | contract lookup fails |
+| development dir | `agent.yaml` → `development_dir`, relative to Agent root; canonical `../../.agents/development/<agent_name>` for `src/<agent_name>/` | contract lookup fails |
 | contract | `<agent-root>/<development_dir>/evaluation-contract.json` or `--contract` | `DESIGN_INCOMPLETE` |
 | components | real filesystem scan of the runtime dir | explicit `(none)` node |
 

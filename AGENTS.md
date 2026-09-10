@@ -6,7 +6,7 @@
 > - **Tone:** imperative and second person; state the rule and the check that enforces it, not the motivation behind it.
 > - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** operating identity, the product/development boundary, evidence rules, audit gates, and the development loop.
-> - **Excludes:** product behavior (see `src/hewo/runtime/`), end-user instructions (see `USER.md`), developer procedure and commands (see `DEV.md`), and machine-specific facts (see `DevelopmentMachine.md`).
+> - **Excludes:** product behavior (see `src/hewo/runtime/`), end-user instructions (see `USER.md`), developer procedure and commands (see `DEV.md`), and machine-specific facts (see `.agents/local/DevelopmentMachine.md`).
 
 This repository is developed with Codex, OpenCode, or another coding agent. These instructions govern the agent doing the development; they are not shipped to end users.
 
@@ -58,9 +58,10 @@ catalogues say nothing about what the product can reach.
 
 - Keep the current product Agent self-contained under `src/hewo/`. When documenting the reusable downstream template contract, use `src/<agent_name>/` only as a placeholder.
 - Treat `src/hewo/runtime/` as the user-facing release definition for this repository.
-- Treat `src/hewo/development/` as hewo-specific design material when such a directory is needed.
+- Treat `.agents/development/hewo/` as hewo-specific design material when such a directory is needed.
 - 将开发 coding agent 专用的 memory、skills、knowledge、workflows 和内部工具放在 `.agents/`；内部工具入口位于 `.agents/scripts/`。保留 `scripts/setup-dev.sh`、`scripts/build-release.sh`、`scripts/publish-release.sh` 与 `docker/run-hewo-e2e.sh` 作为 human 入口，不把开发工具混入 `src/` 产品。
 - Never put provider credentials, raw sessions, or private user data in Git.
+- 本机开发资料位于 `.agents/local/DevelopmentMachine.md`；文件存在时，按任务需要通过该显式路径读取。Git ignore 仅表示不纳入版本控制，不代表禁止读取；文件不存在时，不得假定任何环境事实。不要提交本机资料，也不要将其放入产品载荷。
 
 ## Reuse-first Agent philosophy
 
@@ -168,7 +169,7 @@ Never report that the product Agent "got better" without the four things below.
 Load `.agents/skills/agent-evaluation-loop-design/SKILL.md` before designing or
 judging any improvement loop.
 
-1. **A contract.** `src/<agent>/development/evaluation-contract.json` declaring
+1. **A contract.** `.agents/development/<agent>/evaluation-contract.json` declaring
    the product goal, the functional checks, the required artifacts and — for a
    performance claim — the benchmark, verifier, environment, primary metric,
    repetitions, thresholds and stop conditions.

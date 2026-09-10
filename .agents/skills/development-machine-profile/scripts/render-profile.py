@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Render DevelopmentMachine.md from machine-profile JSON + operator facts.
+"""Render .agents/local/DevelopmentMachine.md from machine-profile JSON + operator facts.
 
 Reads machine-profile JSON on stdin (or --probe-json) and the operator facts
-file (--facts), and writes a deterministic, secret-free DevelopmentMachine.md.
+file (--facts), and writes a deterministic, secret-free .agents/local/DevelopmentMachine.md.
 """
 
 from __future__ import annotations
@@ -394,7 +394,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--probe-json", type=Path, default=None, help="read probe JSON from a file instead of stdin")
     parser.add_argument("--facts", type=Path, default=Path(".agents/knowledge/development-machine-facts.md"))
-    parser.add_argument("--output", type=Path, default=Path("DevelopmentMachine.md"))
+    parser.add_argument("--output", type=Path, default=Path(".agents/local/DevelopmentMachine.md"))
     args = parser.parse_args()
 
     if args.probe_json:
@@ -408,6 +408,7 @@ def main() -> int:
     guard(facts, f"facts file {args.facts}")
 
     doc = render(probe, facts)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(doc, encoding="utf-8")
     print(f"Wrote {args.output}", file=sys.stderr)
     return 0

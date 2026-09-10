@@ -242,7 +242,7 @@ human 明确确认问题、定位和功能完整基线后才交接稳态闭环�
 
 禁止在同一 candidate 变更中放宽 verifier、benchmark、metric policy 或阈值；这些与 contract schema 修改是独立设计变更，需人工评审并使旧 baseline 失效。不能用一次 provider response 声称改进，跨 provider/model/runtime 直接比较，或把环境失败说成产品回归。benchmark 衡量 capability/regression，不定义产品行为；不能添加 verifier 专用 runtime hack。
 
-当前 `src/hewo/development/evaluation-contract.json` 为 `infrastructure-smoke-only`，未声明 primary metric，只能标为 `SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE`，不虚构质量指标。
+当前 `.agents/development/hewo/evaluation-contract.json` 为 `infrastructure-smoke-only`，未声明 primary metric，只能标为 `SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE`，不虚构质量指标。
 
 ### 图表生成器契约
 

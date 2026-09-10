@@ -80,7 +80,7 @@ infrastructure and development skills the target project needs.
 - Put user-facing product behavior under `src/hewo/runtime/` in this repository
   (or under `src/<agent>/runtime/` after adapting this skill downstream). Keep
   reusable development memory, knowledge, skills, and workflows in `.agents/`;
-  keep Agent-specific design material in `src/hewo/development/` here.
+  keep Agent-specific design material in `.agents/development/hewo/` here.
 - Do not copy the template's `.agents/` wholesale into a downstream repository.
   Follow `.agents/template-content-registry.json`: install only explicitly
   selected skills, and bootstrap downstream-owned memory, knowledge, and

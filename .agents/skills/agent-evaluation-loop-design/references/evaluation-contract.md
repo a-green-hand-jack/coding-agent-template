@@ -43,8 +43,11 @@ for as long as the evaluation policy is unchanged.
 
 ## 1. Evaluation contract v1
 
-Canonical location: `src/<agent_name>/development/evaluation-contract.json`,
-resolved from `agent.yaml`'s `development_dir`. `--contract PATH` overrides it.
+Canonical location: `.agents/development/<agent_name>/evaluation-contract.json`,
+resolved from `agent.yaml`'s `development_dir` relative to the Agent root.
+For `src/<agent_name>/agent.yaml`, set
+`development_dir: ../../.agents/development/<agent_name>`.
+`--contract PATH` overrides it.
 There is no other lookup path.
 
 ### 1.1 Required fields

@@ -43,7 +43,7 @@ The minimum artifact at each step:
    claim.
 2. **Functional contract** — stable functional checks, required artifacts, and
    the failure taxonomy. Lives in
-   `src/<agent_name>/development/evaluation-contract.json`.
+   `.agents/development/<agent_name>/evaluation-contract.json`.
 3. **Functional baseline** — a working first version. Mediocre quality is fine;
    *unstable input/output or an unstable verifier is not*. If the contract or
    the verifier cannot yet decide pass/fail, the state is
@@ -138,7 +138,7 @@ generated blocks only. `--check` fails on drift.
 
 ```bash
 python3 .agents/skills/agent-evaluation-loop-design/scripts/compare-evaluations.py \
-  --contract src/<agent>/development/evaluation-contract.json \
+  --contract .agents/development/<agent>/evaluation-contract.json \
   --current-best <path>/current-best-result.json \
   --candidate <path>/candidate-result.json
 ```

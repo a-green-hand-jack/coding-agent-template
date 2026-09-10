@@ -33,7 +33,7 @@
 | [USER.md](USER.md) | human 用户安装、运行和故障处理 |
 | [DEV.md](DEV.md) | human 开发环境、Docker E2E、后台任务与发布指南 |
 | [src/hewo/runtime/](src/hewo/runtime/) | 唯一发布给用户的产品定义，排除所有 `AGENTS.md` |
-| [src/hewo/development/](src/hewo/development/) | 产品设计与评估 contract，不发布 |
+| [.agents/development/hewo/](.agents/development/hewo/) | 产品设计与评估 contract，不发布 |
 | [scripts/](scripts/) | human 操作入口：setup-dev、build-release、publish-release |
 | [docker/](docker/) / [distribution/](distribution/) | Docker E2E、镜像、installer 和薄容器 entrypoint |
 | [.agents/](.agents/) | 开发 coding agent 的 knowledge、memory、skills、workflows 与内部 scripts |
@@ -41,7 +41,7 @@
 | [AGENTS.md](AGENTS.md) | 开发 coding agent 的强制规则，不是产品上下文 |
 | [benchmarks/README.md](benchmarks/README.md) | benchmark 条件、结果分类和可声明范围 |
 
-开发 coding agent 维护仓库；产品 agent 只使用 `src/hewo/runtime/`。`.agents/`、开发历史、benchmarks 和所有 `AGENTS.md` 都不进入产品发布载荷。设计决策和验收证据使用 GitHub Issues，机器事实保留在本机生成、不入库的 `DevelopmentMachine.md`，历史计划只用于追溯。
+开发 coding agent 维护仓库；产品 agent 只使用 `src/hewo/runtime/`。`.agents/`、开发历史、benchmarks 和所有 `AGENTS.md` 都不进入产品发布载荷。设计决策和验收证据使用 GitHub Issues，机器事实保留在本机生成、不入库的 `.agents/local/DevelopmentMachine.md`，历史计划只用于追溯。
 
 创建独立下游产品时才将产品路径适配为 `src/<agent_name>/runtime/`，不要在本仓库添加第二个产品或整目录复制 `.agents/`。下游初始化和基础设施选择性复用入口见 [开发内部流程](.agents/knowledge/development-procedures.md)。
 

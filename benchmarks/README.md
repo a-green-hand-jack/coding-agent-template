@@ -6,7 +6,7 @@
 > - **Tone:** constraining and unambiguous; short rules about comparability and the scope of a claim.
 > - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** what every run must pin, the run pipeline, condition-identity rules, the failure classes that never update the current best, and why a pass is not a product claim.
-> - **Excludes:** product behavior and any benchmark-specific runtime hack (see `src/<agent_name>/runtime/`), and the acceptance rules themselves (see `src/<agent_name>/development/evaluation-contract.json`).
+> - **Excludes:** product behavior and any benchmark-specific runtime hack (see `src/<agent_name>/runtime/`), and the acceptance rules themselves (see `.agents/development/<agent_name>/evaluation-contract.json`).
 
 Benchmarks measure general capability and regression; they do not define product behavior. They are one stage in the project-internal evaluation loop, not the whole loop and not product runtime content. Pin task-set revision, model, runtime, Agent Definition commit, and verifier version for every run. Store only scrubbed trajectories and derived results.
 
@@ -23,7 +23,7 @@ improvement.
 
 - The evaluation contract, not this directory, decides what counts as an
   improvement. See `.agents/skills/agent-evaluation-loop-design/` and
-  `src/<agent_name>/development/evaluation-contract.json`.
+  `.agents/development/<agent_name>/evaluation-contract.json`.
 - Two runs are comparable only when they reference condition manifests with
   identical canonical bytes. A changed benchmark revision, verifier revision,
   metric policy, provider, model, runtime, image digest, sampling or seed is a

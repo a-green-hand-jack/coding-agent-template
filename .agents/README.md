@@ -11,9 +11,11 @@
 This directory is for the **development coding agent** that maintains this
 repository and develops the `hewo` product agent. It is not part of the installed
 product. Keep reusable development memory, knowledge, and skills here; keep
-hewo-specific product material in `src/hewo/` (and, for a downstream repository,
-in that repository's `src/<agent_name>/development/`).
+hewo-specific design material in `.agents/development/hewo/` (and, for a downstream
+repository, in `.agents/development/<agent_name>/`). Product material stays in
+`src/hewo/runtime/`.
 
+- `development/`: Agent-specific design material and evaluation contracts; never shipped.
 - `memory/`: durable development decisions, checklists, and lessons.
 - `knowledge/`: repository conventions and technical references.
 - `skills/`: reusable coding and validation procedures written as `SKILL.md`.

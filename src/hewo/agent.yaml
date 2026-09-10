@@ -1,5 +1,5 @@
 name: hewo
 runtime_dir: runtime
-development_dir: development
+development_dir: ../../.agents/development/hewo
 knowledge_dir: runtime/knowledge
 workflows_dir: runtime/workflows

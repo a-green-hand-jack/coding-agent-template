@@ -352,7 +352,7 @@
       "note": "Fixed, provider-free test fixtures and protected self-bootstrap outcome cases. They are this template's test data, never downstream acceptance evidence."
     },
     {
-      "path": "src/hewo/development/evaluation-contract.json",
+      "path": ".agents/development/hewo/evaluation-contract.json",
       "class": "template-only-or-adapt",
       "note": "hewo's infrastructure-smoke-only evaluation contract. A downstream Agent writes its own contract; a smoke-only contract never demonstrates a performance improvement."
     },

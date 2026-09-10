@@ -212,11 +212,14 @@ def run_base_comparator(snapshot: Path, report: Report) -> None:
     if not comparator.is_file():
         raise Blocked("base-comparator", f"base comparator is missing from the snapshot: {comparator}")
     fixtures = snapshot / SKILL_RELATIVE / "fixtures"
+    # Resolve from the base snapshot's manifest, including pre-migration bases.
+    smoke_agent = snapshot / "src" / "hewo"
+    smoke_manifest = lib.parse_agent_yaml(smoke_agent / "agent.yaml")
     contracts = {
         "paper": fixtures / "paper-agent/development/evaluation-contract.json",
         "invalid": fixtures / "self-bootstrap/contract-invalid.json",
         "general": fixtures / "self-bootstrap/contract-product-general.json",
-        "smoke": snapshot / "src/hewo/development/evaluation-contract.json",
+        "smoke": smoke_agent / smoke_manifest["development_dir"] / "evaluation-contract.json",
     }
     boot = fixtures / "self-bootstrap"
     before = lib.file_sha256(comparator)

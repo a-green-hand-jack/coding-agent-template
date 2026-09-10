@@ -28,7 +28,7 @@ Repeat this loop for each product-agent iteration:
 
 0. **Design the evaluation before changing behavior.** Load
    `.agents/skills/agent-evaluation-loop-design/SKILL.md`. Write or update
-   `src/<agent_name>/development/evaluation-contract.json` first, and regenerate
+   `.agents/development/<agent_name>/evaluation-contract.json` first, and regenerate
    the two diagrams so the product structure and the optimization state machine
    stay truthful:
 
@@ -99,7 +99,7 @@ Repeat this loop for each product-agent iteration:
 
    ```bash
    python3 .agents/skills/agent-evaluation-loop-design/scripts/compare-evaluations.py \
-     --contract src/<agent_name>/development/evaluation-contract.json \
+     --contract .agents/development/<agent_name>/evaluation-contract.json \
      --current-best <path>/current-best-result.json \
      --candidate <path>/candidate-result.json
    ```

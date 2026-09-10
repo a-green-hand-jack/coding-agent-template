@@ -6,10 +6,10 @@
 > - **Tone:** factual and dated; metadata entries and their provenance, with no procedure and no argument.
 > - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the non-probeable machine facts as one JSON fence: provider endpoints, environment-variable names, auth-file paths, model observations, and smoke-evidence status.
-> - **Excludes:** key values, tokens and auth payloads; the field-by-field contract for these entries (see `.agents/skills/development-machine-profile/references/profile-schema.md`) and the probed, rendered profile (see `DevelopmentMachine.md`).
+> - **Excludes:** key values, tokens and auth payloads; the field-by-field contract for these entries (see `.agents/skills/development-machine-profile/references/profile-schema.md`) and the probed, rendered profile (see `.agents/local/DevelopmentMachine.md`).
 
 Supplies the non-probeable facts that the `development-machine-profile` skill
-merges into `DevelopmentMachine.md`: provider endpoints, environment-variable
+merges into `.agents/local/DevelopmentMachine.md`: provider endpoints, environment-variable
 names, auth-file paths (metadata), model observations, and smoke-evidence
 status. **Never put key values, tokens, or auth payloads here.**
 
@@ -18,7 +18,7 @@ facts are personal — provider endpoints, observed models, host names and smoke
 evidence identify one machine and its operator — so a filled-in file must stay
 device-local and must never be committed to a public repository. Fill the
 fence with your own machine's metadata before regenerating
-`DevelopmentMachine.md`; the renderer treats every empty section as absent.
+`.agents/local/DevelopmentMachine.md`; the renderer treats every empty section as absent.
 
 The `render-profile.py` script reads the first ```json fence below. Keep prose
 outside the fence for the human operator; the fence itself is the machine input.

@@ -6,11 +6,11 @@
 > - **Tone:** specification-style; field tables naming the source command and whether the field is required.
 > - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the eight capability families and their fields, the forbidden-content rules, the operator facts file schema, and the output section order.
-> - **Excludes:** when and how to run the capture (see `.agents/skills/development-machine-profile/SKILL.md`), and any actual machine values (see `.agents/knowledge/development-machine-facts.md` and `DevelopmentMachine.md`).
+> - **Excludes:** when and how to run the capture (see `.agents/skills/development-machine-profile/SKILL.md`), and any actual machine values (see `.agents/knowledge/development-machine-facts.md` and `.agents/local/DevelopmentMachine.md`).
 
 Source of truth for the `development-machine-profile` skill. The probe emits
 machine-profile JSON keyed by the eight capability families below; the renderer
-writes `DevelopmentMachine.md` from that JSON plus the operator facts file.
+writes `.agents/local/DevelopmentMachine.md` from that JSON plus the operator facts file.
 
 Every field is **secret-free**. A field that cannot be captured without a
 credential value must be left out, not approximated.
@@ -141,7 +141,7 @@ the renderer emits a clearly-marked `TODO(operator)` placeholder instead.
 
 ## Output section order
 
-`DevelopmentMachine.md` must contain, in order: Scope (secret-safety banner +
+`.agents/local/DevelopmentMachine.md` must contain, in order: Scope (secret-safety banner +
 regenerate command), Host identity, Storage, Runtime environment, Toolchain
 versions, Agent backends & task executors, External services, Harbor interface
 surface (workspace/task/timeout/result/trajectory), Documented provider wiring

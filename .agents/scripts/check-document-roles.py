@@ -43,7 +43,7 @@ EXEMPT = (
     ".agents/memory/*.md",
     "PLAN.md",
     "PLAN-*.md",
-    "DevelopmentMachine.md",
+    ".agents/local/DevelopmentMachine.md",
     ".agents/downstream-skeleton/**",
     ".agents/skills/*/fixtures/**",
 )

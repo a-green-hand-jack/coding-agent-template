@@ -89,7 +89,7 @@ Exempt, and deliberately so:
   block. (`AGENTS.md` is excluded from every payload, which is why it takes the
   short form instead.) This exemption is a boundary, not a shortcut.
 - **Records**: `.agents/memory/*.md`, `PLAN.md`, `PLAN-*.md`,
-  `DevelopmentMachine.md`. Their authority is `record`; they are generated or
+  `.agents/local/DevelopmentMachine.md`. Their authority is `record`; they are generated or
   dated evidence, and adding a block would edit history.
 - **Placeholders**: `.agents/downstream-skeleton/**/PLACEHOLDER.md`, and fixtures
   under `.agents/skills/*/fixtures/**`.
