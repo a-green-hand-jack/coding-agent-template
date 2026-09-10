@@ -22,6 +22,11 @@ in that repository's `src/<agent_name>/development/`).
 
 The root `AGENTS.md` is the entrypoint for these resources.
 
+Claude Code 通过根 `CLAUDE.md → AGENTS.md` 读取开发规则，通过
+`.claude/skills → ../.agents/skills` 自动发现同一份技能。Codex 和 pi 直接发现
+`.agents/skills/`；memory、knowledge 和 workflow 仍按规则按需读取，不全文注入。
+不要为不同开发 CLI 复制维护多份资源。
+
 ## Downstream boundary
 
 Do not copy this directory wholesale into a downstream Agent repository.

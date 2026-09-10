@@ -37,6 +37,11 @@
         "note": "Use the specific entries below for selectable skills and neutral placeholders."
       },
       {
+        "path": ".claude/**",
+        "class": "selective",
+        "note": "Development-only Claude Code discovery adapter. Recreate skills as a relative symlink to ../.agents/skills; do not copy skills or AGENTS.md. Write downstream-scoped instructions and exclude from product payloads."
+      },
+      {
         "path": ".dockerignore",
         "class": "selective",
         "note": "Adapt build-context and credential/development exclusions."

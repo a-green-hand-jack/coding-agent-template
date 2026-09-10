@@ -3,8 +3,10 @@
 > **Role of this document**
 > - **Audience:** 维护 template 或适配下游仓库的 development coding agent，不是产品 agent。
 > - **Authority:** informative；根 `AGENTS.md` 和 gate scripts 优先。
+> - **Tone:** 面向开发 coding agent 的操作步骤与参考。
+> - **Language:** 中文，保留英文标识和命令。
 > - **Contains:** 从根 `DEV.md` / `README.md` 迁入的初始化 prompts、组件选择、内部审计、评估闭环、scaffold 契约与图表维护。
-> - **Excludes:** 产品行为与机器私有事实；human 操作指南见 [DEV.md](../../DEV.md)，产品使用见 [USER.md](../../USER.md)。
+> - **Excludes:** 产品行为见 `src/hewo/runtime/`；human 操作指南见 [DEV.md](../../DEV.md)，产品使用见 [USER.md](../../USER.md)。
 > - **Provenance:** 本次文档职责迁移；原内容来自根 DEV/README，命令接口对照仓库脚本。所有 shell 示例从仓库根目录执行；Markdown 链接相对本文件。
 
 ## 身份与 skill 路由
