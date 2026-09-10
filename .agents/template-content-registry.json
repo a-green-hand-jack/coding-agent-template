@@ -102,9 +102,9 @@
         "note": "Generated development diagrams describing this template's sample Agent. Downstream repositories regenerate their own with the agent-evaluation-loop-design skill; never copy these as downstream product facts."
       },
       {
-        "path": "benchmarks/**",
+        "path": ".agents/development/hewo/cases/**",
         "class": "template-only",
-        "note": "Template benchmark tasks and evidence are not downstream acceptance evidence."
+        "note": "HeWo internal smoke cases are neither external benchmarks nor downstream acceptance evidence."
       },
       {
         "path": "distribution/**",
@@ -313,9 +313,9 @@
       "note": "Coding-agent internal tooling, moved from scripts/ without removing functionality. Select implementation files individually; exclude AGENTS.md and write downstream-scoped instructions instead."
     },
     {
-      "path": "benchmarks/",
+      "path": ".agents/development/hewo/cases/",
       "class": "template-only",
-      "note": "Template benchmark tasks and evidence are not downstream acceptance evidence."
+      "note": "HeWo internal smoke cases are neither external benchmarks nor downstream acceptance evidence."
     },
     {
       "path": ".github/",

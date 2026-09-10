@@ -58,7 +58,7 @@ flowchart TB
   subgraph development["Development-only (not product behavior)"]
     dv_contract["evaluation contract<br/>mode=infrastructure-smoke-only, scope=not applicable"]
     dv_validation["validate-agent-evaluation.py<br/>structure and determinism"]
-    dv_benchmark["benchmark and comparator<br/>primary metric none declared (smoke-only contract)"]
+    dv_benchmark["internal smoke case (not performance)<br/>primary metric none declared (smoke-only contract)"]
     dv_loop["run-agent-loop.sh<br/>stage runner, not an auto-optimizer"]
   end
   user_input --> rt_identity

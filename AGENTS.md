@@ -63,6 +63,12 @@ catalogues say nothing about what the product can reach.
 - Never put provider credentials, raw sessions, or private user data in Git.
 - 本机开发资料位于 `.agents/local/DevelopmentMachine.md`；文件存在时，按任务需要通过该显式路径读取。Git ignore 仅表示不纳入版本控制，不代表禁止读取；文件不存在时，不得假定任何环境事实。不要提交本机资料，也不要将其放入产品载荷。
 
+## Python 开发命令
+
+开发命令优先使用 `uv run --no-project python` 或 `uvx`；先复用兼容环境，不使用全局 `pip` 安装。此约定不要求修改产品或容器运行时解释器；离线验证可设置 `UV_PYTHON_DOWNLOADS=never`。
+
+内部 smoke 验收使用 `.agents/development/hewo/cases/`，不得称为 benchmark 或性能证据。真正 benchmark 由外部评测方对已发布 Agent 独立开展；保留通用 performance 契约与 comparison 协议，不用内部 case 冒充外部测量。
+
 ## Reuse-first Agent philosophy
 
 - Build Agent behavior primarily with prompts, skills, memory, knowledge,

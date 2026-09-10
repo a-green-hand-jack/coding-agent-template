@@ -1,5 +1,5 @@
 # Outcome Verifiers
 
-> **Role:** development-agent instructions for the benchmark outcome verifiers. Not product behavior.
+> **Role:** development-agent instructions for the internal smoke case outcome verifiers. Not product behavior.
 
 For the development coding agent only: check observable task artifacts and outcomes. Keep verifiers deterministic where possible, separate from runtime behavior, and free of credentials or grader-specific runtime hints.

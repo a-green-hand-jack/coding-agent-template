@@ -67,7 +67,7 @@ two, name both and say which sections belong to which.
 Governed, full block required:
 
 - root documents: `README.md`, `DEV.md`, `USER.md`, `AGENTS.md`
-- `benchmarks/README.md`
+- `.agents/development/hewo/cases/README.md`
 - `.agents/README.md`, `.agents/*/README.md`
 - `.agents/knowledge/*.md` except records
 - `.agents/workflows/*.md`

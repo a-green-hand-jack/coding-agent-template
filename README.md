@@ -39,9 +39,9 @@
 | [.agents/](.agents/) | 开发 coding agent 的 knowledge、memory、skills、workflows 与内部 scripts |
 | [.agents/knowledge/development-procedures.md](.agents/knowledge/development-procedures.md) | 初始化/实现 prompts、选择性复用、内部审计、评估闭环与图表维护 |
 | [AGENTS.md](AGENTS.md) | 开发 coding agent 的强制规则，不是产品上下文 |
-| [benchmarks/README.md](benchmarks/README.md) | benchmark 条件、结果分类和可声明范围 |
+| [内部 cases](.agents/development/hewo/cases/README.md) | HeWo smoke 验收与兼容协议；不是性能 benchmark |
 
-开发 coding agent 维护仓库；产品 agent 只使用 `src/hewo/runtime/`。`.agents/`、开发历史、benchmarks 和所有 `AGENTS.md` 都不进入产品发布载荷。设计决策和验收证据使用 GitHub Issues，机器事实保留在本机生成、不入库的 `.agents/local/DevelopmentMachine.md`，历史计划只用于追溯。
+开发 coding agent 维护仓库；产品 agent 只使用 `src/hewo/runtime/`。`.agents/`（含内部 cases）、开发历史和所有 `AGENTS.md` 都不进入产品发布载荷。真正 benchmark 由外部评测方对已发布 Agent 独立开展；内部 case 不构成性能证据。设计决策和验收证据使用 GitHub Issues，机器事实保留在本机生成、不入库的 `.agents/local/DevelopmentMachine.md`，历史计划只用于追溯。
 
 创建独立下游产品时才将产品路径适配为 `src/<agent_name>/runtime/`，不要在本仓库添加第二个产品或整目录复制 `.agents/`。下游初始化和基础设施选择性复用入口见 [开发内部流程](.agents/knowledge/development-procedures.md)。
 
@@ -117,7 +117,7 @@ flowchart TB
   subgraph development["Development-only (not product behavior)"]
     dv_contract["evaluation contract<br/>mode=infrastructure-smoke-only, scope=not applicable"]
     dv_validation["validate-agent-evaluation.py<br/>structure and determinism"]
-    dv_benchmark["benchmark and comparator<br/>primary metric none declared (smoke-only contract)"]
+    dv_benchmark["internal smoke case (not performance)<br/>primary metric none declared (smoke-only contract)"]
     dv_loop["run-agent-loop.sh<br/>stage runner, not an auto-optimizer"]
   end
   user_input --> rt_identity

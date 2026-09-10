@@ -61,7 +61,7 @@ Repeat this loop for each product-agent iteration:
    read-only auth/key mount. A build, CLI startup, or unauthenticated run is
    infrastructure-only evidence, not product-agent behavior evidence.
 6. **Prefer background execution for long validation.** Product-agent tasks can
-   be long. Submit long E2E or benchmark runs through the loop runner's
+   be long. Submit long E2E or internal case runs through the loop runner's
    registered background mode so the human and development coding agent can
    keep interacting:
 
@@ -79,7 +79,7 @@ Repeat this loop for each product-agent iteration:
    consumed.
 
    Submitting freezes the worktree into a snapshot owned by that run. Every
-   stage — validation, audit, image build, benchmark, and the verifier that
+   stage — validation, audit, image build, case, and the verifier that
    decides pass/fail — reads the snapshot, so the product Agent may be edited
    the moment the submit returns without changing what an in-flight run tests
    or what its evidence claims. `--run-status` reports each run's
@@ -91,7 +91,7 @@ Repeat this loop for each product-agent iteration:
    provider sessions or secrets.
 8. **Classify failures and iterate**: decide whether the problem is in the
    product definition, template infrastructure, provider wiring,
-   benchmark/verifier, or external provider availability. Fix the appropriate
+   case/verifier, or external provider availability. Fix the appropriate
    layer, then rerun the relevant loop stages.
 9. **Compare, do not assert.** When a change claims an improvement, produce a
    candidate result under the same canonical condition manifest as the current
@@ -111,8 +111,10 @@ Repeat this loop for each product-agent iteration:
 
 `.agents/scripts/run-agent-loop.sh` is the executable wrapper for this loop when it is
 available. It should orchestrate existing scripts rather than duplicate their
-internals; `.agents/scripts/run-benchmark.sh` remains the single implementation of the
-provider-backed benchmark / verifier / trace-scrub stage.
+internals; `.agents/scripts/run-case.sh` remains the single implementation of the
+provider-backed internal case / verifier / trace-scrub stage. Legacy `benchmark`
+stage/output names are compatibility aliases only (see `.agents/development/hewo/cases/README.md`).
+真正 benchmark 由外部评测方对已发布 Agent 独立开展，不能用内部 smoke 代替。
 
 This template workflow is not downstream memory. A downstream repository may
 adapt the method, but must replace template Agent names, issue history,

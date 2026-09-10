@@ -127,5 +127,5 @@ git tag -l
 ## 进一步阅读
 
 - [README.md](README.md)：定位、目录布局与产品结构/优化状态图。
-- [开发内部流程](.agents/knowledge/development-procedures.md)：初始化/实现 prompts、选择性复用、审计、benchmark 和图表维护。
+- [开发内部流程](.agents/knowledge/development-procedures.md)：初始化/实现 prompts、选择性复用、审计、内部 case 和图表维护。
 - [AGENTS.md](AGENTS.md)：开发 coding agent 的强制规则。

@@ -65,7 +65,10 @@ The minimum artifact at each step:
 
 `hewo` in this repository has an `infrastructure-smoke-only` contract, so the
 normal path legitimately stops at `SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE`. Do not
-invent a primary metric just to "enter optimization".
+invent a primary metric just to "enter optimization". Its internal smoke tasks live
+in `.agents/development/hewo/cases/`, executed by `.agents/scripts/run-case.sh`.
+真正 benchmark 由外部评测方对已发布 Agent 独立开展；通用 performance schema、
+comparison 状态与外部 benchmark fixtures 不因内部 case 改名而改变。
 
 ## Cold start comes before either phase
 

@@ -24,7 +24,7 @@
     "AGENTS.md",
     "DEV.md",
     ".agents/workflows/agent-development.md",
-    "benchmarks/README.md",
+    ".agents/development/hewo/cases/README.md",
     "agent-architecture.mmd",
     "agent-optimization-loop.mmd"
   ],

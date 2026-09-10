@@ -27,7 +27,7 @@ RELEASE_FORBIDDEN = (
     ".agents/",
     "AGENTS.md",
     "template-content-registry",
-    "benchmarks/",
+    "benchmarks/",  # Legacy/external benchmark payloads remain forbidden; cases are in .agents/.
     "DEV.md",
     "USER.md",
 )

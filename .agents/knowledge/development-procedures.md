@@ -192,7 +192,7 @@ docker build --build-arg AGENT_NAME=hewo -t hewo:dev -f docker/Dockerfile .
 docker run --rm --entrypoint /bin/bash hewo:dev -lc 'pi --version'
 ```
 
-构建排除 AGENTS.md、node_modules 和 credentials，保留 manifest；声明 tools 时用 uv 生成独立环境。最终多阶段镜像仅含安装后产品、工具和 pi，不含 template 开发资源、benchmarks 或 `.agents/`。
+构建排除 AGENTS.md、node_modules 和 credentials，保留 manifest；声明 tools 时用 uv 生成独立环境。最终多阶段镜像仅含安装后产品、工具和 pi，不含 template 开发资源或 `.agents/`（含内部 cases）。
 
 模板发布前加载 release-readiness skill 并运行：
 
@@ -214,9 +214,9 @@ python3 .agents/skills/agent-infrastructure-health/scripts/check_infrastructure.
 
 权威入口：[agent-development workflow](../workflows/agent-development.md)。实现位于 `.agents/`，不能复制进 runtime。runner `./.agents/scripts/run-agent-loop.sh` 是 stage runner；`compare-evaluations.py` 是薄比较协议，都不是自动性能优化器。
 
-阶段：身份/边界确认 → definition validation 和 repository-scope audit → 冻结快照内容寻址构建 → clean-container health → 显式 credential-source 的真实 E2E/benchmark → artifacts/trajectory/scrubbed trajectory → 分类失败并回流修复。
+阶段：身份/边界确认 → definition validation 和 repository-scope audit → 冻结快照内容寻址构建 → clean-container health → 显式 credential-source 的真实 E2E/internal case → artifacts/trajectory/scrubbed trajectory → 分类失败并回流修复。
 
-后台提交、状态、日志、结果消费和镜像回收见 [DEV.md](../../DEV.md#3-长任务后台运行状态与日志)。提交时冻结整个工作树，preflight、构建、benchmark、verifier 都针对该 run 快照；后续修改不污染证据。前台 preflight 验证 backend、credential matrix、task 和 workspace，拒绝无效调用后才可能 detach。登记只含 run id、stage、backend/provider/model、credential-source flag、状态、pid 和路径，不含 key/auth store/raw output/个人数据。
+后台提交、状态、日志、结果消费和镜像回收见 [DEV.md](../../DEV.md#3-长任务后台运行状态与日志)。提交时冻结整个工作树，preflight、构建、case、verifier 都针对该 run 快照；后续修改不污染证据。前台 preflight 验证 backend、credential matrix、task 和 workspace，拒绝无效调用后才可能 detach。登记只含 run id、stage、backend/provider/model、credential-source flag、状态、pid 和路径，不含 key/auth store/raw output/个人数据。
 
 ### 冷启动与功能基线
 
@@ -264,15 +264,15 @@ README 必须保留两组精确 marker：`<!-- BEGIN GENERATED: agent-architectu
 ```bash
 PI_AUTH_FILE="$HOME/.pi/agent/auth.json" \
 LLM_PROVIDER=<provider> LLM_MODEL=<model> \
-BENCHMARK_RUN_DIR=/path/to/task/hewo-evidence \
-./.agents/scripts/run-benchmark.sh hewo
+CASE_RUN_DIR=/path/to/task/hewo-evidence \
+./.agents/scripts/run-case.sh hewo
 ```
 
-`run-benchmark.sh` 凭据/目录入口为 `PI_AUTH_FILE`、`PI_MODELS_FILE`、`BENCHMARK_API_KEY_ENV`。verifier 必须确认独立 workspace 中加载 `runtime-smoke` skill、读取 knowledge/workflow、写入并重新读取 `artifacts/hewo-smoke.md`；检查 `Product runtime`、`Workspace access`、`Skill loaded`、`HEWO_KNOWLEDGE_OK`、`HEWO_TOOL_OK`、`HEWO_WORKFLOW_OK`。不能由开发 agent 预写 artifact 冒充产品生成。
+`run-case.sh` 使用 `PI_AUTH_FILE`、`PI_MODELS_FILE`、`CASE_API_KEY_ENV`、`CASE_RUN_DIR`、`CASE_WORKSPACE`。旧 `BENCHMARK_*` 是新变量非空优先的兼容回退；旧 JSON `benchmark` 与 loop stage 名仅为兼容别名，见 [内部 case 契约](../development/hewo/cases/README.md)。真正 benchmark 由外部评测方对已发布 Agent 独立开展。verifier 必须确认独立 workspace 中加载 `runtime-smoke` skill、读取 knowledge/workflow、写入并重新读取 `artifacts/hewo-smoke.md`；检查 `Product runtime`、`Workspace access`、`Skill loaded`、`HEWO_KNOWLEDGE_OK`、`HEWO_TOOL_OK`、`HEWO_WORKFLOW_OK`。不能由开发 agent 预写 artifact 冒充产品生成。
 
 凭据接线见 [provider-e2e](provider-e2e.md)。helper 仅接受四种来源 flags：`--pi-auth-file`、`--api-key-env`、`--api-key-stdin`、`--bundle`；runtime 不写死 provider。不隐式读 `.env`。bundle 生成工具为 `./.agents/scripts/create-provider-bundle.sh <provider> <model> PROVIDER_API_KEY /approved/private/bundle`；bundle 为 0700、credential 为 0600，只含所选 provider metadata 与单个 credential，不含 HOME/auth 数据库；Docker 只读挂载到 `/run/provider-bundle`。bundle 必须位于允许存储凭据的仓库外私有位置，使用后按凭据管理规则清理，不能放入普通任务临时目录。
 
-pi 凭据优先级为显式 `--api-key`、auth.json、环境变量、自定义 provider key。`pi --list-models` 是 auth-filtered 枚举而非 E2E 证明。真实 provider/model、credential-source、CLI version、runtime revision 和 artifact 路径只记本机私有记录，公开仓库仅保留占位示例。轨迹和 benchmark 输出在可重建目录保存，分享前 scrub，不能提交 raw provider output 或 secrets。机器 sandbox 限制必须如实记 blocked，不能默认关闭隔离掩盖。
+pi 凭据优先级为显式 `--api-key`、auth.json、环境变量、自定义 provider key。`pi --list-models` 是 auth-filtered 枚举而非 E2E 证明。真实 provider/model、credential-source、CLI version、runtime revision 和 artifact 路径只记本机私有记录，公开仓库仅保留占位示例。轨迹和内部 case 输出在可重建目录保存，分享前 scrub，不能提交 raw provider output 或 secrets。机器 sandbox 限制必须如实记 blocked，不能默认关闭隔离掩盖。
 
 ## 变更验证清单
 
@@ -280,7 +280,7 @@ pi 凭据优先级为显式 `--api-key`、auth.json、环境变量、自定义 p
 ./.agents/scripts/validate-definition.sh hewo
 bash -n scripts/setup-dev.sh distribution/install.sh \
   distribution/container-entrypoint.sh docker/run-hewo-e2e.sh \
-  scripts/build-release.sh .agents/scripts/run-benchmark.sh .agents/scripts/run-agent-loop.sh \
+  scripts/build-release.sh .agents/scripts/run-case.sh .agents/scripts/run-agent-loop.sh \
   .agents/scripts/freeze-agent-run.sh .agents/scripts/build-agent-image.sh
 git diff --check
 ```

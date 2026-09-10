@@ -91,6 +91,8 @@ Fixed subgraph order and required node ids:
 5. `development` — "Development-only (not product behavior)": `dv_contract`,
    `dv_validation`, `dv_benchmark`, `dv_loop`
 
+`dv_benchmark` 保留为兼容 node ID；smoke-only 契约的显示标签必须为 internal smoke case（非性能），其它契约标明 external benchmark and comparator。
+
 Required edges:
 
 ```text

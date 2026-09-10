@@ -5,10 +5,11 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 name="${AGENT_NAME:-hewo}"
 environment="${VIRTUAL_ENV_PATH:-${VIRTUAL_ENV:-$root/.venv}}"
+command -v uv >/dev/null || { printf 'Install uv before running setup-dev.sh.\n' >&2; exit 2; }
 if [[ ! -x "$environment/bin/python" ]]; then
-  python3 -m venv "$environment"
+  uv venv "$environment" --python python3
 fi
-"$environment/bin/python" -m pip install -r "$root/requirements-dev.txt"
+uv pip install --python "$environment/bin/python" -r "$root/requirements-dev.txt"
 if [[ -f "$root/package-lock.json" ]]; then npm ci --ignore-scripts --no-audit --no-fund; fi
 command -v pi >/dev/null || { printf 'Install pi yourself: npm install -g @earendil-works/pi-coding-agent\n' >&2; exit 2; }
 AGENT_NAME="$name" PREFIX="${PREFIX:-$HOME/.local}" "$root/distribution/install.sh"

@@ -1,2 +1,3 @@
-# Compatibility entrypoint for developers who use pip instead of uv.
+# Development dependencies: install with uv pip into the selected existing environment.
+# Retained as a pip-compatible dependency declaration, not a global pip install instruction.
 -e .[dev]

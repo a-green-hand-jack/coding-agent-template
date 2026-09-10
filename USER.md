@@ -94,4 +94,4 @@ identity、memory policy、knowledge、workflows 和工具白名单。不要省�
 - 产品 extension 的失败应排查所安装 package 与 pi 版本，不退回已删除的产品包装命令。
 - 容器场景只读挂载明确选定的凭据文件，不挂载整个宿主机 HOME。
 
-开发 Docker 验证和发布流程见 [DEV.md](DEV.md)；用户不需要执行仓库审计或 benchmark。
+开发 Docker 验证和发布流程见 [DEV.md](DEV.md)；用户不需要执行仓库审计或内部 case 验收。

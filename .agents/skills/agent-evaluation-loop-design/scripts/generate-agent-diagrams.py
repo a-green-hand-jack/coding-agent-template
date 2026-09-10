@@ -465,7 +465,7 @@ def render_architecture(agent: str, agent_relative: str, scan: Scan, view: dict[
             '  subgraph development["Development-only (not product behavior)"]',
             f'    dv_contract["evaluation contract<br/>mode={sanitize(view["mode"])}, scope={sanitize(view["claim_scope"])}"]',
             '    dv_validation["validate-agent-evaluation.py<br/>structure and determinism"]',
-            f'    dv_benchmark["benchmark and comparator<br/>primary metric {shorten(view["metric"], 70)}"]',
+            f'    dv_benchmark["{"internal smoke case (not performance)" if view["mode"] == "infrastructure-smoke-only" else "external benchmark and comparator"}<br/>primary metric {shorten(view["metric"], 70)}"]',
             '    dv_loop["run-agent-loop.sh<br/>stage runner, not an auto-optimizer"]',
             "  end",
             "  user_input --> rt_identity",

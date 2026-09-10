@@ -17,7 +17,7 @@ provider="${LLM_PROVIDER:-}"
 model="${LLM_MODEL:-}"
 workspace=""
 task_file=""
-run_dir="${BENCHMARK_RUN_DIR:-}"
+run_dir="${CASE_RUN_DIR:-${BENCHMARK_RUN_DIR:-}}"
 allow_unauthenticated=false
 credential_flag=""
 credential_value=""
@@ -38,7 +38,7 @@ Usage: ./.agents/scripts/run-agent-loop.sh [options] [task prompt]
 
 Run the project-internal evaluation loop in this order:
   definition validation -> consistency audit -> image build ->
-  infrastructure health -> benchmark
+  infrastructure health -> internal smoke case
 
 Every stage runs against a snapshot of the worktree frozen when the run was
 submitted, so editing the product Agent while a run is in flight cannot change
@@ -53,10 +53,10 @@ Options:
   --api-key-env NAME              Host variable holding the provider key
   --credential-source SPEC         Explicit source, e.g. --credential-source --pi-auth-file PATH
                                   or --credential-source PATH (pi auth store)
-  --workspace PATH                Benchmark workspace directory
-  --task-file PATH                Benchmark task file
-  --run-dir PATH                  Benchmark evidence directory
-  --allow-unauthenticated         Skip the provider-backed benchmark stage;
+  --workspace PATH                Case workspace directory
+  --task-file PATH                Case task file
+  --run-dir PATH                  Case evidence directory
+  --allow-unauthenticated         Skip the provider-backed case stage;
                                   successful runs are infrastructure-only (exit 3)
   -h, --help                      Show this help
 
@@ -81,7 +81,7 @@ Credential matrix (mismatches are rejected before any stage runs):
 
 Backends other than pi are rejected; there is no fallback default.
 
-The benchmark stage remains the single implementation of Docker E2E,
+The case stage (legacy protocol name: benchmark) remains the single implementation of Docker E2E,
 verification, and trace scrubbing. This runner only validates and orchestrates.
 EOF
 }
@@ -205,7 +205,7 @@ while (($#)); do
     --pi-auth-file=*) set_credential '--pi-auth-file' "${1#*=}"; [[ -n "$credential_value" ]] || reject 'empty value for --pi-auth-file'; shift ;;
     --bundle|--bundle=*)
       # Accepted by name only so the diagnostic stays specific instead of
-      # degrading to "unknown option". The benchmark stage has no bundle path.
+      # degrading to "unknown option". The case stage has no bundle path.
       reject 'provider bundles are not in this runner'"'"'s credential matrix; use --pi-auth-file or --api-key-env' ;;
     --credential-source)
       need_value "$1" "${2:-}"
@@ -437,7 +437,7 @@ if ((${#positionals[@]} > 0)); then
   fi
 fi
 if [[ -z "$task_file" ]]; then
-  task_file='benchmarks/tasks/example-task.md'
+  task_file='.agents/development/hewo/cases/tasks/example-task.md'
 fi
 if [[ "$task_file" != /* ]]; then task_file="$root/$task_file"; fi
 if [[ "$allow_unauthenticated" != true ]]; then
@@ -455,7 +455,7 @@ fi
 
 # Freeze the worktree now. This is the instant the run's subject is decided:
 # everything after this point -- the preflight stages, the image build, the
-# benchmark, and the verifier that decides pass/fail -- reads the frozen copy,
+# case, and the verifier that decides pass/fail -- reads the frozen copy,
 # so the developer's worktree is free the moment this returns (~0.1s for this
 # repository). It happens before the run id is minted so a freeze failure is a
 # clean preflight rejection instead of an orphaned registry entry.
@@ -679,40 +679,41 @@ else
   record_skipped infrastructure_health
 fi
 
-benchmark_summary_file="$tmp_dir/benchmark-summary.json"
+# Keep legacy stage/log names and output fields for existing consumers.
+# They denote an internal smoke case, not a performance benchmark.
+benchmark_summary_file="$tmp_dir/case-summary.json"
 benchmark_ran=false
 if [[ "$allow_unauthenticated" == true ]]; then
   record_skipped benchmark
 elif [[ "$loop_status" -ne 0 ]]; then
   record_skipped benchmark
 else
-  # Pass only the selected credential source into the benchmark convention;
-  # the benchmark maps it to the explicit Docker helper flag.
-  unset PI_AUTH_FILE BENCHMARK_API_KEY_ENV BENCHMARK_WORKSPACE
+  # Pass only the selected credential source into the case convention.
+  unset PI_AUTH_FILE CASE_API_KEY_ENV CASE_WORKSPACE BENCHMARK_API_KEY_ENV BENCHMARK_WORKSPACE
   export AGENT_BACKEND="$backend" LLM_PROVIDER="$provider" LLM_MODEL="$model"
   case "$credential_flag" in
     --pi-auth-file) export PI_AUTH_FILE="$credential_value" ;;
     --api-key-env)
-      export BENCHMARK_API_KEY_ENV="$credential_value"
+      export CASE_API_KEY_ENV="$credential_value"
       export "$credential_value"
       ;;
   esac
-  [[ -n "$workspace" ]] && export BENCHMARK_WORKSPACE="$workspace"
-  [[ -n "$run_dir" ]] && export BENCHMARK_RUN_DIR="$run_dir"
-  # The benchmark must not re-derive either of these: re-deriving the revision
+  [[ -n "$workspace" ]] && export CASE_WORKSPACE="$workspace"
+  [[ -n "$run_dir" ]] && export CASE_RUN_DIR="$run_dir"
+  # The case must not re-derive either of these: re-deriving the revision
   # after the run is exactly the bug this design removes.
   export AGENT_IMAGE_ID="$agent_image_id"
   export AGENT_DEFINITION_REVISION="$definition_revision"
 
   benchmark_ran=true
-  if run_stage benchmark ./.agents/scripts/run-benchmark.sh "$agent" "$task_file"; then
+  if run_stage benchmark ./.agents/scripts/run-case.sh "$agent" "$task_file"; then
     :
   else
     loop_status=1
   fi
 
-  # Extract the benchmark's own JSON record without trusting incidental command
-  # output. A successful benchmark with no machine-readable record is a loop
+  # Extract the case's own JSON record without trusting incidental command
+  # output. A successful case with no machine-readable record is a loop
   # failure, not a passing provider-backed result.
   python3 - "$tmp_dir/benchmark.log" "$benchmark_summary_file" <<'PY'
 import json
@@ -739,7 +740,7 @@ with open(destination, "w", encoding="utf-8") as handle:
 PY
   parse_status=$?
   if [[ "$parse_status" -ne 0 ]]; then
-    printf 'error: benchmark did not produce a machine-readable summary\n' >&2
+    printf 'error: case did not produce a machine-readable summary\n' >&2
     loop_status=1
   fi
 fi
@@ -848,6 +849,10 @@ summary = {
     "artifact": artifact_paths["artifact"],
     "trajectory": artifact_paths["trajectory"],
     "scrubbed_trajectory": artifact_paths["scrubbed_trajectory"],
+    "case": benchmark,
+    "case_ran": benchmark_ran == "true",
+    "evidence_scope": "infrastructure-smoke-only",
+    "compatibility_aliases": {"benchmark": "case", "benchmark_ran": "case_ran", "stage:benchmark": "case"},
     "benchmark": benchmark,
     "benchmark_ran": benchmark_ran == "true",
 }

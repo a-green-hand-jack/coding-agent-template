@@ -12,7 +12,7 @@
 # preflight stages resolve their own paths (validate-definition.sh is CWD
 # relative, audit_agent.py defaults --root to the current directory). Freezing
 # only the build context would leave those stages reading live source while the
-# benchmark ran frozen source, producing a summary that looks internally
+# case ran frozen source, producing a summary that looks internally
 # consistent and is not.
 set -euo pipefail
 
@@ -165,7 +165,8 @@ definition_revision = subset_digest(
     (f"src/{agent}/", "distribution/container-entrypoint.sh")
 )
 
-# The image cache key. .agents/scripts/, scripts/ and benchmarks/ are frozen but deliberately
+# The image cache key. .agents/ (including development/hewo/cases/) and scripts/
+# are frozen but deliberately
 # absent here: editing a script must not force an image rebuild.
 context_digest = subset_digest(
     ("src/", "distribution/", "docker/"),

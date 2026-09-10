@@ -22,6 +22,13 @@ jobs:
       # content-addressed image. CI exercising a different build path than
       # every local path is how the two silently diverge.
       - run: ./.agents/scripts/freeze-agent-run.sh --agent hewo --into "$RUNNER_TEMP/snapshot"
+      - name: Frozen internal case paths (not performance evidence)
+        run: |
+          test -x "$RUNNER_TEMP/snapshot/.agents/scripts/run-case.sh"
+          test -f "$RUNNER_TEMP/snapshot/.agents/development/hewo/cases/tasks/example-task.md"
+          test -x "$RUNNER_TEMP/snapshot/.agents/development/hewo/cases/verifiers/example-verifier.sh"
+          test ! -d "$RUNNER_TEMP/snapshot/benchmarks"
+          bash -n "$RUNNER_TEMP/snapshot/.agents/scripts/run-case.sh"
       - run: ./.agents/scripts/build-agent-image.sh --context "$RUNNER_TEMP/snapshot"
       - name: Clean-container smoke on the frozen image
         run: |

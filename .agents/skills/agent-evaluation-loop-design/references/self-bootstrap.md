@@ -6,7 +6,7 @@
 > - **Tone:** precise and cautionary; the limits of the guarantee stated before the mechanism that provides it.
 > - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the scope of the isolation guarantee, the pre-committed candidate manifest, the check CLI, and the accept/reject state machine ending in human review.
-> - **Excludes:** the normal product optimization path (see `.agents/skills/agent-evaluation-loop-design/SKILL.md`), and any claim about product performance (see `benchmarks/README.md`).
+> - **Excludes:** the normal product optimization path (see `.agents/skills/agent-evaluation-loop-design/SKILL.md`), and any claim about product performance (see `.agents/development/hewo/cases/README.md`).
 
 For optimizing **this skill**, not a product Agent. Do not read this to run a
 normal product loop; use `SKILL.md`'s normal path.

@@ -3,6 +3,7 @@
 .pi
 .env
 .env.*
+# Legacy external/template benchmark exclusion; internal cases are under .agents.
 benchmarks
 release
 artifacts

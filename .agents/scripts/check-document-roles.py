@@ -26,7 +26,7 @@ GOVERNED_FULL = (
     "DEV.md",
     "USER.md",
     "AGENTS.md",
-    "benchmarks/README.md",
+    ".agents/development/hewo/cases/README.md",
     ".agents/README.md",
     ".agents/*/README.md",
     ".agents/knowledge/*.md",
