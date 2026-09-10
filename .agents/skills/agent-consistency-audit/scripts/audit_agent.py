@@ -198,7 +198,7 @@ class Audit:
     def check_runtime_manifest(self, name: str, runtime: Path, path: Path) -> None:
         """Audit the pi resource manifest.
 
-        `scripts/validate-definition.sh` owns the exhaustive structural
+        `.agents/scripts/validate-definition.sh` owns the exhaustive structural
         contract. This audit covers the drift a repository accumulates over
         time: a manifest that stopped being pi-only, resource paths that no
         longer resolve, and a declared tool surface that went empty.

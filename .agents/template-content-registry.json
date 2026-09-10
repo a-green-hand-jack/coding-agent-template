@@ -294,7 +294,18 @@
     {
       "path": "scripts/",
       "class": "selective",
-      "note": "Select scripts individually; do not overwrite downstream product scripts wholesale."
+      "note": "Human setup and release entrypoints only; select individually and adapt calls into .agents/scripts/."
+    },
+    {
+      "path": ".agents/scripts/*",
+      "class": "selective",
+      "destination": ".agents/scripts/",
+      "adapt_required": [
+        "downstream agent name, paths and evidence commands",
+        "human entrypoint and CI callers",
+        "provider assumptions and frozen snapshot execution"
+      ],
+      "note": "Coding-agent internal tooling, moved from scripts/ without removing functionality. Select implementation files individually; exclude AGENTS.md and write downstream-scoped instructions instead."
     },
     {
       "path": "benchmarks/",
@@ -374,7 +385,7 @@
         "the Contains/Excludes wording of every role block, which is per-document",
         "the audience vocabulary if the downstream product serves a different set of readers"
       ],
-      "note": "The role/content separation convention and its governed set. Its executable form is scripts/check-document-roles.py; copy both or neither."
+      "note": "The role/content separation convention and its governed set. Its executable form is .agents/scripts/check-document-roles.py; copy both or neither."
     }
   ]
 }

@@ -12,10 +12,10 @@ set -euo pipefail
 context=""
 usage() {
   cat <<'EOF'
-Usage: ./scripts/build-agent-image.sh --context DIR
+Usage: ./.agents/scripts/build-agent-image.sh --context DIR
 
 Build the image for a frozen snapshot unless it already exists, then resolve it.
-DIR must be a snapshot produced by ./scripts/freeze-agent-run.sh.
+DIR must be a snapshot produced by ./.agents/scripts/freeze-agent-run.sh.
 
 Prints KEY=VALUE lines on stdout:
   AGENT_IMAGE     the content-addressed tag

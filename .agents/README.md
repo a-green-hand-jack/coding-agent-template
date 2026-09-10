@@ -17,6 +17,8 @@ in that repository's `src/<agent_name>/development/`).
 - `memory/`: durable development decisions, checklists, and lessons.
 - `knowledge/`: repository conventions and technical references.
 - `skills/`: reusable coding and validation procedures written as `SKILL.md`.
+- `workflows/`: development-only orchestration and evidence procedures.
+- `scripts/`: coding-agent internal validation, image/snapshot, evaluation, trace, provider-bundle and audit tools; human setup/release entrypoints remain in root `scripts/`, with Docker E2E in `docker/run-hewo-e2e.sh`.
 
 The root `AGENTS.md` is the entrypoint for these resources.
 

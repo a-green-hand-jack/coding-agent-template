@@ -59,7 +59,7 @@ catalogues say nothing about what the product can reach.
 - Keep the current product Agent self-contained under `src/hewo/`. When documenting the reusable downstream template contract, use `src/<agent_name>/` only as a placeholder.
 - Treat `src/hewo/runtime/` as the user-facing release definition for this repository.
 - Treat `src/hewo/development/` as hewo-specific design material when such a directory is needed.
-- Use `.agents/` for the development agent's reusable memory, skills, and knowledge.
+- 将开发 coding agent 专用的 memory、skills、knowledge、workflows 和内部工具放在 `.agents/`；内部工具入口位于 `.agents/scripts/`。保留 `scripts/setup-dev.sh`、`scripts/build-release.sh`、`scripts/publish-release.sh` 与 `docker/run-hewo-e2e.sh` 作为 human 入口，不把开发工具混入 `src/` 产品。
 - Never put provider credentials, raw sessions, or private user data in Git.
 
 ## Reuse-first Agent philosophy
@@ -87,7 +87,7 @@ scopes and must not be confused:
   `.agents/skills/template-release-readiness/SKILL.md` first):
 
   ```bash
-  python3 scripts/check-template-registry.py
+  python3 .agents/scripts/check-template-registry.py
   python3 .agents/skills/template-release-readiness/scripts/audit_template_release.py --agent hewo
   ```
 
@@ -195,7 +195,7 @@ invalidate the old baseline. One lucky provider response is not an improvement.
 
 `hewo`'s contract is `infrastructure-smoke-only`, so its honest state is
 `SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE`. Do not invent a quality metric for it.
-`scripts/run-agent-loop.sh` is a stage runner and `compare-evaluations.py` is a
+`.agents/scripts/run-agent-loop.sh` is a stage runner and `compare-evaluations.py` is a
 thin comparison protocol; neither is a finished automatic optimizer.
 
 ## Development loop
@@ -209,7 +209,7 @@ it must not be copied into `src/hewo/runtime/` or treated as hewo behavior.
 2. Select a skill from `.agents/skills` when a workflow matches.
 3. Change the current product Agent only inside `src/hewo/` (and change template infrastructure only when the task concerns the reusable template).
 4. Validate the definition, run the self-audit gates for the repository scope (template internal or downstream, as scoped above), run the clean-container checks, and—when validating product behavior—run a real provider-backed Docker E2E through `docker/run-hewo-e2e.sh` or the loop wrapper using the development machine's intended provider injected via an explicit flag.
-5. For long product-agent validation, prefer a registered background loop run instead of a foreground terminal command: `./scripts/run-agent-loop.sh --background ...`, then `--run-status <id>` to query and `--clean-run <id>` once the result is consumed. The registry records backend/provider/model and the credential-source flag without secret values.
+5. For long product-agent validation, prefer a registered background loop run instead of a foreground terminal command: `./.agents/scripts/run-agent-loop.sh --background ...`, then `--run-status <id>` to query and `--clean-run <id>` once the result is consumed. The registry records backend/provider/model and the credential-source flag without secret values.
 6. Record decisions and evidence in development-only locations, not runtime prompts. A missing credential/provider injection is a blocked behavior validation, not a passing test.
 
 Do not add benchmark-specific hacks to `src/hewo/runtime/` behavior. Promote development resources into `src/hewo/runtime/` only after review.

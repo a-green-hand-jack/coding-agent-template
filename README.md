@@ -1,244 +1,57 @@
 # Coding Agent Template
 
 > **Role of this document**
-> - **Audience:** a human developer evaluating or adopting this template, plus the development coding agent orienting itself in a fresh checkout.
-> - **Authority:** informative. It explains what exists and points at the normative documents; it decides nothing.
-> - **Tone:** explanatory and concrete; every command shown must be one that actually runs.
-> - **Language:** 中文（代码、命令、协议标识保留原文）.
-> - **Contains:** what the template is, the scaffold/backend/provider layering, the repository layout, and the entry points into each deeper document.
-> - **Excludes:** binding development rules (see `AGENTS.md`), day-to-day development procedure (see `DEV.md`), end-user installation and usage (see `USER.md`), and product behavior (see `src/hewo/runtime/`).
+> - **Audience:** 评估或采用本 template 的 human developer。
+> - **Authority:** informative；定位与导航，不定义开发规则或产品行为。
+> - **Tone:** 简洁、具体。
+> - **Language:** 中文，保留代码、命令和协议标识。
+> - **Contains:** 产品定位、分层、目录导航、产品结构与优化状态图。
+> - **Excludes:** coding agent 内部流程（见 `.agents/`）、日常命令（见 `DEV.md`）、安装使用（见 `USER.md`）。
 
-## 中文文档导航与边界
+用于构建、验证和发布 **pi-native Agent runtime package** 的开发模板。当前参考产品是 **hewo**：功能完整、范围刻意限定的 Hello World Agent，用于验证安装、runtime 加载、skills、工具、workspace 和 artifacts 路径；不是通用 Agent，也没有已证明的性能优化结论。
 
-本仓库的文档按四个边界维护，所有说明正文统一使用中文；代码、命令、文件名、协议标识和产品内固定哨兵值保留原文。
+三层独立：**Agent scaffold → pi backend → LLM provider/model**。用 identity、skills、knowledge、workflows、prompt templates、extensions 和 tools 组合产品，不重新实现 coding-agent runtime。pi 是唯一 backend，没有第二 backend 或静默 fallback；provider/model 在运行时选择，不写死在产品里。
 
-| 文档 | 唯一职责 | 权威性 |
-| --- | --- | --- |
-| `AGENTS.md` | 开发 coding agent 的强制规则、证据要求和边界 | 规范性 |
-| `DEV.md` | 日常开发、验证和发布操作步骤 | 操作性 |
-| `USER.md` | 终端用户安装、运行和故障处理 | 用户说明 |
-| `src/hewo/runtime/` | hewo 产品运行时身份、技能、提示词、工作流和知识 | 产品规范 |
-| `benchmarks/README.md` | 基准运行条件、结果分类和可声明范围 | 规范性 |
-| `DevelopmentMachine.md` | 当前开发机器的已核验事实（本机生成、不入库，由 development-machine-profile skill 重建） | 记录 |
-| `PLAN.md` | 一次性设计计划和历史决策 | 记录 |
+用户自行安装 pi，再显式加载安装后的 runtime package；没有独立 `hewo` CLI 或兼容 wrapper。installer 不安装 pi、不配置 provider 或凭据。产品默认拒绝外部网络和提权；天气能力使用无需网络的 fixture，live lookup 必须显式 opt-in、限制 host 和 timeout，失败回退 fixture。完整能力、安装和使用见 [USER.md](USER.md)。
 
-文档之间的引用只沿上述边界传递：开发规则不得进入产品运行时，用户说明不得定义开发流程，基准结果不得直接改写产品行为。发现冲突时，以 `AGENTS.md` 的开发规范、`src/hewo/runtime/` 的产品定义和各文档声明的职责为准；历史计划只用于追溯，不能覆盖现行规则。
+## 快速开始
 
-这是一个用于构建可安装 Agent 的开发仓。当前仓库只有一个被开发和交付的产品
-agent：**hewo**；它的全部产品源码位于 `src/hewo/`，行为定义位于
-`src/hewo/runtime/`。其他目录不是 hewo 的产品实现：`AGENTS.md`、`.agents/`
-是维护本仓库的开发 coding agent 使用的开发指令和资源，`scripts`、`docker`、
-`benchmarks`、`distribution` 是 template 基础设施。
-
-
-This repository has two strictly separate identities. The **development coding agent** maintains this repository and follows `AGENTS.md` plus `.agents/`. The **product agent** is `hewo`, what users install and run; it follows only the definition under `src/hewo/runtime/`. Development instructions are never product behavior, and all `AGENTS.md` files are excluded from installation, release archives, and final Docker images.
-
-For downstream repositories, the same product boundary is renamed to
-`src/<agent_name>/runtime/`; that placeholder describes how this template is
-reused, not an additional product in this repository.
-
+在仓库根目录准备环境，再运行真实 Docker 请求。先把 `<provider>` / `<model>` 替换为本机已配置的实际值：
 
 ```bash
 ./scripts/setup-dev.sh
 ./docker/run-hewo-e2e.sh --provider <provider> --model <model> \
-  --pi-auth-file "$HOME/.pi/agent/auth.json" "Say hello to Ada"
+  --pi-auth-file "$HOME/.pi/agent/auth.json" "向 Ada 问好"
 ```
 
-The `run-hewo-e2e.sh` helper injects a provider and model at run time without
-requiring manual exports:
+凭据只在运行时注入，不进入镜像、Git 或 runtime。helper 缺少凭据来源会拒绝请求；镜像构建或 CLI 启动不是产品 E2E 通过。环境准备、release artifact 验证、后台日志和发布命令见 [DEV.md](DEV.md)。最终用户无需 clone 仓库，按 [USER.md](USER.md) 下载 release installer 安装即可。
 
-```bash
-./docker/run-hewo-e2e.sh --agent hewo --provider <provider> --model <model> --api-key-env OPENAI_API_KEY "完成这个任务"
-```
+## 布局与导航
 
-## Backend: pi, and only pi
+| 路径 | 用途 |
+| --- | --- |
+| [USER.md](USER.md) | human 用户安装、运行和故障处理 |
+| [DEV.md](DEV.md) | human 开发环境、Docker E2E、后台任务与发布指南 |
+| [src/hewo/runtime/](src/hewo/runtime/) | 唯一发布给用户的产品定义，排除所有 `AGENTS.md` |
+| [src/hewo/development/](src/hewo/development/) | 产品设计与评估 contract，不发布 |
+| [scripts/](scripts/) | human 操作入口：setup-dev、build-release、publish-release |
+| [docker/](docker/) / [distribution/](distribution/) | Docker E2E、镜像、installer 和薄容器 entrypoint |
+| [.agents/](.agents/) | 开发 coding agent 的 knowledge、memory、skills、workflows 与内部 scripts |
+| [.agents/knowledge/development-procedures.md](.agents/knowledge/development-procedures.md) | 初始化/实现 prompts、选择性复用、内部审计、评估闭环与图表维护 |
+| [AGENTS.md](AGENTS.md) | 开发 coding agent 的强制规则，不是产品上下文 |
+| [benchmarks/README.md](benchmarks/README.md) | benchmark 条件、结果分类和可声明范围 |
 
-`hewo` runs on the **pi** coding agent. There is no second backend and no
-fallback: asking for another one is an error, not a silent default.
+开发 coding agent 维护仓库；产品 agent 只使用 `src/hewo/runtime/`。`.agents/`、开发历史、benchmarks 和所有 `AGENTS.md` 都不进入产品发布载荷。设计决策和验收证据使用 GitHub Issues，机器事实保留在本机生成、不入库的 `DevelopmentMachine.md`，历史计划只用于追溯。
 
-```bash
-# pi with an existing read-only auth store
-./docker/run-hewo-e2e.sh --agent hewo --provider <provider> --model <model> \
-  --pi-auth-file "$HOME/.pi/agent/auth.json" "hi"
-```
-
-用户和开发容器运行同一条 pi 原生命令，没有产品专属 CLI 或参数解析器：
-
-```bash
-export PATH="$HOME/.local/lib/hewo/environment/bin:$PATH"
-pi --no-session --no-context-files --no-extensions --no-skills \
-  --no-prompt-templates --no-themes \
-  -e "$HOME/.local/lib/hewo/runtime-package" \
-  --provider <provider> --model <model> --print "Say hello to Ada"
-```
-
-pi 从 package manifest 加载原生资源，runtime extension 消费 identity、memory
-policy、knowledge、workflows 和工具白名单。隔离参数关闭隐式资源发现；显式
-`-e` 只加载安装的产品包。安装器不安装 pi；完整依赖、安装和 TUI 路径见 USER.md。
-
-Outbound network access and elevated capabilities are **denied by default**.
-The weather capability ships with a deterministic fixture provider that needs
-no network; live lookups require an explicit opt-in, an allowlisted host and a
-timeout, and degrade back to the fixture on any failure rather than failing the
-task.
-
-The scaffold, coding-agent backend, and LLM provider remain independent layers.
-HeWo is a complete, intentionally scoped Hello World Agent — not a degraded
-one — and the provider/model below is only a run-time choice:
-
-- The scaffold is hewo's runtime definition under `src/hewo/runtime` (a
-  downstream repository renames this path to `src/<agent_name>/runtime`).
-- The backend is pi.
-- The provider/model is selected at run time and never baked into the scaffold.
-
-For a short-lived read-only provider runtime bundle, create it and pass it to Docker:
-
-```bash
-bundle=$(mktemp -d)
-./scripts/create-provider-bundle.sh <provider> <model> OPENAI_API_KEY "$bundle"
-./docker/run-hewo-e2e.sh --agent hewo --provider <provider> --model <model> --bundle "$bundle" "完成这个任务"
-rm -rf "$bundle"
-```
-
-The bundle is mode `0700`, its credential is mode `0600`, and Docker mounts it read-only at `/run/provider-bundle`. It contains only the selected provider metadata and one credential, never the host `HOME` or any CLI authentication database.
-
-凭据来源仅接受 `--api-key-env`、`--api-key-stdin`、`--pi-auth-file` 和 `--bundle`；不隐式读取 `.env`。运行 `./docker/run-hewo-e2e.sh --help` 查看选项。
-
-Never commit provider keys. Credentials are injected at run time through environment variables or Docker secrets, and are never baked into the image, Git, or the runtime.
-
-## Layout
-
-`src/hewo/runtime` is the hewo product Agent definition shipped to users. The
-**development coding agent** that develops this template uses `AGENTS.md` and
-`.agents/` for reusable development memory, knowledge, skills, and workflows;
-it must not treat those resources as hewo behavior. `scripts`, `docker`, and
-`benchmarks` are template infrastructure. `distribution` contains the public
-installer and the thin container entrypoint.
-
-The key feature is definition-first development: create or modify an Agent by editing its runtime identity, skills, prompt templates, memory policy, and the `package.json` resource manifest rather than implementing another runtime. Use GitHub Issues for design decisions and acceptance evidence; do not add `docs/` or unit-test suites for Agent behavior.
-
-## Provider contract
-
-The image contains no credentials and does not bake in a provider. The E2E
-helper passes the selected provider, model, and provider key at run time. It
-passes explicit `--provider` and `--model` arguments to pi, never metadata-only
-environment variables. Explicit keys use pi's native key option inside the
-container; auth stores are mounted read-only. The helper rejects missing
-credential sources. Evidence records backend, provider, model, credential-source
-flag, installation mode and the resolved immutable image ID.
-
-pi resolves credentials in this order: `--api-key`, then its `auth.json`, then
-the environment variable, then a custom provider key. `pi --list-models` is
-auth-filtered, so it is a readiness probe rather than a catalog.
-
-## Create a new agent
-
-```bash
-cp -R src/hewo src/my-agent
-./scripts/validate-definition.sh my-agent
-```
-
-`src/hewo`（Hello World）是本 template 中功能完整、刻意限定范围的参考产品
-Agent，也是当前仓库实际开发的产品。使用它验证完整 runtime 路径；如果要创建
-下游产品，才复制并改名为 `src/<agent_name>`：
-
-```bash
-./scripts/validate-definition.sh hewo
-./docker/run-hewo-e2e.sh --agent hewo --provider <provider> --model <model> \
-  --pi-auth-file "$HOME/.pi/agent/auth.json" "Say hello to Ada"
-```
-
-Replace `src/hewo` only when creating a separate downstream product Agent. In
-this repository, keep hewo's product behavior under `src/hewo/`; keep the
-**development coding agent** instructions in `AGENTS.md` and `.agents/`, and do
-not put template workflow instructions inside `src/hewo/runtime`.
-
-Use `scripts/build-release.sh hewo 0.1.0` to package runtime behavior and its installer. The standalone release installer downloads its matching archive; users supply pi and its dependencies. Release installation, artifact parity and provider-backed execution share `docker/run-hewo-e2e.sh --release` (alias `--user-path`); `--artifact PATH` tests an existing archive. This path never installs repository source. Record scrubbed acceptance evidence in the issue.
-
-This project follows a reuse-first development philosophy: an independent
-developer should build Agent behavior with prompts, skills, memory, knowledge,
-workflows, and tools, while delegating execution, model adapters, approvals,
-and terminal UX to the established coding-agent CLIs. The template therefore
-adds only the thin scaffold/package/provider wiring needed to compose those
-systems; it does not reimplement a coding-agent runtime.
-
-A release installation never installs pi. The user owns the backend and provider setup. Runtime npm dependencies, if a downstream Agent
-declares any, are installed frozen with `npm ci --ignore-scripts`, and a
-dependency without a lockfile is refused rather than resolved at install time.
-A release archive is installed without cloning this repository: one command
-fetches the baked installer, which downloads the matching archive itself (no
-`RELEASE_URL` or version setup). Published versions are listed under the
-repository's GitHub Releases; check there for the current version rather than
-assuming the one written below.
-
-The no-clone installation installs `~/.local/lib/hewo/runtime-package/` and its isolated tools. There is no `hewo` product command or compatibility wrapper. Load this directory explicitly with pi `-e`, as shown above.
-
-```bash
-curl -fsSL https://github.com/a-green-hand-jack/coding-agent-template/releases/latest/download/install.sh | bash
-pi --version
-pi --help
-```
-
-`benchmarks/` contains a benchmark contract, the `hewo-infrastructure-smoke`
-task, and a deterministic verifier. Run the complete smoke with:
-
-```bash
-PI_AUTH_FILE="$HOME/.pi/agent/auth.json" \
-LLM_PROVIDER=<provider> LLM_MODEL=<model> \
-BENCHMARK_RUN_DIR=/tmp/hewo-evidence \
-./scripts/run-benchmark.sh hewo
-```
-
-The benchmark writes only disposable workspace artifacts and a scrubbed
-trajectory; never commit the evidence directory or raw provider output. For
-full product-agent iteration, run the project-internal evaluation loop from
-`.agents/workflows/agent-development.md`. Long E2E or benchmark validation is
-submitted through the loop helper's registered background mode
-(`./scripts/run-agent-loop.sh --background ...`, then `--list-runs`,
-`--run-status <id>`, `--clean-run <id>` and `--gc`), so it can be queried and
-cleaned up without blocking the developer session. The preflight still runs in
-the foreground, so an invalid invocation fails there rather than inside a
-detached run.
-
-Submitting a run freezes the worktree into a snapshot that run owns, and builds
-a content-addressed image (`<agent>:def-<digest>`) from it. Every stage reads
-the snapshot, so editing the product Agent while a run is in flight changes
-neither what that run tests nor what its evidence records.
-
-## Development environments
-
-开发有两个主入口：`scripts/setup-dev.sh` 准备或复用开发环境并安装当前 runtime；
-`docker/run-hewo-e2e.sh` 构建/复用固定镜像、安装当前构建或 release artifact，并运行
-相同 pi 命令。Python/TypeScript 开发依赖不进入产品包。独立 benchmark、评测状态机、
-冻结快照、trace 和审计脚本保留各自职责，不是另一套产品入口。
-
-The Dockerfile is multi-stage. The final runtime contains only installed product
-resources, isolated tools and pi, never template development resources,
-benchmarks, `AGENTS.md` or `.agents/`.
+创建独立下游产品时才将产品路径适配为 `src/<agent_name>/runtime/`，不要在本仓库添加第二个产品或整目录复制 `.agents/`。下游初始化和基础设施选择性复用入口见 [开发内部流程](.agents/knowledge/development-procedures.md)。
 
 ## Agent diagrams
 
-Generated by the development-only `agent-evaluation-loop-design` skill. The
-`.mmd` files are the single source of truth; the blocks below are generated and
-are rewritten in place, so never hand-edit them.
+第一张图说明产品组成；第二张图说明带条件约束的迭代状态机，不是自动优化器。
+当前 hewo contract 为 `infrastructure-smoke-only`，状态为
+`SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE`，不代表性能提升。下游需使用自己的 contract 重新生成。
 
-Regenerate them with:
-
-```bash
-python3 .agents/skills/agent-evaluation-loop-design/scripts/generate-agent-diagrams.py \
-  --agent hewo --repo-root . --output-dir . --readme README.md
-python3 .agents/skills/agent-evaluation-loop-design/scripts/validate-agent-evaluation.py \
-  --agent hewo --repo-root . --output-dir . --readme README.md --strict
-```
-
-The first diagram answers what the product Agent is; the second answers how it
-is iterated, as a state machine with guards rather than a checklist. They
-describe **this template's** `hewo`, whose evaluation contract is
-`infrastructure-smoke-only` — so its honest state is
-`SMOKE_ONLY_NOT_PERFORMANCE_EVIDENCE`, not a demonstrated performance gain. A
-downstream repository must write its own contract and regenerate its own
-diagrams; these are not downstream product facts. GitHub renders the Mermaid
-blocks; some other Markdown renderers will show them as code.
+两份 `.mmd` 是唯一真源，下方 generated blocks 由开发侧 skill 原地同步，不能手改或删除 markers。生成与校验命令见 [图表维护契约](.agents/knowledge/development-procedures.md#图表生成器契约)。GitHub 可渲染 Mermaid，其他 Markdown renderer 可能显示代码。
 
 Source: [`agent-architecture.mmd`](agent-architecture.mmd)
 

@@ -67,7 +67,7 @@ runtime loads:
 - every path a normalized relative path inside the runtime directory.
 
 A non-pi backend configuration file must not exist in the runtime;
-`scripts/validate-definition.sh` and `scripts/check-pi-only-backend.py` both
+`.agents/scripts/validate-definition.sh` and `.agents/scripts/check-pi-only-backend.py` both
 reject one.
 
 ## 3. Remove overlapping runtime infrastructure
@@ -88,7 +88,7 @@ small, deterministic, and credential-free.
 Run the structural check:
 
 ```bash
-./scripts/validate-definition.sh <agent>
+./.agents/scripts/validate-definition.sh <agent>
 ```
 
 Build the clean image and execute a real provider-backed request through

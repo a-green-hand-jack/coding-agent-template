@@ -129,7 +129,7 @@ def check_required_paths(root: Path, audit: Audit) -> None:
         "scripts/setup-dev.sh",
         "docker/Dockerfile",
         "scripts/build-release.sh",
-        "scripts/validate-definition.sh",
+        ".agents/scripts/validate-definition.sh",
         "src/hewo/agent.yaml",
     )
     for relative in required:

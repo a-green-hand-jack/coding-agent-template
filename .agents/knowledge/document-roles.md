@@ -6,7 +6,7 @@
 > - **Tone:** imperative and specific; define the contract, not the motivation.
 > - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the role-block format, the governed set, the audience vocabulary, and the rules for adding a document.
-> - **Excludes:** the content of any individual document (each one carries its own block), product behavior (see `src/<agent>/runtime/`), and the enforcement logic itself (see `scripts/check-document-roles.py`).
+> - **Excludes:** the content of any individual document (each one carries its own block), product behavior (see `src/<agent>/runtime/`), and the enforcement logic itself (see `.agents/scripts/check-document-roles.py`).
 
 ## Why a document declares its own role
 
@@ -97,7 +97,7 @@ Exempt, and deliberately so:
 ## Rules
 
 1. A new governed document is not finished until it has a role block. The gate
-   `python3 scripts/check-document-roles.py` fails otherwise, and it runs in CI.
+   `python3 .agents/scripts/check-document-roles.py` fails otherwise, and it runs in CI.
 2. Changing what a document is *for* means editing its role block first, then
    moving the content that no longer belongs. Never leave the block describing a
    document the content contradicts.

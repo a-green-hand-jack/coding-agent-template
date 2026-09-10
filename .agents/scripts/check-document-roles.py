@@ -161,7 +161,7 @@ def check_short(path: str, lines: list[str]) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--list", action="store_true", help="print the classification and exit")
     args = parser.parse_args()
     root = args.repo_root.resolve()

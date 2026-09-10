@@ -7,12 +7,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.x' }
-      - run: ./scripts/validate-definition.sh hewo
-      - run: python3 scripts/check-template-registry.py
-      - run: python3 scripts/check-pi-only-backend.py
+      - run: ./.agents/scripts/validate-definition.sh hewo
+      - run: python3 .agents/scripts/check-template-registry.py
+      - run: python3 .agents/scripts/check-pi-only-backend.py
       # Every governed document must declare who it is for, so a document's
       # audience cannot drift away from its content unnoticed.
-      - run: python3 scripts/check-document-roles.py
+      - run: python3 .agents/scripts/check-document-roles.py
       # The consistency audit is what catches manifest and documentation drift.
       # Without it here, a red audit can sit on the default branch unnoticed.
       - run: >-
@@ -21,8 +21,8 @@ jobs:
       # Built the same way a developer run builds it: frozen snapshot, then a
       # content-addressed image. CI exercising a different build path than
       # every local path is how the two silently diverge.
-      - run: ./scripts/freeze-agent-run.sh --agent hewo --into "$RUNNER_TEMP/snapshot"
-      - run: ./scripts/build-agent-image.sh --context "$RUNNER_TEMP/snapshot"
+      - run: ./.agents/scripts/freeze-agent-run.sh --agent hewo --into "$RUNNER_TEMP/snapshot"
+      - run: ./.agents/scripts/build-agent-image.sh --context "$RUNNER_TEMP/snapshot"
       - name: Clean-container smoke on the frozen image
         run: |
           image="$(python3 -c 'import json;print(json.load(open("'"$RUNNER_TEMP"'/snapshot/.frozen.json"))["image"])')"

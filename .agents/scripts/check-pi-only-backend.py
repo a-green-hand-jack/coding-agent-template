@@ -33,6 +33,7 @@ PRODUCT_CONTRACT = (
     "distribution/**",
     "docker/**",
     "scripts/**",
+    ".agents/scripts/**",
     "src/**",
     ".env.example",
     ".dockerignore",
@@ -68,7 +69,6 @@ FORBIDDEN = (
 # Development-side files that may still name other CLIs, each with its reason.
 DEVELOPMENT_ALLOWLIST = {
     "AGENTS.md": "names the coding agents this repository may be developed WITH, not product backends",
-    "DEV.md": "developer guide; records the development harness and the pi-only product contract",
     ".agents/knowledge/provider-e2e.md": "secret-free credential cheat-sheet; names the credential paths of other CLIs so they are never printed",
     ".agents/memory/2026-09-06-issue1-hewo-evidence.md": "historical evidence record, redacted at the owner's request",
     ".agents/skills/development-machine-profile/SKILL.md": "machine-agnostic prober",
@@ -77,12 +77,12 @@ DEVELOPMENT_ALLOWLIST = {
     ".agents/skills/agent-consistency-audit/scripts/audit_agent.py": "audit rules name retired markers deliberately",
     ".agents/template-content-registry.json": "registry notes describe historical classes",
     ".opencode/opencode.jsonc": "configuration for the development harness, not the product",
-    "scripts/check-pi-only-backend.py": "this gate names the patterns it forbids",
+    ".agents/scripts/check-pi-only-backend.py": "this gate names the patterns it forbids",
 }
 
 # Positive facts the pi-only contract must keep.
 REQUIRED_FACTS = (
-    ("scripts/validate-definition.sh", r"runtime/package\.json", "validation must require the pi resource manifest"),
+    (".agents/scripts/validate-definition.sh", r"runtime/package\.json", "validation must require the pi resource manifest"),
     ("docker/Dockerfile", r"pi-coding-agent", "the image must install pi"),
 )
 
@@ -114,7 +114,7 @@ def in_downstream_guidance(path: str) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--list-allowlist", action="store_true", help="print the development allowlist and exit")
     args = parser.parse_args()
     root = args.repo_root.resolve()

@@ -22,9 +22,9 @@ REQUIRED_FILES = (
     "scripts/setup-dev.sh",
     "distribution/container-entrypoint.sh",
     "docker/Dockerfile",
-    "scripts/validate-definition.sh",
+    ".agents/scripts/validate-definition.sh",
 )
-SHELL_DIRS = ("distribution", "docker", "scripts")
+SHELL_DIRS = ("distribution", "docker", "scripts", ".agents/scripts")
 TOOL_NAME_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9_.:=/-]+$")
 
@@ -80,16 +80,18 @@ class Health:
             base = self.root / directory
             for path in sorted(base.rglob("*.sh")) if base.is_dir() else []:
                 self.run_command("shell-syntax", ["bash", "-n", str(path)])
-        for path in sorted((self.root / "scripts").rglob("*.py")) if (self.root / "scripts").is_dir() else []:
-            try:
-                ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-            except (OSError, SyntaxError) as exc:
-                self.add("ERROR", "python-syntax", f"{path}: {exc}")
-            else:
-                self.add("PASS", "python-syntax", str(path.relative_to(self.root)))
+        for directory in ("scripts", ".agents/scripts"):
+            base = self.root / directory
+            for path in sorted(base.rglob("*.py")) if base.is_dir() else []:
+                try:
+                    ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+                except (OSError, SyntaxError) as exc:
+                    self.add("ERROR", "python-syntax", f"{path}: {exc}")
+                else:
+                    self.add("PASS", "python-syntax", str(path.relative_to(self.root)))
 
     def definition(self) -> None:
-        self.run_command("definition-validation", ["./scripts/validate-definition.sh", self.agent])
+        self.run_command("definition-validation", ["./.agents/scripts/validate-definition.sh", self.agent])
         tools_project = self.root / "src" / self.agent / "runtime" / "tools" / "pyproject.toml"
         if tools_project.is_file():
             if shutil.which("uv"):

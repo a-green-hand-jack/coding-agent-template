@@ -47,9 +47,9 @@ Repeat this loop for each product-agent iteration:
    memory policy, tools, and permissions. In this repository, product behavior
    belongs under `src/hewo/`; downstream repositories replace that with their
    own `src/<agent_name>/`.
-2. **Validate structure** with `./scripts/validate-definition.sh <agent_name>`.
+2. **Validate structure** with `./.agents/scripts/validate-definition.sh <agent_name>`.
 3. **Audit the repository scope**: run the template self-audit
-   (`scripts/check-template-registry.py`, then
+   (`.agents/scripts/check-template-registry.py`, then
    `template-release-readiness` / `audit_template_release.py --agent hewo`) in
    this template repository, or run the consistency audit
    (`agent-consistency-audit` / `audit_agent.py --agent <agent_name> --strict`)
@@ -66,11 +66,11 @@ Repeat this loop for each product-agent iteration:
    keep interacting:
 
    ```bash
-   ./scripts/run-agent-loop.sh --background --provider <provider> --model <model> \
+   ./.agents/scripts/run-agent-loop.sh --background --provider <provider> --model <model> \
      --pi-auth-file "$HOME/.pi/agent/auth.json" "<task>"
-   ./scripts/run-agent-loop.sh --run-status <run_id>
-   ./scripts/run-agent-loop.sh --clean-run <run_id>
-   ./scripts/run-agent-loop.sh --gc --older-than 7
+   ./.agents/scripts/run-agent-loop.sh --run-status <run_id>
+   ./.agents/scripts/run-agent-loop.sh --clean-run <run_id>
+   ./.agents/scripts/run-agent-loop.sh --gc --older-than 7
    ```
 
    The whole preflight runs in the foreground, so an invalid invocation is
@@ -109,9 +109,9 @@ Repeat this loop for each product-agent iteration:
    product-general claim additionally needs an independent holdout or canary
    plus domain review.
 
-`scripts/run-agent-loop.sh` is the executable wrapper for this loop when it is
+`.agents/scripts/run-agent-loop.sh` is the executable wrapper for this loop when it is
 available. It should orchestrate existing scripts rather than duplicate their
-internals; `scripts/run-benchmark.sh` remains the single implementation of the
+internals; `.agents/scripts/run-benchmark.sh` remains the single implementation of the
 provider-backed benchmark / verifier / trace-scrub stage.
 
 This template workflow is not downstream memory. A downstream repository may

@@ -123,7 +123,7 @@ if [[ "$release_mode" == true ]]; then
   install_mode=release
   scratch="$(mktemp -d "${TMPDIR:-/tmp}/agent-e2e.XXXXXX")"
   if [[ -z "$artifact" ]]; then
-    "$root/scripts/freeze-agent-run.sh" --agent "$name" --into "$scratch/snapshot" >/dev/null
+    "$root/.agents/scripts/freeze-agent-run.sh" --agent "$name" --into "$scratch/snapshot" >/dev/null
     version="${RELEASE_VERSION:-0.1.0}"
     "$scratch/snapshot/scripts/build-release.sh" "$name" "$version" >&2
     artifact="$scratch/snapshot/release/$name-$version.tar.gz"
@@ -173,8 +173,8 @@ DOCKER
   image="$(<"$scratch/image-id")"
 elif [[ -z "$image" && "$no_build" != true ]]; then
   scratch="$(mktemp -d "${TMPDIR:-/tmp}/agent-e2e.XXXXXX")"
-  "$root/scripts/freeze-agent-run.sh" --agent "$name" --into "$scratch/snapshot" >/dev/null
-  build_result="$("$root/scripts/build-agent-image.sh" --context "$scratch/snapshot")"
+  "$root/.agents/scripts/freeze-agent-run.sh" --agent "$name" --into "$scratch/snapshot" >/dev/null
+  build_result="$("$root/.agents/scripts/build-agent-image.sh" --context "$scratch/snapshot")"
   while IFS='=' read -r key value; do [[ "$key" != AGENT_IMAGE_ID ]] || image="$value"; done <<< "$build_result"
 else
   image="${image:-$name:e2e}"

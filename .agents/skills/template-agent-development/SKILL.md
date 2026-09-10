@@ -59,7 +59,7 @@ authoritative content registry at
 `.agents/template-content-registry.json`. It defines what is template-only,
 what is selectively reusable, which reference scaffolds need adaptation, and
 which neutral placeholders may be installed. It covers the entire repository,
-not only `.agents/`; run `python3 scripts/check-template-registry.py` after
+not only `.agents/`; run `python3 .agents/scripts/check-template-registry.py` after
 adding tracked template files.
 
 Before publishing a template version, also load
@@ -99,7 +99,7 @@ infrastructure and development skills the target project needs.
   behavior, run a real Docker request with the intended provider/auth injected
   through the safe path and observe the model response. If no provider runtime
   was injected, call the result infrastructure-only.
-- Prefer the repository's current checks (`scripts/validate-definition.sh`,
+- Prefer the repository's current checks (`.agents/scripts/validate-definition.sh`,
   Docker E2E, and release inspection). Do not revive the obsolete install-test
   workflow or add an Agent unit-test suite.
 

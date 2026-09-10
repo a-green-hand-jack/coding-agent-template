@@ -19,7 +19,7 @@ def matches(path: str, pattern: str) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[2])
     args = parser.parse_args()
     root = args.repo_root.resolve()
     registry_path = root / ".agents/template-content-registry.json"

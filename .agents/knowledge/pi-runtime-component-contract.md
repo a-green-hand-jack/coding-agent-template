@@ -1,7 +1,5 @@
 # Pi runtime component contract
 
-> **架构决策（已确认）**：HeWo 是 pi-native runtime/package，pi 是唯一 backend。`install.sh` 只安装 runtime package；provider、model、credentials 与 host infrastructure 由用户负责。HeWo wrapper 不是产品入口，开发规则不得把 wrapper 当作第二 backend 或产品 API。
-
 > **Role of this document**
 > - **Audience:** the development coding agent composing a product Agent on the pi backend in this repository.
 > - **Authority:** normative. The decision tree, the script boundary and the discovery guards bind every component choice.
@@ -9,6 +7,8 @@
 > - **Language:** 中文（代码、命令、协议标识保留原文）.
 > - **Contains:** the component decision tree, the per-component pi loader contract, the leaf-script boundary, the pi capability matrix, the `.agents/` discovery hazard and its required guards, and dated provenance.
 > - **Excludes:** product payload of any kind (see `src/hewo/runtime/`), and this machine's credential and provider selection facts (see `.agents/knowledge/provider-e2e.md`).
+
+> **架构决策（已确认）**：HeWo 是 pi-native runtime/package，pi 是唯一 backend。`install.sh` 安装产品包；provider、model、credentials 与 host infrastructure 由用户负责。不提供产品 wrapper。
 
 For the **development coding agent** only. Development-side knowledge: it governs
 how this repository composes a product Agent. It is never product payload and must

@@ -40,7 +40,7 @@ The classes have these meanings:
 Confirm that the inventory still covers the complete template before syncing:
 
 ```bash
-python3 scripts/check-template-registry.py
+python3 .agents/scripts/check-template-registry.py
 ```
 
 This check uses `git ls-files`, so adding a new tracked file without assigning
@@ -148,7 +148,7 @@ After applying changes:
 Run the definition check for the downstream Agent:
 
 ```bash
-./scripts/validate-definition.sh <agent_name>
+./.agents/scripts/validate-definition.sh <agent_name>
 ```
 
 Run the consistency audit after copying or adapting development resources:

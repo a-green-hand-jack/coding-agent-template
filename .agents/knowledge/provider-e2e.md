@@ -31,7 +31,7 @@ accepts. Anything else exits 2 as an unknown option; run
 | `--api-key-stdin` | stdin, so the key stays out of shell history |
 | `--pi-auth-file PATH` | `~/.pi/agent/auth.json`; was **not** sufficient on its own for a custom provider in prior testing |
 | `--pi-models-file PATH` | `~/.pi/agent/models.json`, for a custom provider catalog |
-| `--bundle PATH` | a short-lived bundle from `scripts/create-provider-bundle.sh` |
+| `--bundle PATH` | a short-lived bundle from `.agents/scripts/create-provider-bundle.sh` |
 
 ## The host catalogue is not the container catalogue
 

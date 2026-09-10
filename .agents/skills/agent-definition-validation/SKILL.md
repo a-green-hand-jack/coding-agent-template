@@ -36,15 +36,15 @@ credentials.
 1. Validate the definition structure:
 
    ```bash
-   ./scripts/validate-definition.sh <agent_name>
+   ./.agents/scripts/validate-definition.sh <agent_name>
    ```
 
 2. Build the clean Docker image when runtime, tools, package loading, dependencies, or
    packaging changed:
 
    ```bash
-   ./scripts/freeze-agent-run.sh --agent <agent_name> --into /tmp/<agent_name>-snapshot
-   ./scripts/build-agent-image.sh --context /tmp/<agent_name>-snapshot
+   ./.agents/scripts/freeze-agent-run.sh --agent <agent_name> --into /tmp/<agent_name>-snapshot
+   ./.agents/scripts/build-agent-image.sh --context /tmp/<agent_name>-snapshot
    ```
 
    The image is built from the frozen snapshot and tagged by content

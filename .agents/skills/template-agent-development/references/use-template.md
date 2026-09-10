@@ -51,7 +51,7 @@ write the real product identity or domain resources until Phase 1 is authorized.
 `runtime/package.json` is the resource manifest: a `pi` section for what pi
 loads natively, and an `agent` section for everything pi has no primitive for.
 A non-pi backend configuration file must not exist in the runtime;
-`scripts/validate-definition.sh` rejects one.
+`.agents/scripts/validate-definition.sh` rejects one.
 
 Keep product resources self-contained under `src/<agent_name>/`. Development
 guidance belongs in scoped `AGENTS.md` files or `.agents/`, never in runtime
@@ -98,7 +98,7 @@ backend; users install it themselves. Never copy auth stores into the scaffold.
 Run the structural checks first:
 
 ```bash
-./scripts/validate-definition.sh <agent_name>
+./.agents/scripts/validate-definition.sh <agent_name>
 ```
 
 Then run a real provider-backed Docker request. Supply credentials with an

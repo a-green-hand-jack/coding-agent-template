@@ -38,7 +38,7 @@ self-checks the runtime manifest declares in `agent.tool_checks`, a clean Docker
 build, the final image's pi binary, the isolated `uv` tool environment,
 native pi help/version behavior, and release payload exclusions. Pass
 `--skip-build --image <image-id>` to reuse an image already built from a frozen
-snapshot by `./scripts/build-agent-image.sh`; the tag is content addressed, so
+snapshot by `./.agents/scripts/build-agent-image.sh`; the tag is content addressed, so
 matching an image to its source is no longer something the operator has to
 remember. `--skip-build` asserts the image exists and fails if it does not.
 

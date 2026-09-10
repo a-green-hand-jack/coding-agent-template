@@ -1,5 +1,13 @@
 # hewo 用户指南
 
+> **Role of this document**
+> - **Audience:** end user，安装和使用 HeWo 的用户。
+> - **Authority:** informative。
+> - **Tone:** 简明操作指南。
+> - **Language:** 中文，保留英文标识和命令。
+> - **Contains:** 安装、pi 启动、配置和故障排查。
+> - **Excludes:** 开发工作见 `DEV.md`，内部规则见 `.agents/`。
+
 HeWo 是 pi-native runtime package，不提供独立的 `hewo` CLI。用户安装并配置
 pi，安装器只交付产品资源和独立工具环境；provider/model 始终由 pi 原生参数选择。
 

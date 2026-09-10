@@ -50,7 +50,7 @@ if [[ "$dry_run" == true ]]; then
   exit 0
 fi
 
-./scripts/validate-definition.sh "$name"
+./.agents/scripts/validate-definition.sh "$name"
 RELEASE_URL="$release_url" ./scripts/build-release.sh "$name" "$version"
 [[ -f "$archive" ]] || { echo "error: expected archive $archive was not produced" >&2; exit 2; }
 

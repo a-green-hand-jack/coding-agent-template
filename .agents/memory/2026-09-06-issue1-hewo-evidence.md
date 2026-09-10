@@ -1,6 +1,8 @@
 # [SUPERSEDED] Issue #1 HeWo Infrastructure Evidence
 
 > 历史证据记录；不作为当前 pi-native runtime/package 分发规则。
+>
+> 路径迁移说明：下文验证命令按历史原样保留；当前定义校验入口为 `.agents/scripts/validate-definition.sh`，不是历史的 `scripts/` 路径。
 
 Date: 2026-09-06
 

@@ -16,13 +16,13 @@
 # consistent and is not.
 set -euo pipefail
 
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 agent="${AGENT_NAME:-hewo}"
 into=""
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/freeze-agent-run.sh --into DIR [--agent NAME]
+Usage: ./.agents/scripts/freeze-agent-run.sh --into DIR [--agent NAME]
 
 Copy the worktree into DIR and record the two digests that identify the run.
 DIR must not already exist.
@@ -165,7 +165,7 @@ definition_revision = subset_digest(
     (f"src/{agent}/", "distribution/container-entrypoint.sh")
 )
 
-# The image cache key. scripts/ and benchmarks/ are frozen but deliberately
+# The image cache key. .agents/scripts/, scripts/ and benchmarks/ are frozen but deliberately
 # absent here: editing a script must not force an image rebuild.
 context_digest = subset_digest(
     ("src/", "distribution/", "docker/"),

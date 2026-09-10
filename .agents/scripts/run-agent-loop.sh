@@ -8,7 +8,7 @@
 # (`--clean-run`).
 set -uo pipefail
 
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$root"
 
 agent="${AGENT_NAME:-hewo}"
@@ -34,7 +34,7 @@ runs_root="$state_root/runs"
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/run-agent-loop.sh [options] [task prompt]
+Usage: ./.agents/scripts/run-agent-loop.sh [options] [task prompt]
 
 Run the project-internal evaluation loop in this order:
   definition validation -> consistency audit -> image build ->
@@ -469,7 +469,7 @@ if [[ -f "$root/.frozen.json" ]]; then
 else
   freeze_parent="$(mktemp -d "${TMPDIR:-/tmp}/agent-loop-freeze.XXXXXX")" \
     || reject 'could not create a directory for the run snapshot'
-  "$root/scripts/freeze-agent-run.sh" --agent "$agent" --into "$freeze_parent/snapshot" >/dev/null \
+  "$root/.agents/scripts/freeze-agent-run.sh" --agent "$agent" --into "$freeze_parent/snapshot" >/dev/null \
     || reject 'could not freeze the worktree for this run'
   snapshot="$freeze_parent/snapshot"
 fi
@@ -590,7 +590,7 @@ PY
     "$script" "$@" >"$run/summary.json" 2>"$run/output.log"
     code=$?
     printf "%s\n" "$code" >"$run/exit_code"
-  ' _ "$run" "$run/snapshot/scripts/run-agent-loop.sh" "${child_args[@]}" >/dev/null 2>&1 &
+  ' _ "$run" "$run/snapshot/.agents/scripts/run-agent-loop.sh" "${child_args[@]}" >/dev/null 2>&1 &
   child_pid=$!
   printf '%s\n' "$child_pid" >"$run/pid"
   disown "$child_pid" 2>/dev/null || true
@@ -634,7 +634,7 @@ record_skipped() {
 # The preflight stages intentionally use the exact repository entrypoints from
 # the plan. Do not replace these with duplicated checks or backend commands.
 loop_status=0
-if run_stage definition_validation ./scripts/validate-definition.sh "$agent"; then
+if run_stage definition_validation ./.agents/scripts/validate-definition.sh "$agent"; then
   :
 else
   loop_status=1
@@ -653,7 +653,7 @@ fi
 # infrastructure-health failure.
 agent_image_id=""
 if [[ "$loop_status" -eq 0 ]]; then
-  if run_stage image_build ./scripts/build-agent-image.sh --context "$snapshot"; then
+  if run_stage image_build ./.agents/scripts/build-agent-image.sh --context "$snapshot"; then
     agent_image_id="$(sed -n 's/^AGENT_IMAGE_ID=//p' "$tmp_dir/image_build.log" | tail -n 1)"
     if [[ -z "$agent_image_id" ]]; then
       printf 'error: the image build reported no image id\n' >&2
@@ -705,7 +705,7 @@ else
   export AGENT_DEFINITION_REVISION="$definition_revision"
 
   benchmark_ran=true
-  if run_stage benchmark ./scripts/run-benchmark.sh "$agent" "$task_file"; then
+  if run_stage benchmark ./.agents/scripts/run-benchmark.sh "$agent" "$task_file"; then
     :
   else
     loop_status=1

@@ -9,7 +9,7 @@
 # revision that had never run.
 set -euo pipefail
 
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 name="${1:-hewo}"
 task_file="${2:-benchmarks/tasks/example-task.md}"
 backend="${AGENT_BACKEND:-${HEWO_BACKEND:-pi}}"
@@ -51,7 +51,7 @@ if [[ -f "$root/.frozen.json" ]]; then
   if [[ -z "$image_id" ]]; then
     while IFS='=' read -r key value; do
       [[ "$key" == AGENT_IMAGE_ID ]] && image_id="$value"
-    done < <("$root/scripts/build-agent-image.sh" --context "$root")
+    done < <("$root/.agents/scripts/build-agent-image.sh" --context "$root")
   fi
 elif [[ -z "$image_id" || -z "$definition_revision" ]]; then
   snapshot_root="$(mktemp -d "${TMPDIR:-/tmp}/agent-benchmark.XXXXXX")"
@@ -59,10 +59,10 @@ elif [[ -z "$image_id" || -z "$definition_revision" ]]; then
     case "$key" in
       AGENT_DEFINITION_REVISION) definition_revision="$value" ;;
     esac
-  done < <("$root/scripts/freeze-agent-run.sh" --agent "$name" --into "$snapshot_root/snapshot")
+  done < <("$root/.agents/scripts/freeze-agent-run.sh" --agent "$name" --into "$snapshot_root/snapshot")
   while IFS='=' read -r key value; do
     [[ "$key" == AGENT_IMAGE_ID ]] && image_id="$value"
-  done < <("$root/scripts/build-agent-image.sh" --context "$snapshot_root/snapshot")
+  done < <("$root/.agents/scripts/build-agent-image.sh" --context "$snapshot_root/snapshot")
 fi
 [[ -n "$image_id" && -n "$definition_revision" ]] || {
   echo "could not pin the image and definition revision before the run" >&2
@@ -94,7 +94,7 @@ fi
 # report. Executed through the same (possibly frozen) root as everything else.
 ARTIFACT_PATH="$workspace/artifacts/hewo-smoke.md" \
   ./benchmarks/verifiers/example-verifier.sh
-./scripts/collect-trace.sh "$trajectory" "$scrubbed" >/dev/null
+./.agents/scripts/collect-trace.sh "$trajectory" "$scrubbed" >/dev/null
 
 # Fail closed on subject drift: the image that answered must still be the image
 # that was pinned. A concurrent build that moved the tag, or a manual retag,

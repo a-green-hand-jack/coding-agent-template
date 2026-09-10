@@ -1,6 +1,8 @@
 # [SUPERSEDED] Pi-only Runtime Bridge and Evaluation Loop
 
 > 本记录已被确认的 pi-native runtime/package 分发边界取代；仅保留历史证据，不作为当前规则。
+>
+> 路径迁移说明：下文原始证据保持不变；当前 backend 收敛 gate 位于 `.agents/scripts/check-pi-only-backend.py`，不是历史的 `scripts/` 路径。
 
 Date: 2026-09-08 (pi 0.85.1 `@earendil-works/pi-coding-agent`). Secret-free: no credential was read and no provider request was
 made while producing any of this.

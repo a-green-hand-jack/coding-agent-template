@@ -193,7 +193,7 @@ promotion gate; the comparator never writes it and never updates the best.
 
 ## What this skill is not
 
-`scripts/run-agent-loop.sh` is a stage runner, not a finished automatic
+`.agents/scripts/run-agent-loop.sh` is a stage runner, not a finished automatic
 optimizer. This skill adds the design contract, the diagrams, a thin
 comparison protocol and a protected self-bootstrap check. It deliberately adds
 no LLM client, session manager, approval loop, tool loop or provider adapter.
